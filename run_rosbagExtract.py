@@ -18,9 +18,9 @@ INFO:
     Date: September 2019
 """
 import cv2
-import rosbagpy
+import pyrosbag
 
-def run_rosbagExtract():
+def run_rosbagExtract(bagfile):
     # Open up the bag
     
     # Write videos to standard file
