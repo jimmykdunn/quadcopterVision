@@ -26,6 +26,8 @@ INFO:
 import injectBackground
 import cv2
 import os
+import struct
+import numpy as np
 
 def run_videoInjection(greenVideoFile, backgroundVideoFile):
     
@@ -38,16 +40,27 @@ def run_videoInjection(greenVideoFile, backgroundVideoFile):
     outVideoFile = greenVideoName + '_over_' + backgroundVideoName + vidExt
     
     # Open input video streams
-    greenVideoStream = cv2.VideoCapture(greenVideoFile)
-    backgroundVideoStream = cv2.VideoCapture(backgroundVideoFile)
-    assert greenVideoStream.isOpened()
-    assert backgroundVideoStream.isOpened()
-    
+    inputExtension = os.path.splitext(greenVideoFile)[1]
+    if 'avi' in inputExtension:
+        greenVideoStream = cv2.VideoCapture(greenVideoFile)
+        backgroundVideoStream = cv2.VideoCapture(backgroundVideoFile)
+        assert greenVideoStream.isOpened()
+        assert backgroundVideoStream.isOpened()
+        greenWidth,greenHeight = \
+            int(greenVideoStream.get(3)), int(greenVideoStream.get(4))
+        backgroundWidth, backgroundHeight = \
+            int(backgroundVideoStream.get(3)), int(backgroundVideoStream.get(4))
+    else:
+        greenVideoStream = open(greenVideoFile,'rb')  
+        backgroundVideoStream = open(backgroundVideoFile,'rb')  
+        greenWidth = struct.unpack('i',greenVideoStream.read(4))[0]
+        greenHeight = struct.unpack('i',greenVideoStream.read(4))[0]
+        greenNColors = struct.unpack('i',greenVideoStream.read(4))[0]
+        backgroundWidth = struct.unpack('i',backgroundVideoStream.read(4))[0]
+        backgroundHeight = struct.unpack('i',backgroundVideoStream.read(4))[0]
+        backgroundNColors = struct.unpack('i',backgroundVideoStream.read(4))[0]
+        
     # Determine size of each video
-    greenWidth,greenHeight = \
-        int(greenVideoStream.get(3)), int(greenVideoStream.get(4))
-    backgroundWidth, backgroundHeight = \
-        int(backgroundVideoStream.get(3)), int(backgroundVideoStream.get(4))
     assert greenWidth == backgroundWidth
     assert greenHeight == backgroundHeight
     
@@ -55,30 +68,53 @@ def run_videoInjection(greenVideoFile, backgroundVideoFile):
     outStream = cv2.VideoWriter(outVideoFile,cv2.VideoWriter_fourcc('X','V','I','D'), \
                                 framerate, (greenWidth, greenHeight))
     
-    # Read in the greenscreen video and process frame-by-frame
-    success_g, success_b = True, True
-    iFrame = 0
-    while success_g and success_b:
-        # Read a frame of the each video
-        success_g, greenFrame = greenVideoStream.read()
-        success_b, backgroundFrame = backgroundVideoStream.read()
-        if not success_g or not success_b:
-            break
+    try:
+        # Read in the greenscreen video and process frame-by-frame
+        success_g, success_b = True, True
+        iFrame = 0
+        while success_g and success_b:
+            # Read a frame of each video
+            if 'avi' in inputExtension:
+                success_g, greenFrame = greenVideoStream.read()
+                success_b, backgroundFrame = backgroundVideoStream.read()
+            else:
+                greenFrame = np.zeros([greenWidth*greenHeight*greenNColors,1]).astype(np.uint8)
+                greenFrameRaw = greenVideoStream.read(greenWidth*greenHeight*greenNColors)
+                if len(greenFrameRaw) != greenWidth*greenHeight*greenNColors:
+                    break # we are done
+                for pix in range(greenWidth*greenHeight*greenNColors):
+                    greenFrame[pix] = greenFrameRaw[pix]
+                greenFrame = np.reshape(greenFrame, (greenHeight,greenWidth,greenNColors))
+                
+                backgroundFrame = np.zeros([backgroundWidth*backgroundHeight*backgroundNColors,1]).astype(np.uint8)
+                backgroundFrameRaw = backgroundVideoStream.read(backgroundWidth*backgroundHeight*backgroundNColors)
+                if len(backgroundFrameRaw) != backgroundWidth*backgroundHeight*backgroundNColors:
+                    break # we are done
+                for pix in range(backgroundWidth*backgroundHeight*backgroundNColors):
+                   backgroundFrame[pix] = backgroundFrameRaw[pix]
+                backgroundFrame = np.reshape(backgroundFrame, (backgroundHeight,backgroundWidth,backgroundNColors))
+
+            if not success_g or not success_b:
+                break
+            
+            # Inject the background
+            frame = injectBackground.injectBackground(greenFrame, backgroundFrame)
+            
+            # Write frame to output video stream
+            outStream.write(frame)
+            
+            print('Injecting onto frame ' + str(iFrame))
+            iFrame += 1
+        # while success
         
-        # Inject the background
-        frame = injectBackground.injectBackground(greenFrame, backgroundFrame)
-        
-        # Write frame to output video stream
-        outStream.write(frame)
-        
-        print('Injecting onto frame ' + str(iFrame))
-        iFrame += 1
-        
-    # Save it off so we can play the video
-    outStream.release()
+    finally:       
+        # Save it off so we can play the video
+        print("Exiting cleanly")
+        outStream.release()
     
 # end run_videoInjection()
 
 # Run with defaults if at highest level
 if __name__ == "__main__":
     run_videoInjection("defaultGreenscreenVideo.avi", "defaultBackgroundVideo.avi")
+    #run_videoInjection("defaultGreenscreenVideo.vraw", "defaultBackgroundVideo.vraw")

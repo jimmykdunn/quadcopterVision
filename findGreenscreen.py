@@ -20,9 +20,8 @@ INFO:
     Date: September 2019
 """
 import numpy as np
-import copy
 import cv2
-#[0.3938,0.5567,0.5402]
+
 def findGreenscreen(greenImageIn, screenColorHSV=[41,63,138], colorVariance=30.0):
     # Check that the image is indeed a 3-D array
     nx,ny,nc = greenImageIn.shape

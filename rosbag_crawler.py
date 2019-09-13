@@ -3,6 +3,7 @@
 FUNCTION: rosbag_crawler
 DESCRIPTION:
     Extracts relevant information from a recorded rosbag, including video data.
+    DEBUGGUING USE ONLY!!!
     
 INPUTS: 
     rosbagFile: location of a rosbag file
@@ -20,11 +21,13 @@ INFO:
 
 import numpy as np
 import struct
-import matplotlib.pyplot as plt
 import os
 import cv2
 
+SAVE_AS_AVI = False
+
 def rosbag_crawler(bagfile):
+    
     # Open up the bag
     bagptr = open(bagfile, "rb")
     iImage = 0
@@ -97,15 +100,25 @@ def rosbag_crawler(bagfile):
                         bpp=1
                         
                         if not videoInitialized:
-                            # Get the video stream name ready
-                            framerate = 30.0 # fps
-                            videoFilename = os.path.splitext(bagfile)[0] + '.avi'
-                            #videoStream = cv2.VideoWriter(videoFilename,cv2.VideoWriter_fourcc(*'DIVX'), \
-                            #                            framerate, (nx, ny))
-                            videoStream = cv2.VideoWriter(videoFilename,cv2.VideoWriter_fourcc('X','V','I','D'), \
-                                                        framerate, (nx, ny))
-                            #videoStream = cv2.VideoWriter(videoFilename,cv2.VideoWriter_fourcc(*'MJPG'), \
-                            #                             framerate, (nx, ny))
+                            if SAVE_AS_AVI:
+                                # Get the video stream name ready
+                                framerate = 30.0 # fps
+                                videoFilename = os.path.splitext(bagfile)[0] + '.avi'
+                                #videoStream = cv2.VideoWriter(videoFilename,cv2.VideoWriter_fourcc(*'DIVX'), \
+                                #                            framerate, (nx, ny))
+                                videoStream = cv2.VideoWriter(videoFilename,cv2.VideoWriter_fourcc('X','V','I','D'), \
+                                                            framerate, (nx, ny))
+                                #videoStream = cv2.VideoWriter(videoFilename,cv2.VideoWriter_fourcc(*'MJPG'), \
+                                #                             framerate, (nx, ny))
+                            else:
+                                # Save binary raw bgr values
+                                videoFilename = os.path.splitext(bagfile)[0] + '.vraw'
+                                videoStream = open(videoFilename, "wb")
+                                nc = 3
+                                videoStream.write(nx.to_bytes(4,"little"))
+                                videoStream.write(ny.to_bytes(4,"little"))
+                                videoStream.write(nc.to_bytes(4,"little"))
+                                
                             videoInitialized= True
                     
                     if data[ick:].find(b'bgr8') != -1:
@@ -174,9 +187,12 @@ def rosbag_crawler(bagfile):
     finally:
         bagptr.close()
         
-        # Save it off so we can play the video
-        print("Releasing video stream handle")
-        videoStream.release()
+        if SAVE_AS_AVI:
+            # Save it off so we can play the video
+            print("Releasing video stream handle")
+            videoStream.release()
+        else:
+            videoStream.close()
     
     
 # end rosbag_crawler()
@@ -252,6 +268,6 @@ def parse_header(header,spaces=''):
 
 # Run with defaults if at highest level
 if __name__ == "__main__":
-    #rosbag_crawler("C:\\Users\\jimmy\\OneDrive\\Documents\\gradSchool\\thesis\\data\\rosbags\\helloworld.bag")
-    rosbag_crawler("C:\\Users\\jimmy\\OneDrive\\Documents\\gradSchool\\thesis\\data\\rosbags\\greenTest_01.bag")
+    rosbag_crawler("C:\\Users\\jimmy\\OneDrive\\Documents\\gradSchool\\thesis\\data\\rosbags\\helloworld.bag")
+    #rosbag_crawler("C:\\Users\\jimmy\\OneDrive\\Documents\\gradSchool\\thesis\\data\\rosbags\\greenTest_01.bag")
     
