@@ -20,27 +20,26 @@ INFO:
     Date: September 2019
 """
 import numpy as np
-
-def findGreenscreen(greenImage, screenColor=[0,1,0], colorVariance=0.1):
-    # Check that the image is indeed a 3-D array ranged 0 to 1
-    nx,ny,nc = greenImage.shape
+import copy
+import cv2
+#[0.3938,0.5567,0.5402]
+def findGreenscreen(greenImageIn, screenColorHSV=[41,63,138], colorVariance=30.0):
+    # Check that the image is indeed a 3-D array
+    nx,ny,nc = greenImageIn.shape
     
     # Check validity of screenColor
-    assert len(screenColor) == 3
-    assert np.fabs(np.linalg.norm(screenColor) - 1.0) < 0.001
+    assert len(screenColorHSV) == 3    
     
-    # Check validity of colorVariance
-    assert colorVariance >= 0
-    assert colorVariance <= 1
+    # Convert to HSV colorspace
+    greenImage_hsv = cv2.cvtColor(greenImageIn, cv2.COLOR_BGR2HSV)
     
-    # Normalize each image pixel?
-    
-    # Dot each pixel by screenColor
-    greenScore = np.dot(greenImage.reshape(nx*ny,nc), screenColor)
-    greenScore = np.reshape(greenScore,[nx,ny,nc])
+    #greenScore = np.mean(np.fabs(greenImage-screenColor),axis=2)
+    greenScore = np.fabs(greenImage_hsv - screenColorHSV).astype('float')
+    greenScore *= [3, 0.510, 0.934] # weight #cv30
+    greenScore = np.mean(greenScore,axis=2)
     
     # Apply a threshold to the green score to create the mask
-    greenMask = greenScore > (1.0 - colorVariance)
+    greenMask = greenScore < colorVariance
     
     return greenMask
     

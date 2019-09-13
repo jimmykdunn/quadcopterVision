@@ -26,7 +26,7 @@ def injectBackground(greenImage, background):
     assert greenImage.shape == background.shape
     
     # Find background pixels with findGreenscreen.py. Use default parameters.
-    greenMask = findGreenscreen(greenImage)
+    greenMask = findGreenscreen.findGreenscreen(greenImage)
     
     # Replace greenscreen pixels with background pixels
     image = copy.deepcopy(greenImage)

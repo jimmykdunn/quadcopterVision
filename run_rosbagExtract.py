@@ -31,5 +31,6 @@ def run_rosbagExtract(bagfile):
 
 # Run with defaults if at highest level
 if __name__ == "__main__":
-    run_rosbagExtract("C:\\Users\\jimmy\\OneDrive\\Documents\\gradSchool\\thesis\\data\\rosbags\\greenTest_01.bag")
+    #run_rosbagExtract("C:\\Users\\jimmy\\OneDrive\\Documents\\gradSchool\\thesis\\data\\rosbags\\greenTest_01.bag")
+    run_rosbagExtract("C:\\Users\\jimmy\\OneDrive\\Documents\\gradSchool\\thesis\\data\\rosbags\\helloWorld.bag")
     
