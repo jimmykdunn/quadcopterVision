@@ -10,6 +10,7 @@ DESCRIPTION:
 INPUTS: 
     greenVideoFile: location of a greenscreened video file readable by opencv
     backgroundVideoFile: location of a background video file readable by opencv
+    bgRotate_deg: degrees CCW to rotate the background by (0, 90, 180, or 270)
     
 OUTPUTS: 
     Video with greenscreen pixels replaced with background pixels. File name
@@ -23,13 +24,13 @@ INFO:
     Date: September 2019
 """
 
-import injectBackground
+import greenscreenTools as gst
 import cv2
 import os
 import struct
 import numpy as np
 
-def run_videoInjection(greenVideoFile, backgroundVideoFile):
+def run_videoInjection(greenVideoFile, backgroundVideoFile, bgRotate_deg=0):
     
     vidExt = '.avi'
     framerate = 30 # frames per second
@@ -38,6 +39,7 @@ def run_videoInjection(greenVideoFile, backgroundVideoFile):
     greenVideoName = os.path.splitext(greenVideoFile)[0]
     backgroundVideoName = os.path.splitext(backgroundVideoFile)[0]
     outVideoFile = greenVideoName + '_over_' + backgroundVideoName + vidExt
+    outMaskFile = greenVideoName + '_mask' + vidExt
     
     # Open input video streams
     inputExtension = os.path.splitext(greenVideoFile)[1]
@@ -59,14 +61,15 @@ def run_videoInjection(greenVideoFile, backgroundVideoFile):
         backgroundWidth = struct.unpack('i',backgroundVideoStream.read(4))[0]
         backgroundHeight = struct.unpack('i',backgroundVideoStream.read(4))[0]
         backgroundNColors = struct.unpack('i',backgroundVideoStream.read(4))[0]
-        
-    # Determine size of each video
-    assert greenWidth == backgroundWidth
-    assert greenHeight == backgroundHeight
+    
     
     # Open output video stream
     outStream = cv2.VideoWriter(outVideoFile,cv2.VideoWriter_fourcc('X','V','I','D'), \
-                                framerate, (greenWidth, greenHeight))
+                                framerate, (backgroundWidth, backgroundHeight))
+    
+    # Open output mask video stream
+    outMaskStream = cv2.VideoWriter(outMaskFile,cv2.VideoWriter_fourcc('X','V','I','D'), \
+                                framerate, (backgroundWidth, backgroundHeight))
     
     try:
         # Read in the greenscreen video and process frame-by-frame
@@ -97,8 +100,15 @@ def run_videoInjection(greenVideoFile, backgroundVideoFile):
             if not success_g or not success_b:
                 break
             
+            # Rotate the background image if so desired
+            if bgRotate_deg != 0:
+                backgroundFrame = np.rot90(backgroundFrame, k=int(bgRotate_deg/90), axes=(0,1))
+            
             # Inject the background
-            frame = injectBackground.injectBackground(greenFrame, backgroundFrame)
+            frame, mask = gst.injectBackground(greenFrame, backgroundFrame)
+            
+            # Write mask to output video stream
+            outMaskStream.write(np.repeat(mask.astype('uint8')[:,:,np.newaxis]*255,3,axis=2))
             
             # Write frame to output video stream
             outStream.write(frame)
@@ -111,10 +121,12 @@ def run_videoInjection(greenVideoFile, backgroundVideoFile):
         # Save it off so we can play the video
         print("Exiting cleanly")
         outStream.release()
+        outMaskStream.release()
     
 # end run_videoInjection()
 
 # Run with defaults if at highest level
 if __name__ == "__main__":
-    run_videoInjection("defaultGreenscreenVideo.avi", "defaultBackgroundVideo.avi")
+    #run_videoInjection("defaultGreenscreenVideo.avi", "defaultBackgroundVideo.avi")
     #run_videoInjection("defaultGreenscreenVideo.vraw", "defaultBackgroundVideo.vraw")
+    run_videoInjection("defaultGreenscreenVideo.avi", "sophieTricycle.mov",270)
