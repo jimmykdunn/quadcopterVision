@@ -1,3 +1,5 @@
+
+
 # -*- coding: utf-8 -*-
 """
 FUNCTION: run_videoInjection
@@ -37,7 +39,7 @@ def run_videoInjection(greenVideoFile, backgroundVideoFile, bgRotate_deg=0):
     
     # Form the filename of the output video
     greenVideoName = os.path.splitext(greenVideoFile)[0]
-    backgroundVideoName = os.path.splitext(backgroundVideoFile)[0].split('\\')[-1]
+    backgroundVideoName = os.path.splitext(backgroundVideoFile)[0].split(os.sep)[-1]
     outVideoFile = greenVideoName + '_over_' + backgroundVideoName + vidExt
     outMaskFile = greenVideoName + '_mask' + vidExt
     
@@ -133,7 +135,7 @@ def run_videoInjection(greenVideoFile, backgroundVideoFile, bgRotate_deg=0):
 
 # Run with defaults if at highest level
 if __name__ == "__main__":
-    #run_videoInjection("defaultGreenscreenVideo.avi", defaultBackgroundVideo.avi")
+    #run_videoInjection("defaultGreenscreenVideo.avi", "defaultBackgroundVideo.avi")
     #run_videoInjection("defaultGreenscreenVideo.vraw", defaultBackgroundVideo.vraw")
     #run_videoInjection("defaultGreenscreenVideo.avi", os.path.join("backgroundVideos","sophieTricycle.mov"),270)
     #run_videoInjection("defaultGreenscreenVideo.avi", os.path.join("backgroundVideos","EPC_ramp.mov"),270)
