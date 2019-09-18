@@ -135,8 +135,8 @@ def run_videoInjection(greenVideoFile, backgroundVideoFile, bgRotate_deg=0):
 if __name__ == "__main__":
     #run_videoInjection("defaultGreenscreenVideo.avi", "defaultBackgroundVideo.avi")
     #run_videoInjection("defaultGreenscreenVideo.vraw", "defaultBackgroundVideo.vraw")
-    #run_videoInjection("defaultGreenscreenVideo.avi", "backgroundVideos\\sophieTricycle.mov",270)
-    #run_videoInjection("defaultGreenscreenVideo.avi", "backgroundVideos\\EPC_ramp.mov",270)
-    #run_videoInjection("defaultGreenscreenVideo.avi", "backgroundVideos\\EPC_hallway.mov",270)
-    run_videoInjection("defaultGreenscreenVideo.avi", "backgroundVideos\\BOS_trainSidewalk.mov",270)
+    #run_videoInjection("defaultGreenscreenVideo.avi", "backgroundVideos/sophieTricycle.mov",270)
+    #run_videoInjection("defaultGreenscreenVideo.avi", "backgroundVideos/EPC_ramp.mov",270)
+    #run_videoInjection("defaultGreenscreenVideo.avi", "backgroundVideos/EPC_hallway.mov",270)
+    run_videoInjection("defaultGreenscreenVideo.avi", "backgroundVideos/BOS_trainSidewalk.MOV",270)
     
