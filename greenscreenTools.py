@@ -27,7 +27,7 @@ import copy
 import numpy as np
 import cv2
 
-def injectBackground(greenImage, background):
+def injectBackground(greenImage, background, shift=[0,0]):
     
     # Find background pixels with findGreenscreen.py. Use default parameters.
     greenMask = findGreenscreen(greenImage)
@@ -37,6 +37,14 @@ def injectBackground(greenImage, background):
     # the background video.
     if greenImage.shape != background.shape:
         greenImage, greenMask = smartSizeMatch(greenImage, greenMask, background.shape)
+        
+    # Optionally shift the greenImage (target) over the background image
+    if len(shift) == 2:
+        shift.append(0) # tack on color shift (none)
+    greenImage = np.roll(greenImage,shift[0],axis=0)
+    greenImage = np.roll(greenImage,shift[1],axis=1)
+    greenMask = np.roll(greenMask,shift[0],axis=0)
+    greenMask = np.roll(greenMask,shift[1],axis=1)
     
     # Replace greenscreen pixels with background pixels
     image = copy.deepcopy(greenImage)

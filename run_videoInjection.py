@@ -111,7 +111,7 @@ def run_videoInjection(greenVideoFile, backgroundVideoFile, bgRotate_deg=0):
                 backgroundFrame = np.rot90(backgroundFrame, k=int(bgRotate_deg/90), axes=(0,1))
             
             # Inject the background
-            frame, mask = gst.injectBackground(greenFrame, backgroundFrame)
+            frame, mask = gst.injectBackground(greenFrame, backgroundFrame,[600,300])
             
             # Write mask to output video stream
             outMaskStream.write(np.repeat(mask.astype('uint8')[:,:,np.newaxis]*255,3,axis=2))
