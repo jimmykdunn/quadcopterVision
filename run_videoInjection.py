@@ -44,10 +44,13 @@ def run_videoInjection(greenVideoFile, backgroundVideoFile, bgRotate_deg=0):
     outMaskFile = greenVideoName + '_mask' + vidExt
     
     # Open input video streams
+    print("Opening input video streams")
     inputExtension = os.path.splitext(greenVideoFile)[1]
     if 'avi' in inputExtension:
         greenVideoStream = cv2.VideoCapture(greenVideoFile)
+        print("Opened "+greenVideoFile)
         backgroundVideoStream = cv2.VideoCapture(backgroundVideoFile)
+        print("Opened "+backgroundVideoFile)
         assert greenVideoStream.isOpened()
         assert backgroundVideoStream.isOpened()
         greenWidth,greenHeight = \
@@ -56,7 +59,9 @@ def run_videoInjection(greenVideoFile, backgroundVideoFile, bgRotate_deg=0):
             int(backgroundVideoStream.get(3)), int(backgroundVideoStream.get(4))
     else:
         greenVideoStream = open(greenVideoFile,'rb')  
-        backgroundVideoStream = open(backgroundVideoFile,'rb')  
+        print("Opened "+greenVideoFile)
+        backgroundVideoStream = open(backgroundVideoFile,'rb') 
+        print("Opened "+backgroundVideoFile) 
         greenWidth = struct.unpack('i',greenVideoStream.read(4))[0]
         greenHeight = struct.unpack('i',greenVideoStream.read(4))[0]
         greenNColors = struct.unpack('i',greenVideoStream.read(4))[0]
@@ -74,10 +79,12 @@ def run_videoInjection(greenVideoFile, backgroundVideoFile, bgRotate_deg=0):
         outHeight = backgroundHeight
     outStream = cv2.VideoWriter(outVideoFile,cv2.VideoWriter_fourcc('X','V','I','D'), \
                                 framerate, (outWidth, outHeight))
+    print("Opened "+outVideoFile+" for output video stream") 
     
     # Open output mask video stream
     outMaskStream = cv2.VideoWriter(outMaskFile,cv2.VideoWriter_fourcc('X','V','I','D'), \
                                 framerate, (outWidth, outHeight))
+    print("Opened "+outMaskFile+" for output mask stream") 
     
     try:
         # Read in the greenscreen video and process frame-by-frame
@@ -130,6 +137,8 @@ def run_videoInjection(greenVideoFile, backgroundVideoFile, bgRotate_deg=0):
         print("Exiting cleanly")
         outStream.release()
         outMaskStream.release()
+        print("Output video file: "+outVideoFile) 
+        print("Output mask file: "+outMaskFile) 
     
 # end run_videoInjection()
 
@@ -137,8 +146,9 @@ def run_videoInjection(greenVideoFile, backgroundVideoFile, bgRotate_deg=0):
 if __name__ == "__main__":
     #run_videoInjection("defaultGreenscreenVideo.avi", "defaultBackgroundVideo.avi")
     #run_videoInjection("defaultGreenscreenVideo.vraw", defaultBackgroundVideo.vraw")
-    #run_videoInjection("defaultGreenscreenVideo.avi", os.path.join("backgroundVideos","sophieTricycle.mov"),270)
-    #run_videoInjection("defaultGreenscreenVideo.avi", os.path.join("backgroundVideos","EPC_ramp.mov"),270)
-    #run_videoInjection("defaultGreenscreenVideo.avi", os.path.join("backgroundVideos","EPC_hallway.mov"),270)
-    run_videoInjection("defaultGreenscreenVideo.avi", os.path.join("backgroundVideos","BOS_trainSidewalk.MOV"),270)
+    #run_videoInjection("defaultGreenscreenVideo.avi", os.path.join("backgroundVideos","sophieTricycle.avi"),270)
+    #run_videoInjection("defaultGreenscreenVideo.avi", os.path.join("backgroundVideos","EPC_ramp.avi"),270)
+    #run_videoInjection("defaultGreenscreenVideo.avi", os.path.join("backgroundVideos","EPC_hallway.avi"),270)
+    run_videoInjection("defaultGreenscreenVideo.avi", os.path.join("backgroundVideos","PHO_hallway.avi"),270)
+    #run_videoInjection("defaultGreenscreenVideo.avi", os.path.join("backgroundVideos","BOS_trainSidewalk.avi"),270)
     
