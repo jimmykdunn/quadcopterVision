@@ -40,8 +40,10 @@ def run_videoInjection(greenVideoFile, backgroundVideoFile, bgRotate_deg=0):
     # Form the filename of the output video
     greenVideoName = os.path.splitext(greenVideoFile)[0]
     backgroundVideoName = os.path.splitext(backgroundVideoFile)[0].split(os.sep)[-1]
-    outVideoFile = greenVideoName + '_over_' + backgroundVideoName + vidExt
-    outMaskFile = greenVideoName + '_mask' + vidExt
+    outVideoBase = greenVideoName + '_over_' + backgroundVideoName
+    outVideoFile = outVideoBase + vidExt
+    outMaskBase = greenVideoName + '_mask'
+    outMaskFile = outMaskBase + vidExt
     
     # Open input video streams
     print("Opening input video streams")
@@ -123,10 +125,23 @@ def run_videoInjection(greenVideoFile, backgroundVideoFile, bgRotate_deg=0):
             frame, mask = gst.injectBackground(greenFrame, backgroundFrame,[600,300])
             
             # Write mask to output video stream
-            outMaskStream.write(np.repeat(mask.astype('uint8')[:,:,np.newaxis]*255,3,axis=2))
+            # .avi format
+            mask3 = np.repeat(mask.astype('uint8')[:,:,np.newaxis]*255,3,axis=2)
+            outMaskStream.write(mask3) 
+            # .jpg sequence
+            mname = "mask_%04d.jpg" % iFrame
+            if not os.path.isdir(os.path.join("sequences",outVideoBase)):
+                os.mkdir(os.path.join("sequences",outVideoBase))
+            cv2.imwrite(os.path.join("sequences",outVideoBase,mname), mask3) 
             
             # Write frame to output video stream
+            # .avi format
             outStream.write(frame)
+            fname = "frame_%04d.jpg" % iFrame
+            # .jpg sequence
+            if not os.path.isdir(os.path.join("sequences",outVideoBase)):
+                os.mkdir(os.path.join("sequences",outVideoBase))
+            cv2.imwrite(os.path.join("sequences",outVideoBase,fname), frame)
             
             print('Injecting onto frame ' + str(iFrame))
             iFrame += 1
@@ -138,7 +153,8 @@ def run_videoInjection(greenVideoFile, backgroundVideoFile, bgRotate_deg=0):
         outStream.release()
         outMaskStream.release()
         print("Output video file: "+outVideoFile) 
-        print("Output mask file: "+outMaskFile) 
+        print("Output mask file: "+outMaskFile)
+        print("Output image folder: " + os.path.join("sequences",outVideoBase)) 
     
 # end run_videoInjection()
 
@@ -149,6 +165,6 @@ if __name__ == "__main__":
     #run_videoInjection("defaultGreenscreenVideo.avi", os.path.join("backgroundVideos","sophieTricycle.avi"),270)
     #run_videoInjection("defaultGreenscreenVideo.avi", os.path.join("backgroundVideos","EPC_ramp.avi"),270)
     #run_videoInjection("defaultGreenscreenVideo.avi", os.path.join("backgroundVideos","EPC_hallway.avi"),270)
-    run_videoInjection("defaultGreenscreenVideo.avi", os.path.join("backgroundVideos","PHO_hallway.avi"),270)
-    #run_videoInjection("defaultGreenscreenVideo.avi", os.path.join("backgroundVideos","BOS_trainSidewalk.avi"),270)
+    #run_videoInjection("defaultGreenscreenVideo.avi", os.path.join("backgroundVideos","PHO_hallway.avi"),270)
+    run_videoInjection("defaultGreenscreenVideo.avi", os.path.join("backgroundVideos","BOS_trainSidewalk.avi"),270)
     
