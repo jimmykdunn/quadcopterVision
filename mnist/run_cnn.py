@@ -26,6 +26,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
+import shutil
+import os
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
@@ -45,32 +47,44 @@ def cnn_model_fn(features, labels, mode):
     input_layer = tf.reshape(features["x"], [-1, 28, 28, 1])
 
     # Convolutional Layer #1
+    # 32 5x5 kernels, maintain resolution, relu
+    #!!!CHANGE TO tf.keras.layers.conv2d to suppress warnings????
     conv1 = tf.layers.conv2d(
         inputs=input_layer,
         filters=32,
-        kernel_size=[5, 5],
+        kernel_size=[5, 5], # original
+        #kernel_size=[4,4],
         padding="same",
         activation=tf.nn.relu)
 
     # Pooling Layer #1
+    # 2x2 pool on 28x28 gives makes pool1 size 14x14
     pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size=[2, 2], strides=2)
 
-    # Convolutional Layer #2 and Pooling Layer #2
+    # Convolutional Layer #2
+    # 64 5x5 kernels acting on 14x14 images, maintain resolution, relu
     conv2 = tf.layers.conv2d(
         inputs=pool1,
         filters=64,
-        kernel_size=[5, 5],
+        kernel_size=[5, 5], # original
+        #kernel_size=[4,4],
         padding="same",
         activation=tf.nn.relu)
+        
+    # Pooling Layer #2
+    # 2x2 pool on 14x14 gives pool2 size 7x7
     pool2 = tf.layers.max_pooling2d(inputs=conv2, pool_size=[2, 2], strides=2)
 
     # Dense (fully connected) Layer
+    # Resize 7x7x64 per input pool2 to be a single vector per input
+    # dense and then dropout here are still large
     pool2_flat = tf.reshape(pool2, [-1, 7 * 7 * 64])
     dense = tf.layers.dense(inputs=pool2_flat, units=1024, activation=tf.nn.relu)
     dropout = tf.layers.dropout(
         inputs=dense, rate=0.4, training=mode == tf.estimator.ModeKeys.TRAIN)
 
     # Logits Layer (final classes)
+    # Final layer to get down to 10 classes per input
     logits = tf.layers.dense(inputs=dropout, units=10)
 
     predictions = {
@@ -81,6 +95,8 @@ def cnn_model_fn(features, labels, mode):
         "probabilities": tf.nn.softmax(logits, name="softmax_tensor")
     }
 
+    # If we are simply running a forward pass for prediction (actual runtime
+    # usage), then just return that.
     if mode == tf.estimator.ModeKeys.PREDICT:
         return tf.estimator.EstimatorSpec(mode=mode, predictions=predictions)
 
@@ -106,7 +122,12 @@ def cnn_model_fn(features, labels, mode):
       
       
 # Run with defaults if at highest level
-if __name__ == "__main__":      
+if __name__ == "__main__":  
+    # Clear checkpoint files to get a clean training run each time
+    checkpointSaveDir = "/tmp/mnist_convnet_model" # checkpoints saved here
+    if os.path.exists(checkpointSaveDir): # only rm if it exists
+        shutil.rmtree(checkpointSaveDir)    
+    
     # Load training and eval data
     ((train_data, train_labels),
      (eval_data, eval_labels)) = tf.keras.datasets.mnist.load_data()
@@ -126,20 +147,23 @@ if __name__ == "__main__":
     for i in range(15):
         chain = np.append(chain,np.squeeze(train_data[i+1,:,:]),axis=1)
     print("Example training data")
+    plt.figure()
     plt.imshow(chain)
     labelstrs = "".join([str(truth) + ", " for truth in train_labels[:16]])
     print("Truth: ", labelstrs)
     
+    
     # Create the classifier object (estimator)
     # Note that THIS IS WHERE CNN_MODEL_FN GETS REFERENCED!!!
     mnist_classifier = tf.estimator.Estimator(
-        model_fn=cnn_model_fn, model_dir="/tmp/mnist_convnet_model")
+        model_fn=cnn_model_fn, model_dir="/tmp/mnist_convnet_model") #,
+    #    config=checkptConfig)
         
        
     # Set up logging for predictions
-    tensors_to_log = {"probabilities": "softmax_tensor"}
-    logging_hook = tf.train.LoggingTensorHook(
-        tensors=tensors_to_log, every_n_iter=50)
+    #tensors_to_log = {"probabilities": "softmax_tensor"}
+    #logging_hook = tf.train.LoggingTensorHook(
+    #    tensors=tensors_to_log, every_n_iter=50)
         
     # Configure the training function
     train_input_fn = tf.estimator.inputs.numpy_input_fn(
@@ -150,10 +174,10 @@ if __name__ == "__main__":
         shuffle=True)
 
     # Train just one step and display the probabilties for sanity check
-    mnist_classifier.train(input_fn=train_input_fn,steps=1,hooks=[logging_hook])
+    #mnist_classifier.train(input_fn=train_input_fn,steps=1,hooks=[logging_hook])
     
     # Train for another 1000 epochs (do the grunt work)
-    mnist_classifier.train(input_fn=train_input_fn, steps=100)
+    mnist_classifier.train(input_fn=train_input_fn, steps=1000)
     
     # Configure the evaluation
     eval_input_fn = tf.estimator.inputs.numpy_input_fn(
