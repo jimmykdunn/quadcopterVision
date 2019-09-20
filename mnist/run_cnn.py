@@ -24,6 +24,8 @@ INFO:
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import tensorflow as tf
+#import tensorflow.compat.v1.keras.layers as klayers
+#import tensorflow.keras.layers as klayers
 import numpy as np
 import matplotlib.pyplot as plt
 import shutil
@@ -76,16 +78,16 @@ def cnn_model_fn(features, labels, mode):
     # Resize 7x7x64 per input pool2 to be a single vector per input
     # dense and then dropout here are still large
     pool2_flat = tf.reshape(pool2, [-1, 7 * 7 * 64])
-    dense = tf.layers.dense(inputs=pool2_flat, units=1024, activation=tf.nn.relu)
-    #@@@dense = tf.keras.layers.dense(inputs=pool2_flat, units=1024, activation=tf.nn.relu)
-    dropout = tf.layers.dropout(
-    #@@@dropout = tf.keras.layers.dropout(
-        inputs=dense, rate=0.4, training=mode == tf.estimator.ModeKeys.TRAIN)
+    dense = tf.keras.layers.Dense(units=1024, activation=tf.nn.relu)(pool2_flat)
+    #@@@dropout = tf.layers.dropout(
+    #@dropout = tf.keras.layers.Dropout(
+    #@    rate=0.4, training=mode == tf.estimator.ModeKeys.TRAIN)(dense)
+    dropout = tf.keras.layers.Dropout(
+        rate=0.4)(dense,mode == tf.estimator.ModeKeys.TRAIN)
 
     # Logits Layer (final classes)
     # Final layer to get down to 10 classes per input
-    logits = tf.layers.dense(inputs=dropout, units=10)
-    #@@@logits = tf.keras.layers.dense(inputs=dropout, units=10)
+    logits = tf.keras.layers.Dense(units=10)(dropout)
 
     predictions = {
         # Generate predictions (for PREDICT and EVAL mode)
