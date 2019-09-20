@@ -48,44 +48,44 @@ def cnn_model_fn(features, labels, mode):
 
     # Convolutional Layer #1
     # 32 5x5 kernels, maintain resolution, relu
-    #!!!CHANGE TO tf.keras.layers.conv2d to suppress warnings????
-    conv1 = tf.layers.conv2d(
-        inputs=input_layer,
+    conv1 = tf.keras.layers.Convolution2D(
         filters=32,
         kernel_size=[5, 5], # original
         #kernel_size=[4,4],
         padding="same",
-        activation=tf.nn.relu)
-
+        activation=tf.nn.relu)(input_layer)
+        
     # Pooling Layer #1
     # 2x2 pool on 28x28 gives makes pool1 size 14x14
-    pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size=[2, 2], strides=2)
+    pool1 = tf.keras.layers.MaxPooling2D(pool_size=[2, 2], strides=2)(conv1)
 
     # Convolutional Layer #2
     # 64 5x5 kernels acting on 14x14 images, maintain resolution, relu
-    conv2 = tf.layers.conv2d(
-        inputs=pool1,
+    conv2 = tf.keras.layers.Convolution2D(
         filters=64,
         kernel_size=[5, 5], # original
         #kernel_size=[4,4],
         padding="same",
-        activation=tf.nn.relu)
+        activation=tf.nn.relu)(pool1)
         
     # Pooling Layer #2
     # 2x2 pool on 14x14 gives pool2 size 7x7
-    pool2 = tf.layers.max_pooling2d(inputs=conv2, pool_size=[2, 2], strides=2)
+    pool2 = tf.keras.layers.MaxPooling2D(pool_size=[2, 2], strides=2)(conv2)
 
     # Dense (fully connected) Layer
     # Resize 7x7x64 per input pool2 to be a single vector per input
     # dense and then dropout here are still large
     pool2_flat = tf.reshape(pool2, [-1, 7 * 7 * 64])
     dense = tf.layers.dense(inputs=pool2_flat, units=1024, activation=tf.nn.relu)
+    #@@@dense = tf.keras.layers.dense(inputs=pool2_flat, units=1024, activation=tf.nn.relu)
     dropout = tf.layers.dropout(
+    #@@@dropout = tf.keras.layers.dropout(
         inputs=dense, rate=0.4, training=mode == tf.estimator.ModeKeys.TRAIN)
 
     # Logits Layer (final classes)
     # Final layer to get down to 10 classes per input
     logits = tf.layers.dense(inputs=dropout, units=10)
+    #@@@logits = tf.keras.layers.dense(inputs=dropout, units=10)
 
     predictions = {
         # Generate predictions (for PREDICT and EVAL mode)
@@ -114,6 +114,7 @@ def cnn_model_fn(features, labels, mode):
     # Add evaluation metrics (for EVAL mode)
     eval_metric_ops = {
         "accuracy": tf.metrics.accuracy(
+        #@@@"accuracy": tf.keras.metrics.accuracy(
             labels=labels, predictions=predictions["classes"])
     }
     return tf.estimator.EstimatorSpec(
