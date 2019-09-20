@@ -24,8 +24,6 @@ INFO:
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import tensorflow as tf
-#import tensorflow.compat.v1.keras.layers as klayers
-#import tensorflow.keras.layers as klayers
 import numpy as np
 import matplotlib.pyplot as plt
 import shutil
@@ -53,7 +51,6 @@ def cnn_model_fn(features, labels, mode):
     conv1 = tf.keras.layers.Convolution2D(
         filters=32,
         kernel_size=[5, 5], # original
-        #kernel_size=[4,4],
         padding="same",
         activation=tf.nn.relu)(input_layer)
         
@@ -66,7 +63,6 @@ def cnn_model_fn(features, labels, mode):
     conv2 = tf.keras.layers.Convolution2D(
         filters=64,
         kernel_size=[5, 5], # original
-        #kernel_size=[4,4],
         padding="same",
         activation=tf.nn.relu)(pool1)
         
@@ -79,9 +75,6 @@ def cnn_model_fn(features, labels, mode):
     # dense and then dropout here are still large
     pool2_flat = tf.reshape(pool2, [-1, 7 * 7 * 64])
     dense = tf.keras.layers.Dense(units=1024, activation=tf.nn.relu)(pool2_flat)
-    #@@@dropout = tf.layers.dropout(
-    #@dropout = tf.keras.layers.Dropout(
-    #@    rate=0.4, training=mode == tf.estimator.ModeKeys.TRAIN)(dense)
     dropout = tf.keras.layers.Dropout(
         rate=0.4)(dense,mode == tf.estimator.ModeKeys.TRAIN)
 
@@ -127,7 +120,7 @@ def cnn_model_fn(features, labels, mode):
 # Run with defaults if at highest level
 if __name__ == "__main__":  
     # Clear checkpoint files to get a clean training run each time
-    checkpointSaveDir = "/tmp/mnist_convnet_model" # checkpoints saved here
+    checkpointSaveDir = "./mnist_convnet_model" # checkpoints saved here
     if os.path.exists(checkpointSaveDir): # only rm if it exists
         shutil.rmtree(checkpointSaveDir)    
     
@@ -158,9 +151,9 @@ if __name__ == "__main__":
     
     # Create the classifier object (estimator)
     # Note that THIS IS WHERE CNN_MODEL_FN GETS REFERENCED!!!
+    print("Initializing estimator")
     mnist_classifier = tf.estimator.Estimator(
-        model_fn=cnn_model_fn, model_dir="/tmp/mnist_convnet_model") #,
-    #    config=checkptConfig)
+        model_fn=cnn_model_fn, model_dir=checkpointSaveDir)
         
        
     # Set up logging for predictions
@@ -169,6 +162,7 @@ if __name__ == "__main__":
     #    tensors=tensors_to_log, every_n_iter=50)
         
     # Configure the training function
+    print("Configuring training function")
     train_input_fn = tf.estimator.inputs.numpy_input_fn(
         x={"x": train_data}, # x is the training data
         y=train_labels, # y is the testing data
@@ -180,9 +174,12 @@ if __name__ == "__main__":
     #mnist_classifier.train(input_fn=train_input_fn,steps=1,hooks=[logging_hook])
     
     # Train for another 1000 epochs (do the grunt work)
-    mnist_classifier.train(input_fn=train_input_fn, steps=1000)
+    print("Executing training")
+    # This is where all the deprecation warnings come in
+    mnist_classifier.train(input_fn=train_input_fn, steps=3000)
     
     # Configure the evaluation
+    print("Configuring evaluation")
     eval_input_fn = tf.estimator.inputs.numpy_input_fn(
         x={"x": eval_data},
         y=eval_labels,
@@ -192,7 +189,7 @@ if __name__ == "__main__":
     # Run the evaluator and print the results
     eval_results = mnist_classifier.evaluate(input_fn=eval_input_fn)
     print(eval_results)
-
-   
-
+    
+    checkpoint_file=tf.train.latest_checkpoint(checkpointSaveDir)
+    print("Trained model saved to: " + checkpoint_file)
 
