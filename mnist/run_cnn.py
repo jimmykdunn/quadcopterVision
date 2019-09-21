@@ -26,6 +26,7 @@ import numpy as np
 import os
 import shutil
 import matplotlib.pyplot as plt
+import time
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
@@ -161,8 +162,11 @@ def deepnn(x):
         h_fc1_flat = tf.reshape(h_fc1,[-1,1024])
         w4 = weight_variable([1024,10])
         b4 = bias_variable([10])
-        #y_conv = tf.nn.relu(tf.matmul(h_fc1_flat,w4) + b4)
+        
+    # Calculate the final probabilities (logits) for each class
+    with tf.name_scope('outputClassProbs'):    
         y_conv = tf.add(tf.matmul(h_fc1_flat,w4), b4)
+    
     return y_conv
 
 # end deepnn
@@ -186,8 +190,8 @@ if __name__ == "__main__":
     x_train, y_train, x_test, y_test = getNMISTData()
 
     # Placeholders for the data and associated truth
-    x = tf.placeholder(tf.float32, [None, 28,28])
-    y_ = tf.placeholder(tf.float32, [None, 10])
+    x = tf.placeholder(tf.float32, [None, 28,28], name="x")
+    y_ = tf.placeholder(tf.float32, [None, 10], name="y_")
     
     # Build the graph for the deep net
     # It is best to literally thing of this as just building the graph, since
@@ -221,24 +225,43 @@ if __name__ == "__main__":
     # Initialize class to save the CNN post-training
     saver = tf.train.Saver()
     
+    # Start the clock
+    start_sec = time.clock()
+    
     # Actually execute the training using the CNN template we just built
     with tf.Session() as sess:
         # Initialize all variables
         sess.run(tf.global_variables_initializer())
         
         # Loop over every epoch
-        for epoch in range(2000): 
+        nEpochs = 2000
+        for epoch in range(nEpochs): 
+            # Extract data for this batch
             batch = extractBatch(100, x_train, y_train, epoch)
+            
+            # Run a single epoch with the extracted data batch
+            train_step.run(feed_dict={x: batch[0], y_: batch[1]})  
+            
             if epoch % 100 == 0:
                 train_accuracy = accuracy.eval(feed_dict={x: batch[0], y_: batch[1]})
                 print('epoch %d, training accuracy %g' % (epoch, train_accuracy))
-            train_step.run(feed_dict={x: batch[0], y_: batch[1]})    
+            
+            # Print elapsed time every 100 epochs
+            if epoch % 100 == 0:
+                curr_sec = time.clock()
+                print('    Elapsed time for %d epochs: %g sec' 
+                      % (epoch, curr_sec-start_sec))
     
             # Save the model weights (and everything else) every 500 epochs
             if epoch % 500 == 0:
                 save_path = saver.save(sess, checkpointSaveDir + "/model_at" + str(epoch) + ".ckpt")
-                print("Model saved in path: %s" % save_path)
+                print("    Checkpoint saved to: %s" % save_path)
+        
 
+        # Total elapsed time
+        end_sec = time.clock()
+        print('Total elapsed time for %d epochs: %g sec' 
+              % (nEpochs, end_sec-start_sec))
     
         # Finish off by running the test set.  Extract the entire test set.
         test_batch = extractBatch(len(x_test), x_test, y_test, 0)
