@@ -27,6 +27,7 @@ import os
 import shutil
 import matplotlib.pyplot as plt
 import time
+import use_cnn
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
@@ -165,7 +166,7 @@ def deepnn(x):
         
     # Calculate the final probabilities (logits) for each class
     with tf.name_scope('outputClassProbs'):    
-        y_conv = tf.add(tf.matmul(h_fc1_flat,w4), b4)
+        y_conv = tf.add(tf.matmul(h_fc1_flat,w4), b4, name="classProbs")
     
     return y_conv
 
@@ -253,7 +254,7 @@ if __name__ == "__main__":
                       % (epoch, curr_sec-start_sec))
     
             # Save the model weights (and everything else) every 500 epochs
-            if epoch % 500 == 0:
+            if epoch % 500 == 0 or epoch == (nEpochs-1):
                 save_path = saver.save(sess, checkpointSaveDir + "/model_at" + str(epoch) + ".ckpt")
                 print("    Checkpoint saved to: %s" % save_path)
         
@@ -267,6 +268,10 @@ if __name__ == "__main__":
         test_batch = extractBatch(len(x_test), x_test, y_test, 0)
         print('test accuracy %g' % accuracy.eval(feed_dict={x: test_batch[0], y_: test_batch[1]}))
         
-        # Run a single testpoint through with use_cnn.py
-        # to be implemented!
+        # Run a single testpoint through with use_cnn.py as a sanity check
+        use_cnn.twoTest()
+        
+        # Print the location of the saved network
+        print("Final trained network saved to: " + save_path)
+        print("You can use use_cnn.py with this final network to classify new datapoints")
         
