@@ -24,8 +24,9 @@ import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
+import time
 
-def use_cnn(modelPath, datapoints):
+def use_cnn(modelPath, datapoints, numTimingTrials = 1):
     # Execute a single forward pass on a single image to demonstrate how
     # the trained classifier would be used in real-time software.
     
@@ -42,7 +43,7 @@ def use_cnn(modelPath, datapoints):
             saver.restore(sess,modelPath)
             
             # Get the entire dictionary of names (for debugging)
-            names = [i.name for i in sess.graph.get_operations()]
+            #names = [i.name for i in sess.graph.get_operations()]
             
             # Get the output class probabilities function
             outputFn = graph.get_operation_by_name("outputClassProbs/classProbs").outputs[0]
@@ -53,13 +54,21 @@ def use_cnn(modelPath, datapoints):
             # In a real-time implementation, this will be called inside of
             # the data capture loop with single image datapoints. All of the
             # above preparation should be done ahead of time.
-            outputClassProbs = sess.run(outputFn,feed_dict = {x: datapoints, y_: placeholderY})
+            start_sec = time.clock()
+            for i in range(numTimingTrials): # run many times to get timing information
+                outputClassProbs = sess.run(outputFn,feed_dict = {x: datapoints, y_: placeholderY})
             
-            # Calculate and print the results
-            #print(outputClassProbs)
-            predictions = np.argmax(outputClassProbs,1)
-            #print("The input datapoints look like: ")
-            #print(predictions)
+                # Calculate and print the results
+                #print(outputClassProbs)
+                predictions = np.argmax(outputClassProbs,1)
+                #print("The input datapoints look like: ")
+                #print(predictions)
+                
+            # Display timing trial information
+            end_sec = time.clock()
+            if numTimingTrials != 1:
+                print("%d trials in %g seconds" % (numTimingTrials,end_sec-start_sec))
+                print("Forward pass speed: %g Hz" % (numTimingTrials/(end_sec-start_sec)))
             
     return predictions
 
@@ -69,7 +78,9 @@ def twoTest(modelPath):
     datapoint = np.mean(cv2.imread(dataPath),axis=2)/float(255)
     print("Running CNN at " + modelPath + " on " + dataPath)
     plt.imshow(datapoint)
-    prediction = use_cnn(modelPath, np.reshape(datapoint,[1,datapoint.shape[0],datapoint.shape[1]]))
+    prediction = use_cnn(modelPath, 
+                         np.reshape(datapoint,[1,datapoint.shape[0],datapoint.shape[1]]),
+                         numTimingTrials=1000)
     print(dataPath + " appears to be a " + str(prediction))
     
 # Example of a siz being drawn
@@ -78,11 +89,14 @@ def sixTest(modelPath):
     datapoint = np.mean(cv2.imread(dataPath),axis=2)/float(255)
     print("Running CNN at " + modelPath + " on " + dataPath)
     plt.imshow(datapoint)
-    prediction = use_cnn(modelPath, np.reshape(datapoint,[1,datapoint.shape[0],datapoint.shape[1]]))
+    prediction = use_cnn(modelPath, 
+                         np.reshape(datapoint,[1,datapoint.shape[0],datapoint.shape[1]]),
+                         numTimingTrials=1000)
     print(dataPath + " appears to be a " + str(prediction))
             
 # Run with defaults if at highest level
 if __name__ == "__main__":
     twoTest("./mnist_cnn_save/model_at1000.ckpt")
+    print("\n\n")
     sixTest("./mnist_cnn_save/model_at1000.ckpt")
     
