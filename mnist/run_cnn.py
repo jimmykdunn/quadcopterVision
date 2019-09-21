@@ -35,7 +35,7 @@ def makeTrainingBatch(length, x, y, epoch):
     
     # Just pull them in order, wrapping to the beginning when we go over
     while (epoch+1)*length > len(x):
-        epoch -= len(x)/length
+        epoch -= int(len(x)/length)
     
     batch = [epoch*length + i for i in range(length)]
     
@@ -74,8 +74,8 @@ def conv2d(x, W):
 def max_pool_2x2(x):
   """max_pool_2x2 downsamples a feature map by 2X."""
   # Input x is 4d [image_num, x, y, chan] (chan = color) [?,28,28,1]
-  ksize = [2,2,1,1] # size of pooling (each dimension of the kernel)
-  strides = [1,1,1,1] # stride size
+  ksize = [1,2,2,1]
+  strides = [1,2,2,1]
   padding = 'SAME'
   return tf.nn.max_pool(x,ksize,strides,padding)
 
@@ -192,7 +192,8 @@ def deepnn(x):
         h_fc1_flat = tf.reshape(h_fc1,[-1,1024])
         w4 = weight_variable([1024,10])
         b4 = bias_variable([10])
-        y_conv = tf.nn.relu(tf.matmul(h_fc1_flat,w4) + b4)
+        #y_conv = tf.nn.relu(tf.matmul(h_fc1_flat,w4) + b4)
+        y_conv = tf.add(tf.matmul(h_fc1_flat,w4), b4)
     return y_conv
 
 # end deepnn
@@ -251,11 +252,15 @@ if __name__ == "__main__":
     False, True, True] would become [1,0,1,1] which would become 0.75.
     '''
     with tf.name_scope('accuracy'):
+        #correct_prediction = tf.argmax(y_,1)
+        #our_prediction = tf.argmax(y_conv,1)
+        #performance_vec = tf.equal(correct_prediction,our_prediction)
+        #accuracy = tf.reduce_mean(tf.cast(performance_vec, tf.float32))
         correct_prediction = tf.argmax(y_,1)
-        our_prediction = tf.argmax(y_conv,1)
+        y = tf.nn.softmax(y_conv)
+        our_prediction = tf.argmax(y,1)
         performance_vec = tf.equal(correct_prediction,our_prediction)
-        #accuracy = tf.reduce_mean(float(performance_vec))
-        accuracy = tf.reduce_mean(tf.cast(performance_vec, tf.float32))
+        accuracy = tf.reduce_mean(tf.cast(performance_vec,tf.float32))
         
     # For saving the graph, DO NOT CHANGE.
     # This both saves the current state and gives us a way to run the model
@@ -285,12 +290,12 @@ if __name__ == "__main__":
     
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
-        for i in range(2000):
+        for epoch in range(2000):
             #batch = mnist.train.next_batch(50)
-            batch = makeTrainingBatch(100, x_train, y_train, i)
-            if i % 100 == 0:
+            batch = makeTrainingBatch(100, x_train, y_train, epoch)
+            if epoch % 100 == 0:
                 train_accuracy = accuracy.eval(feed_dict={x: batch[0], y_: batch[1]})
-                print('step %d, training accuracy %g' % (i, train_accuracy))
+                print('epoch %d, training accuracy %g' % (epoch, train_accuracy))
             train_step.run(feed_dict={x: batch[0], y_: batch[1]})
     
         # Finish off by running the test set
