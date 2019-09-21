@@ -235,7 +235,7 @@ if __name__ == "__main__":
         sess.run(tf.global_variables_initializer())
         
         # Loop over every epoch
-        nEpochs = 500
+        nEpochs = 1000
         for epoch in range(nEpochs): 
             # Extract data for this batch
             batch = extractBatch(100, x_train, y_train, epoch)
@@ -255,7 +255,7 @@ if __name__ == "__main__":
     
             # Save the model weights (and everything else) every 500 epochs
             if epoch % 500 == 499 or epoch == (nEpochs-1):
-                save_path = saver.save(sess, checkpointSaveDir + "/model_at" + str(epoch) + ".ckpt")
+                save_path = saver.save(sess, checkpointSaveDir + "/model_at" + str(epoch+1) + ".ckpt")
                 print("    Checkpoint saved to: %s" % save_path)
         
         print("\n\n\n\n")
@@ -274,8 +274,9 @@ if __name__ == "__main__":
         
         # Run a single testpoint through with use_cnn.py as a sanity check
         print("\n")
-        print("Sanity check:")
+        print("Sanity checks:")
         use_cnn.twoTest(save_path)
+        use_cnn.sixTest(save_path)
         print("\n")
         
         # Print the location of the saved network

@@ -71,8 +71,18 @@ def twoTest(modelPath):
     plt.imshow(datapoint)
     prediction = use_cnn(modelPath, np.reshape(datapoint,[1,datapoint.shape[0],datapoint.shape[1]]))
     print(dataPath + " appears to be a " + str(prediction))
+    
+# Example of a siz being drawn
+def sixTest(modelPath):
+    dataPath = './jimmyDraws_6Blk.png'
+    datapoint = np.mean(cv2.imread(dataPath),axis=2)/float(255)
+    print("Running CNN at " + modelPath + " on " + dataPath)
+    plt.imshow(datapoint)
+    prediction = use_cnn(modelPath, np.reshape(datapoint,[1,datapoint.shape[0],datapoint.shape[1]]))
+    print(dataPath + " appears to be a " + str(prediction))
             
 # Run with defaults if at highest level
 if __name__ == "__main__":
-    twoTest("./mnist_cnn_save/model_at1500.ckpt")
+    twoTest("./mnist_cnn_save/model_at1000.ckpt")
+    sixTest("./mnist_cnn_save/model_at1000.ckpt")
     
