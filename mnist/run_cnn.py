@@ -202,7 +202,7 @@ if __name__ == "__main__":
     # (numeral).
     y_conv = deepnn(x)
     
-    #define the loss function (externally from the actual neural net)
+    # Define the loss function (externally from the actual neural net)
     # This is literally just defining the loss function, not actually running it.
     with tf.name_scope('loss'):
         cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=y_conv)
@@ -235,7 +235,7 @@ if __name__ == "__main__":
         sess.run(tf.global_variables_initializer())
         
         # Loop over every epoch
-        nEpochs = 2000
+        nEpochs = 500
         for epoch in range(nEpochs): 
             # Extract data for this batch
             batch = extractBatch(100, x_train, y_train, epoch)
@@ -243,21 +243,25 @@ if __name__ == "__main__":
             # Run a single epoch with the extracted data batch
             train_step.run(feed_dict={x: batch[0], y_: batch[1]})  
             
-            if epoch % 100 == 0:
+            if epoch % 100 == 99:
                 train_accuracy = accuracy.eval(feed_dict={x: batch[0], y_: batch[1]})
-                print('epoch %d, training accuracy %g' % (epoch, train_accuracy))
+                print('epoch %d of %d, training accuracy %g' % (epoch+1, nEpochs, train_accuracy))
             
             # Print elapsed time every 100 epochs
-            if epoch % 100 == 0:
+            if epoch % 100 == 99:
                 curr_sec = time.clock()
                 print('    Elapsed time for %d epochs: %g sec' 
-                      % (epoch, curr_sec-start_sec))
+                      % (epoch+1, curr_sec-start_sec))
     
             # Save the model weights (and everything else) every 500 epochs
-            if epoch % 500 == 0 or epoch == (nEpochs-1):
+            if epoch % 500 == 499 or epoch == (nEpochs-1):
                 save_path = saver.save(sess, checkpointSaveDir + "/model_at" + str(epoch) + ".ckpt")
                 print("    Checkpoint saved to: %s" % save_path)
         
+        print("\n\n\n\n")
+        print("============================")
+        print("TRAINING RESULTS")
+        print("============================")
 
         # Total elapsed time
         end_sec = time.clock()
@@ -269,7 +273,10 @@ if __name__ == "__main__":
         print('test accuracy %g' % accuracy.eval(feed_dict={x: test_batch[0], y_: test_batch[1]}))
         
         # Run a single testpoint through with use_cnn.py as a sanity check
-        use_cnn.twoTest()
+        print("\n")
+        print("Sanity check:")
+        use_cnn.twoTest(save_path)
+        print("\n")
         
         # Print the location of the saved network
         print("Final trained network saved to: " + save_path)
