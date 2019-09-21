@@ -30,7 +30,7 @@ import matplotlib.pyplot as plt
 tf.logging.set_verbosity(tf.logging.INFO)
 
 
-def makeTrainingBatch(length, x, y, epoch):
+def makeBatch(length, x, y, epoch):
     """Pulls a batch of the input length from the input data"""
     
     # Just pull them in order, wrapping to the beginning when we go over
@@ -290,13 +290,17 @@ if __name__ == "__main__":
     
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
-        for epoch in range(2000):
-            #batch = mnist.train.next_batch(50)
-            batch = makeTrainingBatch(100, x_train, y_train, epoch)
+        for epoch in range(2000): 
+            batch = makeBatch(100, x_train, y_train, epoch)
             if epoch % 100 == 0:
                 train_accuracy = accuracy.eval(feed_dict={x: batch[0], y_: batch[1]})
                 print('epoch %d, training accuracy %g' % (epoch, train_accuracy))
             train_step.run(feed_dict={x: batch[0], y_: batch[1]})
     
         # Finish off by running the test set
-        print('test accuracy %g' % accuracy.eval(feed_dict={x: x_test, y_: y_test}))
+        test_batch = makeBatch(len(x_test), x_test, y_test, 0)
+        print('test accuracy %g' % accuracy.eval(feed_dict={x: test_batch[0], y_: test_batch[1]}))
+        
+        # Run a single testpoint through with use_cnn.py
+        # to be implemented!
+        
