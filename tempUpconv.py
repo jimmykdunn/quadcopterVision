@@ -44,8 +44,54 @@ def addSkipConnection(xNew, xOld):
 
 
 """
-#ADD THIS TO deepnn
+Takes in the entire list of images and creates boolean masks from them.
+The boolean masks represent a segmentation of "pixels drawn on" (true) versus
+"pixels not drawn on" (false). Done by a simple thresholding of the normalized 
+[0,1] images. Designed for NMIST handwritten digit dataset, but should work on
+anything.
+INPUTS:
+    images: images to threshold to get a binary mask. [-1,nx,ny], range [0,1]
+    (optional) threshold: True/False threshold value. Default 0.5
+EXAMPLE:
+    booleanMasks = makeThresholdMask(images)
+RETURNS:
+    Boolean (true,false) masks for each image in the input set
 """
+def makeThresholdMask(images, threshold = 0.5): 
+    return images > threshold
+
+"""
+Takes a boolean mask and makes the True pixels +1 and the False pixels -1.
+Values to replace true and false pixels by are overrideable with keywords.
+INPUTS:
+    masks: boolean masks to threshold to get a binary mask. [-1,nx,ny]
+    trueVal  (optional): value to repalce true  pixels by. Default +1
+    falseVal (optional): value to repalce false pixels by. Default -1
+EXAMPLE:
+    plusMinusMask = booleanMaskToPlusMinus(booleanMasks)
+RETURNS:
+    Floating point masks for each boolean mask in the input set
+"""
+def booleanMaskToPlusMinus(booleanMask, trueVal=1, falseVal=-1):
+    plusMinusMask = np.zeros(booleanMask.shape)
+    plusMinusMask[booleanMask] = trueVal
+    plusMinusMask[np.logical_not(booleanMask)] = falseVal
+    
+    return plusMinusMask
+
+
+
+"""
+#ADD THIS TO run_cnn.py
+"""
+# Add to main level near the top
+    y_train_pmMask = booleanMaskToPlusMinus(makeThresholdMask(x_train))
+    y_test_pmMask  = booleanMaskToPlusMinus(makeThresholdMask(x_test))
+    
+    y_pmMask = tf.placeholder(tf.float32, [None, 28,28], name="y_mask")
+    
+
+# Add to deepnn
 # Remember the order is skip-connection THEN upconv
     # x_image shape is [-1,28,28,1]
     # h_conv1 shape is [-1,28,28,32]
@@ -78,7 +124,7 @@ optimization, and accuracy name scopes of the original NMIST version.
         # To do this, targetmask must have +1's at target     locations
         # and         targetmask must have -1's at background locations
         # Make sure targetmask is formed in this way!!!
-        gainmap = tf.multiply(heatmap, targetMask) # pixel-by-pixel gain
+        gainmap = tf.multiply(heatmap, y_pmMask) # pixel-by-pixel gain
         
         # May be useful to have an intermediate reduction here of a single
         # gain value for each individual image...
