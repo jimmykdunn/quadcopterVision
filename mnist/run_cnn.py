@@ -31,9 +31,19 @@ import use_cnn
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
-# Extract a batch of data of the input length from data x and truth y. Epoch
-# is input to ensure that we extract every image over the course of many
-# consecutive epochs.
+"""
+Extract a batch of data of the input length from data x and truth y. Epoch
+is input to ensure that we extract every image over the course of many
+consecutive epochs.
+INPUTS: 
+    length: number of images (datapoints) in each batch
+    x: full set of training images, [numImages,width,length]
+    y: truth classes [numImages]
+    epcoh: training epoch, integer starting at zero. Used to prevent overlap
+RETURNS:
+    [x_batch, y_batch] subsets of the x and y inputs of length length. y_batch
+    is output as a set of one-hot vectors, size [numImages,numClasses] 
+"""
 def extractBatch(length, x, y, epoch):
     
     # Just pull them in order, wrapping to the beginning when we go over
@@ -50,35 +60,81 @@ def extractBatch(length, x, y, epoch):
     
     return x_batch, y_batch
 
-# Constructs a weight variable with the given shape (random initialization)
+"""
+Constructs a weight variable with the given shape (random initialization)
+INPUTS:
+     shape: N-D vector with size of random weights to generate. 
+            [[weightSize], layerSize]
+EXAMPLE:
+    weights = weight_variable([5,5,1,32])
+    Variable for the initial weights for a 5x5 convolution on a single color
+    image with layer size 32.
+RETURNS:
+    Normally distributed tensorflow variable with dimensions shape
+"""
 def weight_variable(shape):
     initial = tf.truncated_normal(shape, stddev=0.1)
     return tf.Variable(initial)
 
-# Constructs a bias variable with the given shape (constant initialization)
+"""
+Constructs a bias variable with the given shape (constant initialization)
+INPUTS:
+    shape: size of random biases to generate [(integer)]
+EXAMPLE:
+    biases = bias_variable([1024])
+    Variable for the initial biases for a layer with size 1024
+RETURNS:
+    Constant tensorflow variable with dimensions shape
+"""
 def bias_variable(shape):
-    """bias_variable generates a bias variable of a given shape."""
     initial = tf.constant(0.1, shape=shape)
     return tf.Variable(initial)
 
-# Wrapper for 2D convolution
+"""
+Wrapper for tensorflow 2D convolution.
+INPUTS:
+    x: input to the convolutional layer. Tensor [-1,width,height,nChannels]
+    W: random weights to use. Tensor [nx,ny,nChannels,layerSize]
+EXAMPLE:
+    output = conv2d(x,W)
+RETURNS:
+    Result of the convolutional layer with full stride and same size
+"""
 def conv2d(x, W):
-  """conv2d returns a 2d convolution layer with full stride."""
-  # Input x is 4d [image_num, x, y, chan] (chan = color) [?,28,28,1]
-  # Input W (kernel) is also 4d [height, width, in chan, out chan], [28,28,1,1]
   stride = [1,1,1,1] # stride of filter.  Full stride means 1
   padding = 'SAME' # full zeropadding
   return tf.nn.conv2d(x,W,stride,padding)
 
-# Wrapper for maxpooling
+"""
+Wrapper for tensorflow 2x2 maxpooling.
+INPUTS:
+    x: input to the maxpooling layer. Tensor [-1,width,height,nChannels]
+EXAMPLE:
+    output = max_pool_2x2(x,W)
+RETURNS:
+    Result of the maxpooling layer - half the widht and height of input x.
+    Full-stride.
+"""
 def max_pool_2x2(x):
-  """max_pool_2x2 downsamples a feature map by 2X."""
-  # Input x is 4d [image_num, x, y, chan] (chan = color) [?,28,28,1]
   ksize = [1,2,2,1]
   strides = [1,2,2,1]
   padding = 'SAME'
   return tf.nn.max_pool(x,ksize,strides,padding)
 
+"""
+Loads the NMIST handwritten-digits data using the built-in keras function.
+Performs normalization and also displays a few example images if python 
+terminal allows it.
+INPUTS:
+    None
+EXAMPLE:
+    x_train, y_train, x_test, y_test = getNMISTData()
+RETURNS:
+    x_train: full set of 60000 28x28 pixel training images, [60000,28,28]
+    y_train: full set of 60000 truth classes for x_train [60000]
+    x_test: full set of 10000 28x28 pixel test images, [10000,28,28]
+    y_test: full set of 10000 truth classes for x_test [10000]
+"""
 def getNMISTData():
     """Load training and eval data"""
     ((x_train, y_train),
@@ -106,22 +162,18 @@ def getNMISTData():
     
     return x_train, y_train, x_test, y_test
 
-
-# Build the CNN template.  This is a 3-hidden layer convolutional neural
-# network. It has 2 layers of convolution+pooling, followed by two feed-forward
-# (dense) layers.
+"""
+Build the CNN template.  This is a 3-hidden layer convolutional neural
+network. It has 2 layers of convolution+pooling, followed by two feed-forward
+(dense) layers.
+INPUTS:
+    x: input images, [-1,28,28,1] (-1 is for the number of images in the batch)
+EXAMPLE:
+    logits = deepnn(x)
+RETURNS:
+    y_conv: the logits for each input image x [-1,numClasses]
+"""
 def deepnn(x):
-    """
-    deepnn builds the graph for a deep net for classifying digits.
-    Inputs:
-      x: an input tensor with the dimensions (N_examples, 784), where 784 is the
-      number of pixels in a standard MNIST image.
-    Returns:
-      A tuple (y, keep_prob). y is a tensor of shape (N_examples, 10), with values
-      equal to the logits of classifying the digit into one of 10 classes (the
-      digits 0-9). keep_prob is a scalar placeholder for the probability of
-      dropout.
-    """
     
     # Reshape to use within a convolutional neural net.
     # Last dimension is for "features" - there is only one here, since images are
@@ -171,6 +223,8 @@ def deepnn(x):
     return y_conv
 
 # end deepnn
+
+#!!!LEFT OFF HERE!!!
 
 '''
 Complete the Graph[10 pts]
