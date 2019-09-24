@@ -260,20 +260,20 @@ def hourglass_nn(x):
     # First convolutional layer - maps one grayscale image to 32 feature maps.
     with tf.name_scope('conv1'):
         w1 = weight_variable([5,5,1,32])
-        h_conv1 = tf.nn.relu(conv2d(x_image,w1))
+        h_conv1 = tf.nn.relu(conv2d(x_image,w1)) # [-1,28,28,32]
 
     # Pooling layer - downsamples by 2X.
     with tf.name_scope('pool1'):
-        h_pool1 = max_pool_2x2(h_conv1)
+        h_pool1 = max_pool_2x2(h_conv1) # [-1,14,14,32]
 
     # Second convolutional layer -- maps 32 feature maps to 64.
     with tf.name_scope('conv2'):
         w2 = weight_variable([5,5,32,64]) # [5,5,1,2]??  how is this implemented?
-        h_conv2 = tf.nn.relu(conv2d(h_pool1,w2))
+        h_conv2 = tf.nn.relu(conv2d(h_pool1,w2)) # [-1,14,14,64]
 
     # Second pooling layer.
     with tf.name_scope('pool2'):
-        h_pool2 = max_pool_2x2(h_conv2)
+        h_pool2 = max_pool_2x2(h_conv2) # [-1,7,7,64]
 
     # Remember the order is skip-connection THEN upconv
     # x_image shape is [-1,28,28,1]
