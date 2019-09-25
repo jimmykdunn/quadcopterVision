@@ -129,7 +129,7 @@ def upconv2d(x, W):
     nkx, nky, nW = W.shape[:3] # nwIn, nwOut here instead???
     
     # Output dimension and stride calculations
-    outShape = tf.stack([-1, nkx*(nx-1)+1, nky*(ny-1)+1, nW])
+    outShape = tf.stack([-1, nkx*nx, nky*ny, nW])
     stride = [1,nkx,nky,1]
     
     # Build the upconvolution layer
@@ -154,7 +154,7 @@ RETURNS:
     Catenation of the new and old layers
 """
 def addSkipConnection(xNew, xOld): 
-    return tf.concat([xNew, xOld], 0)
+    return tf.concat([xNew, xOld], 3)
 
 
 """
@@ -268,7 +268,7 @@ def hourglass_nn(x):
 
     # Second convolutional layer -- maps 32 feature maps to 64.
     with tf.name_scope('conv2'):
-        w2 = weight_variable([5,5,32,64]) # [5,5,1,2]??  how is this implemented?
+        w2 = weight_variable([5,5,32,64]) 
         h_conv2 = tf.nn.relu(conv2d(h_pool1,w2)) # [-1,14,14,64]
 
     # Second pooling layer.
@@ -288,14 +288,14 @@ def hourglass_nn(x):
         h_upconv1 = tf.nn.relu(upconv2d(h_pool2, wu2)) # [-1,14,14,32]
         
     with tf.name_scope('upconv1'):
-        h_sk1 = addSkipConnection(h_upconv1, h_pool1) # skip connection
-        wu1 = weight_variable([2,2,1,32])
+        h_sk1 = addSkipConnection(h_upconv1, h_pool1) # skip connection [-1,14,14,64]
+        wu1 = weight_variable([2,2,1,64])
         heatmap = tf.nn.relu(upconv2d(h_sk1, wu1)) # [-1,28,28,1]
         
     # The size of heatmap here should be [batch,28,28,1] for NMIST
     return heatmap
 
-# end deepnn
+# end hourglass_nn
 
 """
 Build and train the hourglass CNN from the main level when this file is called.
@@ -318,7 +318,7 @@ if __name__ == "__main__":
 
     # Placeholders for the data and associated truth
     x = tf.placeholder(tf.float32, [None, 28,28], name="x")
-    y_pmMask = tf.placeholder(tf.float32, [None, 28,28], name="y_mask")
+    y_pmMask = tf.placeholder(tf.float32, [None, 28,28], name="y_pmMask")
     
     # Build the graph for the deep hourglass net
     # It is best to literally thing of this as just building the graph, since
@@ -336,18 +336,19 @@ if __name__ == "__main__":
         # To do this, targetmask must have +1's at target     locations
         # and         targetmask must have -1's at background locations
         # Make sure targetmask is formed in this way!!!
-        gainmap = tf.multiply(heatmap, y_pmMask) # pixel-by-pixel gain
+        gainmap = tf.multiply(tf.reshape(heatmap,[-1,28,28]), y_pmMask) # pixel-by-pixel gain
         
         # May be useful to have an intermediate reduction here of a single
         # gain value for each individual image...
         
         # Average of gain across every pixel of every image
-        gain = tf.reduce_mean(tf.cast(gainmap,tf.float32)) 
+        gain = tf.reduce_mean(tf.cast(gainmap,tf.float32))
+        loss = tf.multiply(-1.0,gain)
         
     # Optimization calculation
     with tf.name_scope('adam_optimizer'):
-        # Basic ADAM optimizer, maximizing gain rather than minimizing loss
-        train_step = tf.train.AdamOptimizer().maximize(gain)
+        # Basic ADAM optimizer
+        train_step = tf.train.AdamOptimizer().minimize(loss)
         
     # Final accuracy calculation is nothing more than the gain itself. No need
     # for an additional calculation.
