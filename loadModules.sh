@@ -6,3 +6,5 @@ module load opencv/4.0.1
 echo "Loaded opencv/4.0.1"
 module load tensorflow/1.13.1
 echo "Loaded tensorflow/1.13.1"
+module load /share/pkg.7/gst-libav/1.0.6/modulefile.tcl
+echo "Loaded avi codecs for totem video player"
