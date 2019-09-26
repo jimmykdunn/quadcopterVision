@@ -345,6 +345,7 @@ if __name__ == "__main__":
         # and         targetmask must have -1's at background locations
         # Make sure targetmask is formed in this way!!!
         gainmap = tf.multiply(tf.reshape(heatmap,[-1,28,28]), y_pmMask) # pixel-by-pixel gain
+        gainmap = tf.math.minimum(gainmap, 1.0) # anything above 1 doesn't help
         
         # May be useful to have an intermediate reduction here of a single
         # gain value for each individual image...
@@ -424,13 +425,15 @@ if __name__ == "__main__":
             os.mkdir('heatmaps')
         numToWrite = np.min([10,test_heatmaps.shape[0]])
         for iHeat in range(numToWrite):
-            mapstr = 'heatmap_%04d.png' % iHeat
-            cv2.imwrite(os.path.join('heatmaps',mapstr), np.squeeze(test_heatmaps[iHeat,:])*255.0)
-            print('Wrote ' + os.path.join('heatmaps',mapstr))
+            # Make the output images individually
+            heatmapOutArray = np.squeeze(test_heatmaps[iHeat,:])*255.0
+            testOutArray = np.squeeze(x_test[iHeat,:])*255.0
             
-            imgStr = 'testImg_%04d.png' % iHeat
-            cv2.imwrite(os.path.join('heatmaps',imgStr), np.squeeze(x_test[iHeat,:])*255.0)
-            print('Wrote ' + os.path.join('heatmaps',imgStr))
+            # Join heatmap and actual image to a single array for output
+            joinedStr = 'joined_%04d.png' % iHeat
+            joined = np.concatenate([testOutArray, heatmapOutArray],axis=1)
+            cv2.imwrite(os.path.join('heatmaps',joinedStr), joined)
+            print('Wrote ' + os.path.join('heatmaps',joinedStr))
         
         # Print the location of the saved network
         print("Final trained network saved to: " + save_path)
