@@ -22,6 +22,7 @@ import shutil
 import matplotlib.pyplot as plt
 import time
 import cv2
+import copy
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
@@ -379,7 +380,7 @@ if __name__ == "__main__":
         sess.run(tf.global_variables_initializer())
         
         # Loop over every epoch
-        nEpochs = 100
+        nEpochs = 1000
         for epoch in range(nEpochs): 
             # Extract data for this batch
             batch = extractBatch(100, x_train, y_train_pmMask, epoch)
@@ -424,6 +425,7 @@ if __name__ == "__main__":
         if not os.path.isdir('heatmaps'): # make the output dir if needed
             os.mkdir('heatmaps')
         numToWrite = np.min([10,test_heatmaps.shape[0]])
+        filmstrip = []
         for iHeat in range(numToWrite):
             # Make the output images individually
             heatmapOutArray = np.squeeze(test_heatmaps[iHeat,:])*255.0
@@ -431,9 +433,18 @@ if __name__ == "__main__":
             
             # Join heatmap and actual image to a single array for output
             joinedStr = 'joined_%04d.png' % iHeat
-            joined = np.concatenate([testOutArray, heatmapOutArray],axis=1)
+            joined = np.concatenate([testOutArray, heatmapOutArray],axis=0)
             cv2.imwrite(os.path.join('heatmaps',joinedStr), joined)
             print('Wrote ' + os.path.join('heatmaps',joinedStr))
+            
+            # Make output strip of images and heatmaps
+            if iHeat == 0:
+                filmstrip = copy.deepcopy(joined)
+            filmstrip = np.concatenate([filmstrip,joined], axis=1)
+            
+        # Write all numToWrite in a single image for easy analysis
+        cv2.imwrite(os.path.join('heatmaps','filmstrip.png'), filmstrip) 
+        print('Wrote ' + os.path.join('heatmaps','filmstrip.png')) 
         
         # Print the location of the saved network
         print("Final trained network saved to: " + save_path)
