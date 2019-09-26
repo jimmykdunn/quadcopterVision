@@ -21,6 +21,7 @@ import os
 import shutil
 import matplotlib.pyplot as plt
 import time
+import cv2
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
@@ -377,7 +378,7 @@ if __name__ == "__main__":
         sess.run(tf.global_variables_initializer())
         
         # Loop over every epoch
-        nEpochs = 1000
+        nEpochs = 100
         for epoch in range(nEpochs): 
             # Extract data for this batch
             batch = extractBatch(100, x_train, y_train_pmMask, epoch)
@@ -413,9 +414,23 @@ if __name__ == "__main__":
     
         # Finish off by running the test set.  Extract the entire test set.
         test_batch = extractBatch(len(x_test), x_test, y_test_pmMask, 0)
-        print('test gain %g' % gain.eval(feed_dict={x: test_batch[0], y_pmMask: test_batch[1]}))
-        print('test heatmap %g' % heatmap.eval(feed_dict={x: test_batch[0], y_pmMask: test_batch[1]}))
+        test_gain = gain.eval(feed_dict={x: test_batch[0], y_pmMask: test_batch[1]})
+        test_heatmaps = heatmap.eval(feed_dict={x: test_batch[0], y_pmMask: test_batch[1]})
+        print('test gain %g' % test_gain)
         
+        # Write out the first few heatmaps to file along with the associated
+        # test data inputs for visualization
+        if not os.path.isdir('heatmaps'): # make the output dir if needed
+            os.mkdir('heatmaps')
+        numToWrite = np.min([10,test_heatmaps.shape[0]])
+        for iHeat in range(numToWrite):
+            mapstr = 'heatmap_%04d.png' % iHeat
+            cv2.imwrite(os.path.join('heatmaps',mapstr), np.squeeze(test_heatmaps[iHeat,:])*255.0)
+            print('Wrote ' + os.path.join('heatmaps',mapstr))
+            
+            imgStr = 'testImg_%04d.png' % iHeat
+            cv2.imwrite(os.path.join('heatmaps',imgStr), np.squeeze(x_test[iHeat,:])*255.0)
+            print('Wrote ' + os.path.join('heatmaps',imgStr))
         
         # Print the location of the saved network
         print("Final trained network saved to: " + save_path)
