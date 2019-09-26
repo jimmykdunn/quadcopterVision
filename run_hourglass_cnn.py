@@ -49,23 +49,7 @@ def extractBatch(length, x, y_mask, epoch):
     
     return x_batch, y_batch
 
-'''
-def extractBatchLogits(length, x, y, epoch):
-    
-    # Just pull them in order, wrapping to the beginning when we go over
-    while (epoch+1)*length > len(x):
-        epoch -= int(len(x)/length)
-    
-    batch = [epoch*length + i for i in range(length)]
-    
-    x_batch = x[batch,:,:]
-    y_batch = np.zeros([length,10]) == 1
-    y_b = y[batch]
-    for i in range(length):
-        y_batch[i,y_b[i]] = True
-    
-    return x_batch, y_batch
-'''
+
 """
 Constructs a weight variable with the given shape (random initialization)
 INPUTS:
@@ -142,7 +126,7 @@ RETURNS:
     Larger resolution layer after upconvolution
 """
 def upconv2d(x, W):
-    
+    # It is VERY IMPORTANT to get these variables in this way
     nx = x.get_shape().as_list()[1]
     ny = x.get_shape().as_list()[2]
     nkx = W.get_shape().as_list()[0] 
@@ -150,8 +134,8 @@ def upconv2d(x, W):
     nW = W.get_shape().as_list()[2] 
     
     # Output dimension and stride calculations
-    #outShape = tf.stack([-1, nkx*nx, nky*ny, nW])
-    outShape = tf.stack([tf.shape(x)[0], nkx*nx, nky*ny, nW])
+    # use tf.shape(x)[0] instead of -1
+    outShape = tf.stack([tf.shape(x)[0], nkx*nx, nky*ny, nW]) 
     stride = [1,nkx,nky,1]
     
     # Build the upconvolution layer
@@ -295,31 +279,7 @@ def hourglass_nn(x):
 
     # Second pooling layer.
     with tf.name_scope('pool2'):
-        h_pool2 = max_pool_2x2(h_conv2) # [-1,7,7,64]
-
-
-    '''
-    # Fully connected layer 1 -- after 2 round of downsampling, our 28x28 image
-    # is down to 7x7x64 feature maps -- maps this to 1024 features.
-    with tf.name_scope('fc1'):
-        flatVecSize = 7*7*64
-        #h_pool2_flat = tf.reshape(h_pool2,[-1,flatVecSize,1,1])
-        h_pool2_flat = tf.reshape(h_pool2,[-1,flatVecSize])
-        w3 = weight_variable([flatVecSize,1024])
-        b3 = bias_variable([1024])
-        h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat,w3) + b3)
-
-    # Map the 1024 features to 10 classes, one for each digit
-    with tf.name_scope('fc2'):
-        #h_fc1_flat = tf.reshape(h_fc1,[-1,1024,1,1])
-        h_fc1_flat = tf.reshape(h_fc1,[-1,1024])
-        w4 = weight_variable([1024,10])
-        b4 = bias_variable([10])
-        
-    # Calculate the final probabilities (logits) for each class
-    with tf.name_scope('outputClassProbs'):    
-        y_conv = tf.add(tf.matmul(h_fc1_flat,w4), b4, name="classProbs")
-    '''    
+        h_pool2 = max_pool_2x2(h_conv2) # [-1,7,7,64]  
 
     # Remember the order is skip-connection THEN upconv
     # x_image shape is [-1,28,28,1]
@@ -332,20 +292,15 @@ def hourglass_nn(x):
         # No skip connection necessary on the innermost layer
         wu2 = weight_variable([2,2,32,64])
         h_upconv1 = tf.nn.relu(upconv2d(h_pool2, wu2)) # [-1,14,14,32]
-        #wu2 = weight_variable([4,4,1,64])
-        #heatmap = tf.nn.relu(upconv2d(h_pool2, wu2)) # [-1,14,14,32]
         
     with tf.name_scope('upconv1'):
         h_sk1 = addSkipConnection(h_upconv1, h_pool1) # skip connection [-1,14,14,64]
         wu1 = weight_variable([2,2,1,64])
         heatmap = tf.nn.relu(upconv2d(h_sk1, wu1)) # [-1,28,28,1]
-        #wu1 = weight_variable([2,2,1,32])
-        #heatmap = tf.nn.relu(upconv2d(h_upconv1, wu1)) # [-1,28,28,1]
         
     # The size of heatmap here should be [batch,28,28,1] for NMIST
     return heatmap
     
-    #return heatmap, y_conv
 
 # end hourglass_nn
 
@@ -370,7 +325,6 @@ if __name__ == "__main__":
 
     # Placeholders for the data and associated truth
     x = tf.placeholder(tf.float32, [None, 28,28], name="x")
-    #y_ = tf.placeholder(tf.float32, [None, 10], name="y_")
     y_pmMask = tf.placeholder(tf.float32, [None, 28,28], name="y_pmMask")
     
     # Build the graph for the deep hourglass net
@@ -390,39 +344,18 @@ if __name__ == "__main__":
         # and         targetmask must have -1's at background locations
         # Make sure targetmask is formed in this way!!!
         gainmap = tf.multiply(tf.reshape(heatmap,[-1,28,28]), y_pmMask) # pixel-by-pixel gain
-        #gainmap = tf.reshape(heatmap,[-1,28,28]);
         
         # May be useful to have an intermediate reduction here of a single
         # gain value for each individual image...
         
         # Average of gain across every pixel of every image
         gain = tf.reduce_mean(tf.cast(gainmap,tf.float32))
-        #gain = tf.reduce_mean(gainmap)
         loss = tf.multiply(-1.0,gain)
-        
-    '''   
-    with tf.name_scope('loss'):
-        cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=y_conv)
-    '''
         
     # Optimization calculation
     with tf.name_scope('adam_optimizer'):
         # Basic ADAM optimizer
-        #train_stepCE = tf.train.AdamOptimizer().minimize(cross_entropy)
         train_step = tf.train.AdamOptimizer().minimize(loss)
-        #train_step = tf.train.AdamOptimizer().minimize(gain)
-        #train_step = tf.train.GradientDescentOptimizer(0.001).minimize(loss)
-        
-        
-    # Accuracy calculation
-    '''
-    with tf.name_scope('accuracy'):
-        correct_prediction = tf.argmax(y_,1)
-        y = tf.nn.softmax(y_conv)
-        our_prediction = tf.argmax(y,1)
-        performance_vec = tf.equal(correct_prediction,our_prediction)
-        accuracy = tf.reduce_mean(tf.cast(performance_vec,tf.float32))
-    '''
         
     # Final accuracy calculation is nothing more than the gain itself. No need
     # for an additional calculation.
@@ -448,20 +381,14 @@ if __name__ == "__main__":
         for epoch in range(nEpochs): 
             # Extract data for this batch
             batch = extractBatch(100, x_train, y_train_pmMask, epoch)
-            #batchLogits = extractBatchLogits(100, x_train, y_train, epoch)
             
             # Run a single epoch with the extracted data batch
             train_step.run(feed_dict={x: batch[0], y_pmMask: batch[1]}) 
-            #train_step.run(feed_dict={x: batch[0], y_pmMask: batch[1], y_: batchLogits[1]}) 
-            #train_stepCE.run(feed_dict={x: batch[0], y_pmMask: batch[1], y_: batchLogits[1]})  
             
             # Check our progress on the training data every N epochs
             if epoch % 50 == 49:
-                #trainGain = gain.eval(feed_dict={x: batch[0], y_pmMask: batch[1], y_: batchLogits[1]})
                 trainGain = gain.eval(feed_dict={x: batch[0], y_pmMask: batch[1]})
                 print('epoch %d of %d, training gain %g' % (epoch+1, nEpochs, trainGain))
-                #accuracyCE = accuracy.eval(feed_dict={x: batch[0], y_pmMask: batch[1], y_: batchLogits[1]})
-                #print('epoch %d of %d, training accuracy %g' % (epoch+1, nEpochs, accuracyCE))
             
             # Print elapsed time every 100 epochs
             if epoch % 50 == 49:
