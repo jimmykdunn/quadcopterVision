@@ -23,6 +23,7 @@ import mnist
 import time
 import cv2
 import copy
+import videoUtilities as vu
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
@@ -260,7 +261,7 @@ def hourglass_nn(x):
     with tf.name_scope('upconv1'):
         h_sk1 = addSkipConnection(h_upconv1, h_pool1) # skip connection [-1,14,14,64]
         wu1 = weight_variable([2,2,1,64])
-        heatmaps = tf.nn.relu(upconv2d(h_sk1, wu1),name='heatmaps') # [-1,28,28,1]
+        heatmaps = tf.nn.relu(upconv2d(h_sk1, wu1)) # [-1,28,28,1]
         
     # The size of heatmap here should be [batch,28,28,1] for NMIST
     return heatmaps
@@ -419,6 +420,12 @@ if __name__ == "__main__":
     # Get the MNIST handwritten-digit data
     x_train, y_train, x_test, y_test = mnist.getMNISTData()
     checkpointSaveDir = "./mnist_hourglass_nn_save";
+    
+    # Get homebrewed video data
+    #x_train = vu.pull_video("defaultGreenscreenVideo_over_PHO_hallway.avi")
+    #y_train = vu.pull_video()
+    #x_test  = vu.pull_video()
+    #y_test  = vu.pull_video()
     
     # Make mask truth by simple thresholding
     y_train_pmMask = booleanMaskToPlusMinus(makeThresholdMask(x_train))
