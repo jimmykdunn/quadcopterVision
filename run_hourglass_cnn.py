@@ -260,10 +260,10 @@ def hourglass_nn(x):
     with tf.name_scope('upconv1'):
         h_sk1 = addSkipConnection(h_upconv1, h_pool1) # skip connection [-1,14,14,64]
         wu1 = weight_variable([2,2,1,64])
-        heatmap = tf.nn.relu(upconv2d(h_sk1, wu1)) # [-1,28,28,1]
+        heatmaps = tf.nn.relu(upconv2d(h_sk1, wu1),name='heatmaps') # [-1,28,28,1]
         
     # The size of heatmap here should be [batch,28,28,1] for NMIST
-    return heatmap
+    return heatmaps
     
 
 # end hourglass_nn
@@ -316,7 +316,9 @@ def train_hourglass_nn(trainImages, trainMasks, testImages, testMasks, \
     # actually be running. y_conv is [-1,10], where -1 is the number of input
     # datapoints and 10 is the probability (logit) for each output class 
     # (numeral).
-    b_heatmaps = hourglass_nn(b_images)
+    with tf.name_scope('heatmaps'):
+        b_heatmaps = hourglass_nn(b_images)
+        b_heatmaps = tf.reshape(b_heatmaps,[-1,nWidth,nHeight],'b_heatmaps')
    
     # The heatmap loss calculation
     with tf.name_scope('heatmapGain'):
@@ -326,8 +328,8 @@ def train_hourglass_nn(trainImages, trainMasks, testImages, testMasks, \
         # To do this, targetmask must have +1's at target     locations
         # and         targetmask must have -1's at background locations
         # Make sure targetmask is formed in this way!!!
-        b_gainmaps = tf.multiply(tf.reshape(b_heatmaps,[-1,nWidth,nHeight]), b_masks) # pixel-by-pixel gain
-        b_gainmaps = tf.math.minimum(b_gainmaps, 1.0) # anything above 1 doesn't help
+        b_gainmaps = tf.multiply(b_heatmaps, b_masks) # pixel-by-pixel gain
+        b_gainmaps = tf.math.minimum(b_gainmaps, 1.0, name="b_gainmaps") # anything above 1 doesn't help
         
         # May be useful to have an intermediate reduction here of a single
         # gain value for each individual image...
