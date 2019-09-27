@@ -259,11 +259,13 @@ RETURNS:
 """
 def hourglass_nn(x):
     
+    nBatch, nWidth, nHeight = x.shape[:3]
+    
     # Reshape to use within a convolutional neural net.
     # Last dimension is for "features" - there is only one here, since images are
     # grayscale -- it would be 3 for an RGB image, 4 for RGBA, etc.
     with tf.name_scope('reshape'):
-        x_image = tf.reshape(x,[-1,28,28,1])
+        x_image = tf.reshape(x,[-1,nWidth,nHeight,1])
 
     # First convolutional layer - maps one grayscale image to 32 feature maps.
     with tf.name_scope('conv1'):
@@ -306,28 +308,42 @@ def hourglass_nn(x):
 
 # end hourglass_nn
 
-"""
-Build and train the hourglass CNN from the main level when this file is called.
-"""
 
-if __name__ == "__main__":  
+"""
+Train the hourglass NN. Makes the graph with hourglass_nn, then calculates gain
+and optimizes in batch over the input data. Ends with a test forward pass.
+"-1" is a placeholder for the number of images in the batch.
+INPUTS:
+    trainImages: input images, [-1,nx,ny,1] 
+    trainMasks: truth masks associated with trainImages. +1 if target, -1 otherwise, [-1,nx,ny] 
+    testImages: test images, [-1,nx,ny,1]
+    testMasks: truth masks associated with testImages. +1 if target, -1 otherwise, [-1,nx,ny] 
+    
+EXAMPLE:
+    test_heatmaps = train_hourglass_nn(x)
+RETURNS:
+    test_heatmaps: map of pixel values for each image, higher for pixels more 
+                   likely to be target. Same size as input testImages.
+"""
+def train_hourglass_nn(trainImages, trainMasks, testImages, testMasks, \
+    checkpointSaveDir='./hourglass_nn_save', nEpochs=100, batchSize=100, \
+    saveEveryNEpochs=500, peekEveryNEpochs=50):
+    
+    print("BEGIN HOURGLASS NN TRAINING")
     
     # Clear checkpoint files to get a clean training run each time
-    checkpointSaveDir = "./mnist_hourglass_nn_save" # checkpoints saved here
     if os.path.exists(checkpointSaveDir): # only rm if it exists
-        shutil.rmtree(checkpointSaveDir, ignore_errors=True)    
-    
-    # Get the NMIST handwritten-digit data
-    x_train, y_train, x_test, y_test = getNMISTData()
-    
-    # Make mask truth by sim0ple thresholding
-    y_train_pmMask = booleanMaskToPlusMinus(makeThresholdMask(x_train))
-    y_test_pmMask  = booleanMaskToPlusMinus(makeThresholdMask(x_test))
-    
+        shutil.rmtree(checkpointSaveDir, ignore_errors=True)   
+    else:
+        os.mkdir(checkpointSaveDir)
+        
+    # Image sizes
+    nBatch, nWidth, nHeight = trainImages.shape[:3]
 
     # Placeholders for the data and associated truth
-    x = tf.placeholder(tf.float32, [None, 28,28], name="x")
-    y_pmMask = tf.placeholder(tf.float32, [None, 28,28], name="y_pmMask")
+    # "b_" prefix stands for "batch"
+    b_images = tf.placeholder(tf.float32, [None, nWidth,nHeight], name="b_images")
+    b_masks = tf.placeholder(tf.float32, [None, nWidth,nHeight], name="b_masks")
     
     # Build the graph for the deep hourglass net
     # It is best to literally thing of this as just building the graph, since
@@ -335,7 +351,7 @@ if __name__ == "__main__":
     # actually be running. y_conv is [-1,10], where -1 is the number of input
     # datapoints and 10 is the probability (logit) for each output class 
     # (numeral).
-    heatmap = hourglass_nn(x)
+    b_heatmaps = hourglass_nn(b_images)
    
     # The heatmap loss calculation
     with tf.name_scope('heatmapGain'):
@@ -345,14 +361,14 @@ if __name__ == "__main__":
         # To do this, targetmask must have +1's at target     locations
         # and         targetmask must have -1's at background locations
         # Make sure targetmask is formed in this way!!!
-        gainmap = tf.multiply(tf.reshape(heatmap,[-1,28,28]), y_pmMask) # pixel-by-pixel gain
-        gainmap = tf.math.minimum(gainmap, 1.0) # anything above 1 doesn't help
+        b_gainmaps = tf.multiply(tf.reshape(b_heatmaps,[-1,nWidth,nHeight]), b_masks) # pixel-by-pixel gain
+        b_gainmaps = tf.math.minimum(b_gainmaps, 1.0) # anything above 1 doesn't help
         
         # May be useful to have an intermediate reduction here of a single
         # gain value for each individual image...
         
         # Average of gain across every pixel of every image
-        gain = tf.reduce_mean(tf.cast(gainmap,tf.float32))
+        gain = tf.reduce_mean(tf.cast(b_gainmaps,tf.float32))
         loss = tf.multiply(-1.0,gain)
         
     # Optimization calculation
@@ -380,27 +396,27 @@ if __name__ == "__main__":
         sess.run(tf.global_variables_initializer())
         
         # Loop over every epoch
-        nEpochs = 1000
         for epoch in range(nEpochs): 
             # Extract data for this batch
-            batch = extractBatch(100, x_train, y_train_pmMask, epoch)
+            batch = extractBatch(batchSize, trainImages, trainMasks, epoch)
             
             # Run a single epoch with the extracted data batch
-            train_step.run(feed_dict={x: batch[0], y_pmMask: batch[1]}) 
+            train_step.run(feed_dict={b_images: batch[0], b_masks: batch[1]}) 
             
-            # Check our progress on the training data every N epochs
-            if epoch % 50 == 49:
-                trainGain = gain.eval(feed_dict={x: batch[0], y_pmMask: batch[1]})
+            # Check our progress on the training data every peekEveryNEpochs epochs
+            if epoch % peekEveryNEpochs == (peekEveryNEpochs-1):
+                trainGain = gain.eval(feed_dict={b_images: batch[0], b_masks: batch[1]})
                 print('epoch %d of %d, training gain %g' % (epoch+1, nEpochs, trainGain))
             
-            # Print elapsed time every 100 epochs
-            if epoch % 50 == 49:
+            # Print elapsed time every peekEveryNEpochs epochs
+            if epoch % peekEveryNEpochs == (peekEveryNEpochs-1):
                 curr_sec = time.clock()
                 print('    Elapsed time for %d epochs: %g sec' 
                       % (epoch+1, curr_sec-start_sec))
     
-            # Save the model weights (and everything else) every 500 epochs
-            if epoch % 500 == 499 or epoch == (nEpochs-1):
+            # Save the model weights (and everything else) every 
+            # saveEveryNEpochs epochs, but always save at the end.
+            if epoch % saveEveryNEpochs == (saveEveryNEpochs-1) or epoch == (nEpochs-1):
                 save_path = saver.save(sess, checkpointSaveDir + "/model_at" + str(epoch+1) + ".ckpt")
                 print("    Checkpoint saved to: %s" % save_path)
         
@@ -415,38 +431,59 @@ if __name__ == "__main__":
               % (nEpochs, end_sec-start_sec))
     
         # Finish off by running the test set.  Extract the entire test set.
-        test_batch = extractBatch(len(x_test), x_test, y_test_pmMask, 0)
-        test_gain = gain.eval(feed_dict={x: test_batch[0], y_pmMask: test_batch[1]})
-        test_heatmaps = heatmap.eval(feed_dict={x: test_batch[0], y_pmMask: test_batch[1]})
+        test_batch = extractBatch(len(testImages), testImages, testMasks, 0)
+        test_gain = gain.eval(feed_dict={b_images: test_batch[0], b_masks: test_batch[1]})
+        test_heatmaps = b_heatmaps.eval(feed_dict={b_images: test_batch[0], b_masks: test_batch[1]})
         print('test gain %g' % test_gain)
-        
-        # Write out the first few heatmaps to file along with the associated
-        # test data inputs for visualization
-        if not os.path.isdir('heatmaps'): # make the output dir if needed
-            os.mkdir('heatmaps')
-        numToWrite = np.min([10,test_heatmaps.shape[0]])
-        filmstrip = []
-        for iHeat in range(numToWrite):
-            # Make the output images individually
-            heatmapOutArray = np.squeeze(test_heatmaps[iHeat,:])*255.0
-            testOutArray = np.squeeze(x_test[iHeat,:])*255.0
-            
-            # Join heatmap and actual image to a single array for output
-            joinedStr = 'joined_%04d.png' % iHeat
-            joined = np.concatenate([testOutArray, heatmapOutArray],axis=0)
-            cv2.imwrite(os.path.join('heatmaps',joinedStr), joined)
-            print('Wrote ' + os.path.join('heatmaps',joinedStr))
-            
-            # Make output strip of images and heatmaps
-            if iHeat == 0:
-                filmstrip = copy.deepcopy(joined)
-            filmstrip = np.concatenate([filmstrip,joined], axis=1)
-            
-        # Write all numToWrite in a single image for easy analysis
-        cv2.imwrite(os.path.join('heatmaps','filmstrip.png'), filmstrip) 
-        print('Wrote ' + os.path.join('heatmaps','filmstrip.png')) 
         
         # Print the location of the saved network
         print("Final trained network saved to: " + save_path)
         print("You can use use_cnn.py with this final network to classify new datapoints")
+        
+    return test_heatmaps
+
+
+"""
+Build and train the hourglass CNN from the main level when this file is called.
+"""
+
+if __name__ == "__main__":  
+    
+    # Get the NMIST handwritten-digit data
+    x_train, y_train, x_test, y_test = getNMISTData()
+    
+    # Make mask truth by sim0ple thresholding
+    y_train_pmMask = booleanMaskToPlusMinus(makeThresholdMask(x_train))
+    y_test_pmMask  = booleanMaskToPlusMinus(makeThresholdMask(x_test))
+    
+    # Run the complete training on the hourglass neural net
+    heatmaps = train_hourglass_nn(x_train, y_train_pmMask, x_test, y_test_pmMask, \
+                                  checkpointSaveDir = "./mnist_hourglass_nn_save")
+        
+    # Write out the first few heatmaps to file along with the associated
+    # test data inputs for visualization
+    if not os.path.isdir('heatmaps'): # make the output dir if needed
+        os.mkdir('heatmaps')
+    numToWrite = np.min([10,heatmaps.shape[0]])
+    filmstrip = []
+    for iHeat in range(numToWrite):
+        # Make the output images individually
+        heatmapOutArray = np.squeeze(heatmaps[iHeat,:])*255.0
+        testOutArray = np.squeeze(x_test[iHeat,:])*255.0
+        
+        # Join heatmap and actual image to a single array for output
+        joinedStr = 'joined_%04d.png' % iHeat
+        joined = np.concatenate([testOutArray, heatmapOutArray],axis=0)
+        cv2.imwrite(os.path.join('heatmaps',joinedStr), joined)
+        print('Wrote ' + os.path.join('heatmaps',joinedStr))
+        
+        # Make output strip of images and heatmaps
+        if iHeat == 0:
+            filmstrip = copy.deepcopy(joined)
+        filmstrip = np.concatenate([filmstrip,joined], axis=1)
+        
+    # Write all numToWrite in a single image for easy analysis
+    cv2.imwrite(os.path.join('heatmaps','filmstrip.png'), filmstrip) 
+    print('Wrote ' + os.path.join('heatmaps','filmstrip.png')) 
+    
         
