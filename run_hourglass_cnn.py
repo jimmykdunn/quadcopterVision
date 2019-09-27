@@ -278,7 +278,12 @@ INPUTS:
     trainMasks: truth masks associated with trainImages. +1 if target, -1 otherwise, [-1,nx,ny] 
     testImages: test images, [-1,nx,ny,1]
     testMasks: truth masks associated with testImages. +1 if target, -1 otherwise, [-1,nx,ny] 
-    
+OPTIONAL INPUTS:
+    nEpochs: number of training epcohs to run (default 100)
+    batchSize: number of images to use per training epoch (default 100)
+    checkpointSaveDir: directory to save trained neural net and graph to (default './hourglass_nn_save")
+    saveEveryNEpochs: save checkpoint every this many epochs (and at the end) (default 500)
+    peekEveryNEpochs: print the training gain with a forward pass every this many epochs (default 50)
 EXAMPLE:
     test_heatmaps = train_hourglass_nn(x)
 RETURNS:
@@ -286,7 +291,7 @@ RETURNS:
                    likely to be target. Same size as input testImages.
 """
 def train_hourglass_nn(trainImages, trainMasks, testImages, testMasks, \
-    checkpointSaveDir='./hourglass_nn_save', nEpochs=100, batchSize=100, \
+    nEpochs=100, batchSize=100, checkpointSaveDir='./hourglass_nn_save', \
     saveEveryNEpochs=500, peekEveryNEpochs=50):
     
     print("BEGIN HOURGLASS NN TRAINING")
