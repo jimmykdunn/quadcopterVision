@@ -19,7 +19,7 @@ import tensorflow as tf
 import numpy as np
 import os
 import shutil
-import matplotlib.pyplot as plt
+import mnist
 import time
 import cv2
 import copy
@@ -204,46 +204,6 @@ def booleanMaskToPlusMinus(booleanMask, trueVal=1, falseVal=-1):
     return plusMinusMask
 
 
-"""
-Loads the NMIST handwritten-digits data using the built-in keras function.
-Performs normalization and also displays a few example images if python 
-terminal allows it.
-INPUTS:
-    None
-EXAMPLE:
-    x_train, y_train, x_test, y_test = getNMISTData()
-RETURNS:
-    x_train: full set of 60000 28x28 pixel training images, [60000,28,28]
-    y_train: full set of 60000 truth classes for x_train [60000]
-    x_test: full set of 10000 28x28 pixel test images, [10000,28,28]
-    y_test: full set of 10000 truth classes for x_test [10000]
-"""
-def getNMISTData():
-    """Load training and eval data"""
-    ((x_train, y_train),
-     (x_test, y_test)) = tf.keras.datasets.mnist.load_data()
-    print("Number of training images: " + str(x_train.shape[0]))
-    print("Number of testing  images: " + str(x_test.shape[0]))
-    print("Image shape (nx,ny): (" + str(x_train.shape[1]) + 
-                               "," + str(x_train.shape[2]) + ")")
-    
-    x_train = x_train/np.float32(255) # normalize images
-    y_train = y_train.astype(np.int32)  # not required
-
-    x_test = x_test/np.float32(255) # normalize images
-    y_test = y_test.astype(np.int32)  # not required
-    
-    # Display some example data
-    chain = np.squeeze(x_train[0,:,:])
-    for i in range(15):
-        chain = np.append(chain,np.squeeze(x_train[i+1,:,:]),axis=1)
-    print("Example training data")
-    plt.figure()
-    plt.imshow(chain)
-    labelstrs = "".join([str(truth) + ", " for truth in y_train[:16]])
-    print("Truth: ", labelstrs)
-    
-    return x_train, y_train, x_test, y_test
 
 """
 Build the hourglass NN template.  This is a 3-hidden layer convolutional neural
@@ -449,16 +409,17 @@ Build and train the hourglass CNN from the main level when this file is called.
 
 if __name__ == "__main__":  
     
-    # Get the NMIST handwritten-digit data
-    x_train, y_train, x_test, y_test = getNMISTData()
+    # Get the MNIST handwritten-digit data
+    x_train, y_train, x_test, y_test = mnist.getMNISTData()
+    checkpointSaveDir = "./mnist_hourglass_nn_save";
     
-    # Make mask truth by sim0ple thresholding
+    # Make mask truth by simple thresholding
     y_train_pmMask = booleanMaskToPlusMinus(makeThresholdMask(x_train))
     y_test_pmMask  = booleanMaskToPlusMinus(makeThresholdMask(x_test))
     
     # Run the complete training on the hourglass neural net
     heatmaps = train_hourglass_nn(x_train, y_train_pmMask, x_test, y_test_pmMask, \
-                                  checkpointSaveDir = "./mnist_hourglass_nn_save")
+                                  checkpointSaveDir = checkpointSaveDir)
         
     # Write out the first few heatmaps to file along with the associated
     # test data inputs for visualization
