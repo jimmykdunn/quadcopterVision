@@ -210,12 +210,14 @@ def augment_sequence(inImageFileBase, inMaskFileBase, outputFolder,
         # always applying the same crop and resize to the image and its
         # corresponding mask.
         nbRandomCropResize = 8
-        
+        lowScl = np.max(np.divide(outShape,rawImage.shape[1:3])) # don't go smaller than outimage size
+        scaleSet = np.random.uniform(low=lowScl, high=lowScl*2, size=nbRandomCropResize)
+        outSizeSet = [[np.ceil(dim * scale).astype(int) for dim in rawImage.shape[2:0:-1]] for scale in scaleSet]
         for iCropResize in range(nbRandomCropResize):
-            resizedImage = cv2.resize(np.squeeze(rawImage), (512,512))
+            resizedImage = cv2.resize(np.squeeze(rawImage), tuple(outSizeSet[iCropResize]))
             croppedImage = resizedImage[:outShape[0],:outShape[1]]
             finalAugmentedImage = croppedImage
-            resizedMask = cv2.resize(np.squeeze(rawMask), (512,512))
+            resizedMask = cv2.resize(np.squeeze(rawMask), tuple(outSizeSet[iCropResize]))
             croppedMask = resizedMask[:outShape[0],:outShape[1]]
             finalAugmentedMask = croppedMask
             
