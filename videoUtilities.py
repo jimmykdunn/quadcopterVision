@@ -200,6 +200,8 @@ def augment_sequence(inImageFileBase, inMaskFileBase, outputFolder,
                                  ext=ext, color=color, invert=invert)
         rawMask = pull_sequence(inMaskFileBase, iStart=rawIndex, iEnd=rawIndex,
                                  ext=ext, color=False, invert=False)
+        rawImage = np.squeeze(rawImage) # remove singleton dimensions
+        rawMask = np.squeeze(rawMask) # remove singleton dimensions
         if len(rawImage.shape) == 1:
             if rawImage == -1 or rawMask == -1:
                 break # we reached the end or had problems reading
@@ -210,26 +212,14 @@ def augment_sequence(inImageFileBase, inMaskFileBase, outputFolder,
         # always applying the same crop and resize to the image and its
         # corresponding mask.
         # Determine valid resizes and draw some randomly
-        nbRandomCropResize = 8
-        lowScl = np.max(np.divide(outShape,rawImage.shape[1:3])) # don't go smaller than outimage size
-        scaleSet = np.random.uniform(low=lowScl, high=lowScl*2, size=nbRandomCropResize)
-        outSizeSet = [[np.ceil(dim * scale).astype(int) for dim in rawImage.shape[2:0:-1]] for scale in scaleSet]
+        nbRandomCropResize = 8           
         for iCropResize in range(nbRandomCropResize):
             # Resize the image and mask
-            resizedImage = cv2.resize(np.squeeze(rawImage), tuple(outSizeSet[iCropResize]))
-            resizedMask = cv2.resize(np.squeeze(rawMask), tuple(outSizeSet[iCropResize]))
+            resizedImage, resizedMask = random_resize(rawImage, rawMask, outShape)
             
-            # Given the resizing, determine some valid crop areas
-            maxValidCropStart = [resizedImage.shape[i] - outShape[i] for i in range(2)]
-            #print(maxValidCropStart)
-            cropSet = [np.floor(np.random.uniform(low=0,high=maxValidCropStart[0])).astype(int), \
-                   np.floor(np.random.uniform(low=0,high=maxValidCropStart[1])).astype(int)]
+            # Crop the image and mask randomly
+            croppedImage, croppedMask = random_crop(resizedImage, resizedMask, outShape)
             
-            # Apply the cropping
-            croppedImage = resizedImage[cropSet[0]:cropSet[0]+outShape[0], \
-                                        cropSet[1]:cropSet[1]+outShape[1]]
-            croppedMask  = resizedMask [cropSet[0]:cropSet[0]+outShape[0], \
-                                        cropSet[1]:cropSet[1]+outShape[1]]
             
             # Set as final image to output
             finalAugmentedImage = croppedImage
@@ -248,6 +238,66 @@ def augment_sequence(inImageFileBase, inMaskFileBase, outputFolder,
     # end while loop over raw images
     
 # end augment_sequence()
+  
+'''
+FUNCTION:
+    random_resize() 
+    
+DESCRIPTION:
+    Applies a random valid resize to the input image and corresponding mask.
+    Always leaves enough pixels to crop to the designated output shape.
+    
+INPUTS: 
+    image: image to resize (2D for now, no colors)
+    mask: mask to resize. Must be same shape as image
+    outShape: Output shape that image and mask will be cropped to
+RETURNS: 
+    resizedImage: image resized randomly
+    resizedMask:  mask resized randomly to match image
+'''
+def random_resize(image, mask, outShape):
+    # Determine smallest scale factor that will still allow an outShape image
+    # to be extracted afterwards.
+    lowScl = np.max(np.divide(outShape,image.shape[1:3])) 
+    highScl = np.max([2*lowScl,1.0])
+    scaleFactor = np.random.uniform(low=lowScl, high=highScl)
+    outSizeSet = [np.ceil(dim * scaleFactor).astype(int) for dim in image.shape[1::-1]]
+    
+    # Resize the image and mask
+    resizedImage = cv2.resize(image, tuple(outSizeSet))
+    resizedMask  = cv2.resize(mask, tuple(outSizeSet))
+    
+    return resizedImage, resizedMask
+  
+'''
+FUNCTION:
+    random_crop() 
+    
+DESCRIPTION:
+    Applies a random valid crop to the input image and corresponding mask.
+    Always crops to the designated output shape
+    
+INPUTS: 
+    image: image to crop (2D for now, no colors)
+    mask: mask to crop. Must be same shape as image
+    outShape: Output shape to crop image and mask to
+RETURNS: 
+    croppedImage: random outShape block extracted from image
+    croppedMask:  random outShape mask  extracted from image
+'''
+def random_crop(image, mask, outShape):
+    # Given the resizing, determine some valid crop areas
+    maxValidCropStart = [image.shape[i] - outShape[i] for i in range(2)]
+    cropSet = [np.floor(np.random.uniform(low=0,high=maxValidCropStart[0])).astype(int), \
+               np.floor(np.random.uniform(low=0,high=maxValidCropStart[1])).astype(int)]
+    
+    # Apply the cropping
+    croppedImage = image[cropSet[0]:cropSet[0]+outShape[0], \
+                         cropSet[1]:cropSet[1]+outShape[1]]
+    croppedMask  = mask [cropSet[0]:cropSet[0]+outShape[0], \
+                         cropSet[1]:cropSet[1]+outShape[1]]
+                         
+    return croppedImage, croppedMask  
     
 # Testing here
 if __name__ == "__main__":
