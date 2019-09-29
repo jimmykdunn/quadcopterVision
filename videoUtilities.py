@@ -209,16 +209,30 @@ def augment_sequence(inImageFileBase, inMaskFileBase, outputFolder,
         # Apply some random crops and resizes to the raw images and masks, 
         # always applying the same crop and resize to the image and its
         # corresponding mask.
+        # Determine valid resizes and draw some randomly
         nbRandomCropResize = 8
         lowScl = np.max(np.divide(outShape,rawImage.shape[1:3])) # don't go smaller than outimage size
         scaleSet = np.random.uniform(low=lowScl, high=lowScl*2, size=nbRandomCropResize)
         outSizeSet = [[np.ceil(dim * scale).astype(int) for dim in rawImage.shape[2:0:-1]] for scale in scaleSet]
         for iCropResize in range(nbRandomCropResize):
+            # Resize the image and mask
             resizedImage = cv2.resize(np.squeeze(rawImage), tuple(outSizeSet[iCropResize]))
-            croppedImage = resizedImage[:outShape[0],:outShape[1]]
-            finalAugmentedImage = croppedImage
             resizedMask = cv2.resize(np.squeeze(rawMask), tuple(outSizeSet[iCropResize]))
-            croppedMask = resizedMask[:outShape[0],:outShape[1]]
+            
+            # Given the resizing, determine some valid crop areas
+            maxValidCropStart = [resizedImage.shape[i] - outShape[i] for i in range(2)]
+            #print(maxValidCropStart)
+            cropSet = [np.floor(np.random.uniform(low=0,high=maxValidCropStart[0])).astype(int), \
+                   np.floor(np.random.uniform(low=0,high=maxValidCropStart[1])).astype(int)]
+            
+            # Apply the cropping
+            croppedImage = resizedImage[cropSet[0]:cropSet[0]+outShape[0], \
+                                        cropSet[1]:cropSet[1]+outShape[1]]
+            croppedMask  = resizedMask [cropSet[0]:cropSet[0]+outShape[0], \
+                                        cropSet[1]:cropSet[1]+outShape[1]]
+            
+            # Set as final image to output
+            finalAugmentedImage = croppedImage
             finalAugmentedMask = croppedMask
             
             # Write the augmented image and mask to file
@@ -257,8 +271,14 @@ if __name__ == "__main__":
     
     if not os.path.exists("augmentedSequences"):
         os.mkdir("augmentedSequences")
+    '''
     augment_sequence(os.path.join("sequences","defaultGreenscreenVideo_over_PHO_hallway","frame_"),
                      os.path.join("sequences","defaultGreenscreenVideo_over_PHO_hallway","mask_"),
                      os.path.join("augmentedSequences","defaultGreenscreenVideo_over_PHO_hallway"),
+                     iStart=330, iEnd=332)
+    '''
+    augment_sequence(os.path.join("sequences","defaultGreenscreenVideo_over_BOS_trainSidewalk","frame_"),
+                     os.path.join("sequences","defaultGreenscreenVideo_over_BOS_trainSidewalk","mask_"),
+                     os.path.join("augmentedSequences","defaultGreenscreenVideo_over_BOS_trainSidewalk"),
                      iStart=330, iEnd=332)
     
