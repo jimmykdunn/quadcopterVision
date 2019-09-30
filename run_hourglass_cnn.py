@@ -199,7 +199,7 @@ EXAMPLE:
 RETURNS:
     Floating point masks for each boolean mask in the input set
 """
-def booleanMaskToPlusMinus(booleanMask, trueVal=1, falseVal=-1):
+def booleanMaskToPlusMinus(booleanMask, trueVal=1, falseVal=-0.01):
     plusMinusMask = np.zeros(booleanMask.shape)
     plusMinusMask[booleanMask] = trueVal
     plusMinusMask[np.logical_not(booleanMask)] = falseVal
@@ -424,17 +424,17 @@ if __name__ == "__main__":
     
     #print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
 
-    '''
+    
     # Get the MNIST handwritten-digit data
     x_train, y_train, x_test, y_test = mnist.getMNISTData()
     checkpointSaveDir = "./mnist_hourglass_nn_save";
     # Make MNIST mask truth by simple thresholding
-    y_train_pmMask = booleanMaskToPlusMinus(makeThresholdMask(x_train))
-    y_test_pmMask  = booleanMaskToPlusMinus(makeThresholdMask(x_test))
+    y_train_pmMask = booleanMaskToPlusMinus(makeThresholdMask(x_train),trueVal=1,falseVal=0.1)
+    y_test_pmMask  = booleanMaskToPlusMinus(makeThresholdMask(x_test), trueVal=1,falseVal=0.1)
     peekEveryNEpochs=50
     saveEveryNEpochs=100
-    '''
     
+    '''
     # Get homebrewed video sequences and corresponding masks
     print("Reading augmented image and mask sequences")
     x_all, y_all = vu.pull_aug_sequence(
@@ -454,7 +454,7 @@ if __name__ == "__main__":
     y_test_pmMask  = booleanMaskToPlusMinus(y_test)
     peekEveryNEpochs=1
     saveEveryNEpochs=10
-    
+    '''
     
     # Run the complete training on the hourglass neural net
     heatmaps = train_hourglass_nn(x_train, y_train_pmMask, x_test, y_test_pmMask, 
