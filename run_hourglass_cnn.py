@@ -375,6 +375,9 @@ def train_hourglass_nn(trainImages, trainMasks, testImages, testMasks, \
             if epoch % peekEveryNEpochs == (peekEveryNEpochs-1):
                 trainGain = gain.eval(feed_dict={b_images: batch[0], b_masks: batch[1]})
                 print('epoch %d of %d, training gain %g' % (epoch+1, nEpochs, trainGain))
+                testBatch = extractBatch(10, testImages, testMasks, 0)
+                testGain = gain.eval(feed_dict={b_images: testBatch[0], b_masks: testBatch[1]})
+                print('epoch %d of %d, test gain %g' % (epoch+1, nEpochs, testGain))
             
             # Print elapsed time every peekEveryNEpochs epochs
             if epoch % peekEveryNEpochs == (peekEveryNEpochs-1):
@@ -416,6 +419,9 @@ Build and train the hourglass CNN from the main level when this file is called.
 """
 
 if __name__ == "__main__":  
+    
+    #print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
+
     '''
     # Get the MNIST handwritten-digit data
     x_train, y_train, x_test, y_test = mnist.getMNISTData()
@@ -423,6 +429,8 @@ if __name__ == "__main__":
     # Make MNIST mask truth by simple thresholding
     y_train_pmMask = booleanMaskToPlusMinus(makeThresholdMask(x_train))
     y_test_pmMask  = booleanMaskToPlusMinus(makeThresholdMask(x_test))
+    peekEveryNEpochs=50
+    saveEveryNEpochs=100
     '''
     
     # Get homebrewed video sequences and corresponding masks
@@ -431,19 +439,22 @@ if __name__ == "__main__":
         os.path.join("augmentedSequences","defaultGreenscreenVideo_over_BOS_trainSidewalk","augImage_"),
         os.path.join("augmentedSequences","defaultGreenscreenVideo_over_BOS_trainSidewalk","augMask_"))
     checkpointSaveDir = "./homebrew_hourglass_nn_save";
-    nBatch, nWidth, nHeight, nColors = x_all.shape
+    nBatch, nWidth, nHeight = x_all.shape
     # Simple first/last train-test split
     print("Splitting into training/testing sets")
     nbTrain = int(nBatch * 0.8)
-    x_train, x_test = [x_all[:nbTrain,:,:,:], x_all[nbTrain:,:,:,:]]
-    y_train, y_test = [y_all[:nbTrain,:,:],   y_all[nbTrain:,:,:]]
+    x_train, x_test = [x_all[:nbTrain,:,:], x_all[nbTrain:,:,:]]
+    y_train, y_test = [y_all[:nbTrain,:,:], y_all[nbTrain:,:,:]]
     y_train_pmMask = booleanMaskToPlusMinus(y_train)
     y_test_pmMask  = booleanMaskToPlusMinus(y_test)
+    peekEveryNEpochs=1
+    saveEveryNEpochs=10
     
     
     # Run the complete training on the hourglass neural net
-    heatmaps = train_hourglass_nn(x_train, y_train_pmMask, x_test, y_test_pmMask, \
-                                  checkpointSaveDir = checkpointSaveDir)
+    heatmaps = train_hourglass_nn(x_train, y_train_pmMask, x_test, y_test_pmMask, 
+        checkpointSaveDir = checkpointSaveDir, peekEveryNEpochs = peekEveryNEpochs,
+        saveEveryNEpochs=saveEveryNEpochs)
         
     # Write out the first few heatmaps to file along with the associated
     # test data inputs for visualization

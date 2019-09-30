@@ -215,6 +215,9 @@ def pull_aug_sequence(inImageBase, inMaskBase, ext='.jpg', color=False):
         # end if imagePrefix in imageName
     # end for imageName in imagePath
     
+    if not color:
+        imageStack = imageStack[:,:,:,0]
+    
     return imageStack, maskStack
     
 """
@@ -478,5 +481,5 @@ if __name__ == "__main__":
     augment_sequence(os.path.join("sequences","defaultGreenscreenVideo_over_BOS_trainSidewalk","frame_"),
                      os.path.join("sequences","defaultGreenscreenVideo_over_BOS_trainSidewalk","mask_"),
                      os.path.join("augmentedSequences","defaultGreenscreenVideo_over_BOS_trainSidewalk"),
-                     iStart=330, iEnd=400)
+                     iStart=330, iEnd=340)
     
