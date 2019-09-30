@@ -38,7 +38,7 @@ def pull_video(inFile):
     assert inStream.isOpened()
     width,height = int(inStream.get(3)), int(inStream.get(4))
     
-    outVideo = np.zeros([None,width,height,3])
+    outVideo = np.zeros([0,width,height,3])
        
     try:
         # Read in the video frame-by-frame
@@ -51,7 +51,7 @@ def pull_video(inFile):
             if not success:
                 break
            
-            outVideo = np.concatenate(outVideo,frame,axis=0)
+            outVideo = np.concatenate([outVideo,frame],axis=0)
             
             iFrame += 1
         # while success
@@ -107,13 +107,13 @@ def pull_sequence(inFileBase, ext='.jpg', iStart=0, iEnd=-1, color=False,
         print("Problem opening " + fullFilename)
         return -1
         
-    print("Video dimensions: (%d,%d)" % (width, height))
+    #print("Video dimensions: (%d,%d)" % (width, height))
     
     # Initialize output video array
     outVideo = np.zeros([1,width,height,nColors])
     outVideo[0,:,:,:] = frame
     index += 1
-    print("Outvideo dimensions:", outVideo.shape)
+    #print("Outvideo dimensions:", outVideo.shape)
     
     while True:
         if index >= iEnd and iEnd != -1:
@@ -141,6 +141,76 @@ def pull_sequence(inFileBase, ext='.jpg', iStart=0, iEnd=-1, color=False,
     
     return outVideo
     
+"""
+FUNCTION:
+    pull_aug_sequence() 
+    
+DESCRIPTION:
+    Uses cv2 to pull an augmented series of images. These images have a file
+    format of "[path]/[name]_####_@@@@.[ext]", where "####" represents the 
+    temporal frame number, and "@@@@" represents the index of an applied
+    augmentation to that frame.  The corresponding truth masks are read in 
+    simultaneously to ensure that they match one another.
+    
+INPUTS: 
+    inImageBase: path+prefix to the desired image sequence. For example, to read
+        all frames named "augImage_####_@@@@.jpg", set inFileBase="augImage_"
+    inMaskBase: path+prefix to the desired mask sequence. For example, to read
+        all masks named "augMask_####_@@@@.jpg", set inFileBase="augMask_"
+OPTIONAL INPUTS:
+    ext: filename extension, including '.' (default '.jpg')
+    color: set to True to use color channel (default False)
+    
+RETURNS: 
+    Series of augmented frames as a [nframes,nx,ny,nColors] 4D array
+"""
+def pull_aug_sequence(inImageBase, inMaskBase, ext='.jpg', color=False):
+    imagePath,imagePrefix = os.path.split(inImageBase)
+    maskPath, maskPrefix  = os.path.split(inMaskBase)
+    
+    stackStarted = False
+    
+    # Iterate over every file in the directory
+    for imageName in os.listdir(imagePath):
+        # Pull only if the image name prefix is in the filename
+        if imagePrefix in imageName:
+            indexString = imageName[len(imagePrefix):].split('.')[0]
+            
+            # Loop over the masks in the mask directory
+            matchingMaskFound = False
+            for maskName in os.listdir(maskPath):
+                # Find the mask with the index matching the image
+                if indexString in maskName and maskPrefix in maskName:
+                    matchingMaskFound = True
+                    
+                    # Read in both the image and the mask as a pair
+                    image = cv2.imread(inImageBase+indexString+ext)
+                    mask  = cv2.imread(inMaskBase +indexString+ext)
+                    width, height, nColors = image.shape
+                    if not color:
+                        image = image[:,:,0] # just pull 1st channel
+                        nColors = 1
+                    mask = mask[:,:,0] # just pull 1st channel, masks are always B/W
+                    
+                    # Create stacks if this is the first image read in
+                    if not stackStarted:
+                        imageStack = np.zeros([0,width,height,nColors])
+                        maskStack  = np.zeros([0,width,height])
+                        stackStarted = True
+                    
+                    # Reshape nicely and add to the stacks
+                    image = np.reshape(image,[1,width,height,nColors])
+                    mask  = np.reshape(mask, [1,width,height])
+                    imageStack = np.concatenate([imageStack,image],axis=0)
+                    maskStack  = np.concatenate([maskStack ,mask] ,axis=0)
+                # end if mask index matches image index
+            # end for mask name in maskPath
+            if not matchingMaskFound:
+                print("WARNING: Could not find a mask matching " + imageName+indexString+ext)
+        # end if imagePrefix in imageName
+    # end for imageName in imagePath
+    
+    return imageStack, maskStack
     
 """
 FUNCTION:
@@ -185,6 +255,8 @@ def augment_sequence(inImageFileBase, inMaskFileBase, outputFolder,
                      ext='.jpg', iStart=0, iEnd=-1, color=False, 
                      invert=False, outShape=[256,256]):
     
+    print("Applying random augmentations to images in " + inImageFileBase)
+    
     # Make output directory if it does not yet exist
     if not os.path.exists(outputFolder):
         os.mkdir(outputFolder)
@@ -196,8 +268,10 @@ def augment_sequence(inImageFileBase, inMaskFileBase, outputFolder,
             break
         
         # Use pull_sequence with iStart=iEnd to just get one at a time
+        print("Pulling image %d from file" % rawIndex)
         rawImage = pull_sequence(inImageFileBase, iStart=rawIndex, iEnd=rawIndex,
                                  ext=ext, color=color, invert=invert)
+        print("  Pulling corresponding mask sequence from file")
         rawMask = pull_sequence(inMaskFileBase, iStart=rawIndex, iEnd=rawIndex,
                                  ext=ext, color=False, invert=False)
         rawImage = np.squeeze(rawImage) # remove singleton dimensions
@@ -212,30 +286,42 @@ def augment_sequence(inImageFileBase, inMaskFileBase, outputFolder,
         # always applying the same crop and resize to the image and its
         # corresponding mask.
         # Determine valid resizes and draw some randomly
-        nbRandomCropResize = 8           
+        nbRandomCropResize = 8   
+        nbRandomBrightContrast = 4
+        nbRandomNoise = 4
         for iCropResize in range(nbRandomCropResize):
+            print("  Applying random crop/resize %d of %d" % (iCropResize,nbRandomCropResize))
             # Resize the image and mask
             resizedImage, resizedMask = random_resize(rawImage, rawMask, outShape)
             
+            # Rotate here?? Ensure only valid area is cropped to
+            #rotatedImage, rotatedMask = random_rotation(resizedImage, resizedMask, outShape)
+                        
             # Crop the image and mask randomly
             croppedImage, croppedMask = random_crop(resizedImage, resizedMask, outShape)
+                        
+            # Apply random brightness/contrast adjustments to the image
+            for iBC in range(nbRandomBrightContrast):
+                bcImage = random_bright_contrast(croppedImage)
+                bcMask = croppedMask # brightness/contrast do not effect the mask
             
+                # Set as final image to output
+                finalAugmentedImage = bcImage
+                finalAugmentedMask = bcMask
             
-            # Set as final image to output
-            finalAugmentedImage = croppedImage
-            finalAugmentedMask = croppedMask
-            
-            # Write the augmented image and mask to file
-            augImageFileStr = os.path.join(outputFolder,
-                'augImage_%04d_%04d' % (rawIndex, iAugmentation) + ext)
-            augMaskFileStr = os.path.join(outputFolder,
-                'augMask_%04d_%04d' % (rawIndex, iAugmentation) + ext)
-            cv2.imwrite(augImageFileStr,np.squeeze(finalAugmentedImage))
-            cv2.imwrite(augMaskFileStr, np.squeeze(finalAugmentedMask))
-            iAugmentation += 1
+                # Write the augmented image and mask to file
+                augImageFileStr = os.path.join(outputFolder,
+                    'augImage_%04d_%04d' % (rawIndex, iAugmentation) + ext)
+                augMaskFileStr = os.path.join(outputFolder,
+                    'augMask_%04d_%04d' % (rawIndex, iAugmentation) + ext)
+                cv2.imwrite(augImageFileStr,np.squeeze(finalAugmentedImage))
+                cv2.imwrite(augMaskFileStr, np.squeeze(finalAugmentedMask))
+                iAugmentation += 1
         
         rawIndex += 1
     # end while loop over raw images
+    
+    print("Augmented images written to " + outputFolder)
     
 # end augment_sequence()
   
@@ -299,6 +385,63 @@ def random_crop(image, mask, outShape):
                          
     return croppedImage, croppedMask  
     
+  
+'''
+FUNCTION:
+    random_rotation() 
+    
+DESCRIPTION:
+    Applies a random valid rotation to the input image and corresponding mask.
+    
+INPUTS: 
+    image: image to rotate (2D for now, no colors)
+    mask: mask to rotate. Must be same shape as image
+    outShape: Output shape that image and mask will be cropped to
+OPTIONAL INPUTS:
+    rotationBoundsDeg: [smallest,largest] allowed rotation in degrees CCW 
+                       (default [-30,+30])
+RETURNS: 
+    rotImage: image with random rotation applied
+    rotMask: mask with randome rotation applied
+'''
+def random_rotation(image, mask, outShape, rotationBoundsDeg=[-30.0,30.0]):
+    # Determine a random rotation angle
+    angle = np.random.uniform(low=rotationBoundsDeg[0],high=rotationBoundsDeg[1])
+    
+    # Rotate the image and mask by the random angle
+    rotImage = cv2.imutils.rotate(image,angle)
+    rotMask = cv2.imutils.rotate(mask,angle)
+                         
+    return rotImage, rotMask  
+
+
+'''
+FUNCTION:
+    random_bright_contrast() 
+    
+DESCRIPTION:
+    Applies a random brightness and contrast adjustment to the input image
+    
+INPUTS: 
+    image: image to adjust (2D for now, no colors)
+OPTIONAL INPUTS:
+    alphaRange: allowable range of contrast adjustments (default [0.7,1.3])
+    betaRange: allowable range of brightness adjustments (default [0.7,1.3])
+RETURNS: 
+    bcImage: image with adjusted contrast and brightness
+'''
+def random_bright_contrast(image,alphaRange=[0.7,1.3],betaRange=[0.7,1.3]):
+    # Determine a random alpha (contrast adjustment)
+    alpha = np.random.uniform(low=alphaRange[0],high=alphaRange[1])
+    
+    # Determine a random beta (brightness adjustment)
+    beta  = np.random.uniform(low=betaRange[0], high=betaRange[1])
+    
+    # Apply the contrast adjustment (alpha), and brightness adjustment (beta)
+    bcImage = cv2.add(cv2.multiply(image,alpha), beta)
+    
+    return bcImage
+
 # Testing here
 if __name__ == "__main__":
     '''
