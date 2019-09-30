@@ -99,18 +99,19 @@ def conv2d(x, W):
   return tf.nn.conv2d(x,W,stride,padding)
 
 """
-Wrapper for tensorflow 2x2 maxpooling.
+Wrapper for tensorflow maxpooling.
 INPUTS:
     x: input to the maxpooling layer. Tensor [-1,width,height,nChannels]
+    kernelSize: size of kernel.  Forced to be square.
 EXAMPLE:
-    output = max_pool_2x2(x,W)
+    output = max_pool(x,W)
 RETURNS:
     Result of the maxpooling layer - half the widht and height of input x.
     Full-stride.
 """
-def max_pool_2x2(x):
-  ksize = [1,2,2,1]
-  strides = [1,2,2,1]
+def max_pool(x,kernelSize):
+  ksize = [1,kernelSize,kernelSize,1]
+  strides = [1,kernelSize,kernelSize,1]
   padding = 'SAME'
   return tf.nn.max_pool(x,ksize,strides,padding)
 
@@ -237,7 +238,7 @@ def hourglass_nn(x):
 
     # Pooling layer - downsamples by 2X.
     with tf.name_scope('pool1'):
-        h_pool1 = max_pool_2x2(h_conv1) # [-1,14,14,32]
+        h_pool1 = max_pool(h_conv1,2) # [-1,14,14,32]
 
     # Second convolutional layer -- maps 32 feature maps to 64.
     with tf.name_scope('conv2'):
@@ -246,7 +247,7 @@ def hourglass_nn(x):
 
     # Second pooling layer.
     with tf.name_scope('pool2'):
-        h_pool2 = max_pool_2x2(h_conv2) # [-1,7,7,64]  
+        h_pool2 = max_pool(h_conv2,2) # [-1,7,7,64]  
 
     # Remember the order is skip-connection THEN upconv
     # x_image shape is [-1,28,28,1]
@@ -424,7 +425,7 @@ if __name__ == "__main__":
     
     #print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
 
-    '''
+    
     # Get the MNIST handwritten-digit data
     x_train, y_train, x_test, y_test = mnist.getMNISTData()
     checkpointSaveDir = "./mnist_hourglass_nn_save";
@@ -433,8 +434,8 @@ if __name__ == "__main__":
     y_test_pmMask  = booleanMaskToPlusMinus(makeThresholdMask(x_test), trueVal=1,falseVal=-0.1)
     peekEveryNEpochs=50
     saveEveryNEpochs=100
-    '''
     
+    '''
     # Get homebrewed video sequences and corresponding masks
     print("Reading augmented image and mask sequences")
     x_all, y_all = vu.pull_aug_sequence(
@@ -454,7 +455,7 @@ if __name__ == "__main__":
     y_test_pmMask  = booleanMaskToPlusMinus(y_test)
     peekEveryNEpochs=1
     saveEveryNEpochs=10
-    
+    '''
     
     # Run the complete training on the hourglass neural net
     heatmaps = train_hourglass_nn(x_train, y_train_pmMask, x_test, y_test_pmMask, 
