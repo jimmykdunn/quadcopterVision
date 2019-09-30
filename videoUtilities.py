@@ -217,6 +217,9 @@ def pull_aug_sequence(inImageBase, inMaskBase, ext='.jpg', color=False):
     
     if not color:
         imageStack = imageStack[:,:,:,0]
+        
+    # Normalize image
+    imageStack /= 255.0
     
     return imageStack, maskStack
     
@@ -472,14 +475,14 @@ if __name__ == "__main__":
     
     if not os.path.exists("augmentedSequences"):
         os.mkdir("augmentedSequences")
-    '''
+    
     augment_sequence(os.path.join("sequences","defaultGreenscreenVideo_over_PHO_hallway","frame_"),
                      os.path.join("sequences","defaultGreenscreenVideo_over_PHO_hallway","mask_"),
                      os.path.join("augmentedSequences","defaultGreenscreenVideo_over_PHO_hallway"),
-                     iStart=330, iEnd=332)
+                     iStart=330, iEnd=340)
     '''
     augment_sequence(os.path.join("sequences","defaultGreenscreenVideo_over_BOS_trainSidewalk","frame_"),
                      os.path.join("sequences","defaultGreenscreenVideo_over_BOS_trainSidewalk","mask_"),
                      os.path.join("augmentedSequences","defaultGreenscreenVideo_over_BOS_trainSidewalk"),
                      iStart=330, iEnd=340)
-    
+    '''

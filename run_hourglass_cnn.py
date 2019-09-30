@@ -188,10 +188,12 @@ def makeThresholdMask(images, threshold = 0.5):
 """
 Takes a boolean mask and makes the True pixels +1 and the False pixels -1.
 Values to replace true and false pixels by are overrideable with keywords.
+Ratio of |falseVal| to trueVal should be approximately the expected ratio of 
+target pixels to non-target pixels in imagery to maintain a balanced PD/PFa.
 INPUTS:
     masks: boolean masks to threshold to get a binary mask. [-1,nx,ny]
     trueVal  (optional): value to repalce true  pixels by. Default +1
-    falseVal (optional): value to repalce false pixels by. Default -1
+    falseVal (optional): value to repalce false pixels by. Default -0.01
 EXAMPLE:
     plusMinusMask = booleanMaskToPlusMinus(booleanMasks)
 RETURNS:
@@ -436,8 +438,11 @@ if __name__ == "__main__":
     # Get homebrewed video sequences and corresponding masks
     print("Reading augmented image and mask sequences")
     x_all, y_all = vu.pull_aug_sequence(
-        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_BOS_trainSidewalk","augImage_"),
-        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_BOS_trainSidewalk","augMask_"))
+        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_PHO_hallway","augImage_"),
+        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_PHO_hallway","augMask_"))
+    #x_all, y_all = vu.pull_aug_sequence(
+    #    os.path.join("augmentedSequences","defaultGreenscreenVideo_over_BOS_trainSidewalk","augImage_"),
+    #    os.path.join("augmentedSequences","defaultGreenscreenVideo_over_BOS_trainSidewalk","augMask_"))
     checkpointSaveDir = "./homebrew_hourglass_nn_save";
     nBatch, nWidth, nHeight = x_all.shape
     # Simple first/last train-test split
