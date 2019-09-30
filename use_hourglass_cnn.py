@@ -85,7 +85,7 @@ def twoTest(modelPath):
     print('Wrote ' + os.path.join('heatmaps','twoTest.png'))
     plt.imshow(joined)
     
-# Example of a siz being drawn
+# Example of a six being drawn
 def sixTest(modelPath):
     dataPath = os.path.join('.','mnist','jimmyDraws_6Blk.png')
     datapoint = np.mean(cv2.imread(dataPath),axis=2)/float(255)
@@ -101,11 +101,30 @@ def sixTest(modelPath):
     cv2.imwrite(os.path.join('heatmaps','sixTest.png'), joined)
     print('Wrote ' + os.path.join('heatmaps','sixTest.png'))
     plt.imshow(joined)
+    
+# Example quadcopter frame
+def quadcopterTest(modelPath):
+    dataPath = os.path.join('.','PHO_quadcopterTest.jpg')
+    datapoint = cv2.imread(dataPath)
+    datapoint = np.mean(datapoint,axis=2)/float(255)
+    print("Running CNN at " + modelPath + " on " + dataPath)
+    heatmap = use_hourglass_cnn(modelPath, 
+                         np.reshape(datapoint,[1,datapoint.shape[0],datapoint.shape[1]]),
+                         numTimingTrials=100)
+    
+    # Join heatmap and actual image to a single array for output
+    heatmapOutArray = np.squeeze(heatmap[0,:])*255.0
+    testOutArray = np.squeeze(datapoint)*255.0
+    joined = np.concatenate([testOutArray, heatmapOutArray],axis=0)
+    cv2.imwrite(os.path.join('heatmaps','quadcopterTest.png'), joined)
+    print('Wrote ' + os.path.join('heatmaps','quadcopterTest.png'))
+    plt.imshow(joined)
             
 # Run with defaults if at highest level
 if __name__ == "__main__":
     
-    twoTest(os.path.join('mnist_hourglass_nn_save','model_at100.ckpt'))
+    #twoTest(os.path.join('mnist_hourglass_nn_save','model_at100.ckpt'))
+    #print("\n\n")
+    #sixTest(os.path.join('mnist_hourglass_nn_save','model_at100.ckpt'))
     print("\n\n")
-    sixTest(os.path.join('mnist_hourglass_nn_save','model_at100.ckpt'))
-    
+    quadcopterTest(os.path.join('homebrew_hourglass_nn_save','model_at20.ckpt'))
