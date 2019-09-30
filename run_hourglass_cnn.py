@@ -416,20 +416,30 @@ Build and train the hourglass CNN from the main level when this file is called.
 """
 
 if __name__ == "__main__":  
-    
+    '''
     # Get the MNIST handwritten-digit data
     x_train, y_train, x_test, y_test = mnist.getMNISTData()
     checkpointSaveDir = "./mnist_hourglass_nn_save";
-    
-    # Get homebrewed video data
-    #x_train = vu.pull_video("defaultGreenscreenVideo_over_PHO_hallway.avi")
-    #y_train = vu.pull_video()
-    #x_test  = vu.pull_video()
-    #y_test  = vu.pull_video()
-    
-    # Make mask truth by simple thresholding
+    # Make MNIST mask truth by simple thresholding
     y_train_pmMask = booleanMaskToPlusMinus(makeThresholdMask(x_train))
     y_test_pmMask  = booleanMaskToPlusMinus(makeThresholdMask(x_test))
+    '''
+    
+    # Get homebrewed video sequences and corresponding masks
+    print("Reading augmented image and mask sequences")
+    x_all, y_all = vu.pull_aug_sequence(
+        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_BOS_trainSidewalk","augImage_"),
+        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_BOS_trainSidewalk","augMask_"))
+    checkpointSaveDir = "./homebrew_hourglass_nn_save";
+    nBatch, nWidth, nHeight, nColors = x_all.shape
+    # Simple first/last train-test split
+    print("Splitting into training/testing sets")
+    nbTrain = int(nBatch * 0.8)
+    x_train, x_test = [x_all[:nbTrain,:,:,:], x_all[nbTrain:,:,:,:]]
+    y_train, y_test = [y_all[:nbTrain,:,:],   y_all[nbTrain:,:,:]]
+    y_train_pmMask = booleanMaskToPlusMinus(y_train)
+    y_test_pmMask  = booleanMaskToPlusMinus(y_test)
+    
     
     # Run the complete training on the hourglass neural net
     heatmaps = train_hourglass_nn(x_train, y_train_pmMask, x_test, y_test_pmMask, \

@@ -169,6 +169,7 @@ def pull_aug_sequence(inImageBase, inMaskBase, ext='.jpg', color=False):
     maskPath, maskPrefix  = os.path.split(inMaskBase)
     
     stackStarted = False
+    stackCount = 0
     
     # Iterate over every file in the directory
     for imageName in os.listdir(imagePath):
@@ -182,6 +183,10 @@ def pull_aug_sequence(inImageBase, inMaskBase, ext='.jpg', color=False):
                 # Find the mask with the index matching the image
                 if indexString in maskName and maskPrefix in maskName:
                     matchingMaskFound = True
+                    #print("Reading image and mask with suffix " + indexString)
+                    stackCount += 1
+                    if stackCount % 100 == 99:
+                        print("Read %d images" % (stackCount+1))
                     
                     # Read in both the image and the mask as a pair
                     image = cv2.imread(inImageBase+indexString+ext)
@@ -195,12 +200,12 @@ def pull_aug_sequence(inImageBase, inMaskBase, ext='.jpg', color=False):
                     # Create stacks if this is the first image read in
                     if not stackStarted:
                         imageStack = np.zeros([0,width,height,nColors])
-                        maskStack  = np.zeros([0,width,height])
+                        maskStack  = np.zeros([0,width,height]) == 1
                         stackStarted = True
                     
                     # Reshape nicely and add to the stacks
                     image = np.reshape(image,[1,width,height,nColors])
-                    mask  = np.reshape(mask, [1,width,height])
+                    mask  = np.reshape(mask, [1,width,height]) < 1
                     imageStack = np.concatenate([imageStack,image],axis=0)
                     maskStack  = np.concatenate([maskStack ,mask] ,axis=0)
                 # end if mask index matches image index
@@ -473,5 +478,5 @@ if __name__ == "__main__":
     augment_sequence(os.path.join("sequences","defaultGreenscreenVideo_over_BOS_trainSidewalk","frame_"),
                      os.path.join("sequences","defaultGreenscreenVideo_over_BOS_trainSidewalk","mask_"),
                      os.path.join("augmentedSequences","defaultGreenscreenVideo_over_BOS_trainSidewalk"),
-                     iStart=330, iEnd=332)
+                     iStart=330, iEnd=400)
     
