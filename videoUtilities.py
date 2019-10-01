@@ -300,7 +300,7 @@ def augment_sequence(inImageFileBase, inMaskFileBase, outputFolder,
         nbRandomCropResize = 8   
         nbRandomBrightContrast = 4
         nbRandomNoise = 4
-        print("Applying %d augmentations" % nbRandomCropResize*nbRandomBrightContrast)
+        print("Applying %d augmentations" % (nbRandomCropResize*nbRandomBrightContrast))
         for iCropResize in range(nbRandomCropResize):
             #print("  Applying random crop/resize %d of %d" % (iCropResize,nbRandomCropResize))
             # Resize the image and mask
@@ -479,8 +479,8 @@ if __name__ == "__main__":
     
     augment_sequence(os.path.join("sequences","defaultGreenscreenVideo_over_PHO_hallway","frame_"),
                      os.path.join("sequences","defaultGreenscreenVideo_over_PHO_hallway","mask_"),
-                     os.path.join("augmentedSequences","defaultGreenscreenVideo_over_PHO_hallway"),
-                     iStart=250, iEnd=-1, outShape=[32,32])
+                     os.path.join("augmentedSequences","defaultGreenscreenVideo_over_PHO_hallway_64x64"),
+                     iStart=250, iEnd=-1, outShape=[64,64])
     '''
     augment_sequence(os.path.join("sequences","defaultGreenscreenVideo_over_BOS_trainSidewalk","frame_"),
                      os.path.join("sequences","defaultGreenscreenVideo_over_BOS_trainSidewalk","mask_"),

@@ -238,8 +238,8 @@ def hourglass_nn(x):
 
     # Pooling layer - downsamples by 2X.
     with tf.name_scope('pool1'):
-        h_pool1 = max_pool(h_conv1,2) # [-1,14,14,32]
-        #h_pool1 = max_pool(h_conv1,4)
+        #h_pool1 = max_pool(h_conv1,2) # [-1,14,14,32]
+        h_pool1 = max_pool(h_conv1,4)
 
     # Second convolutional layer -- maps 32 feature maps to 64.
     with tf.name_scope('conv2'):
@@ -267,8 +267,8 @@ def hourglass_nn(x):
         
     with tf.name_scope('upconv1'):
         h_sk1 = addSkipConnection(h_upconv1, h_pool1) # skip connection [-1,14,14,64]
-        wu1 = weight_variable([2,2,1,64])
-        #wu1 = weight_variable([4,4,1,64])
+        #wu1 = weight_variable([2,2,1,64])
+        wu1 = weight_variable([4,4,1,64])
         heatmaps = tf.nn.relu(upconv2d(h_sk1, wu1)) # [-1,28,28,1]
         
     # The size of heatmap here should be [batch,28,28,1] for NMIST
@@ -445,8 +445,8 @@ if __name__ == "__main__":
     # Get homebrewed video sequences and corresponding masks
     print("Reading augmented image and mask sequences")
     x_all, y_all = vu.pull_aug_sequence(
-        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_PHO_hallway","augImage_"),
-        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_PHO_hallway","augMask_"))
+        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_PHO_hallway_64x64","augImage_"),
+        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_PHO_hallway_64x64","augMask_"))
     #x_all, y_all = vu.pull_aug_sequence(
     #    os.path.join("augmentedSequences","defaultGreenscreenVideo_over_BOS_trainSidewalk","augImage_"),
     #    os.path.join("augmentedSequences","defaultGreenscreenVideo_over_BOS_trainSidewalk","augMask_"))
@@ -459,9 +459,9 @@ if __name__ == "__main__":
     y_train, y_test = [y_all[:nbTrain,:,:], y_all[nbTrain:,:,:]]
     y_train_pmMask = booleanMaskToPlusMinus(y_train)
     y_test_pmMask  = booleanMaskToPlusMinus(y_test)
-    peekEveryNEpochs=50
-    saveEveryNEpochs=100
-    nEpochs = 1000
+    peekEveryNEpochs=25
+    saveEveryNEpochs=25
+    nEpochs = 4000
     
     
     # Run the complete training on the hourglass neural net
