@@ -233,25 +233,24 @@ def hourglass_nn(x):
 
     # First convolutional layer - maps one grayscale image to 32 feature maps.
     with tf.name_scope('conv1'):
-        #MNIST#w1 = weight_variable([5,5,1,32])
         w1 = weight_variable([5,5,1,32])
         h_conv1 = tf.nn.relu(conv2d(x_image,w1)) # [-1,28,28,32]
 
     # Pooling layer - downsamples by 2X.
     with tf.name_scope('pool1'):
-        #MNIST#h_pool1 = max_pool(h_conv1,2) # [-1,14,14,32]
-        h_pool1 = max_pool(h_conv1,4)
+        h_pool1 = max_pool(h_conv1,2) # [-1,14,14,32]
+        #h_pool1 = max_pool(h_conv1,4)
 
     # Second convolutional layer -- maps 32 feature maps to 64.
     with tf.name_scope('conv2'):
-        #MNIST#w2 = weight_variable([5,5,32,64]) 
         w2 = weight_variable([5,5,32,64]) 
+        #w2 = weight_variable([5,5,32,64]) 
         h_conv2 = tf.nn.relu(conv2d(h_pool1,w2)) # [-1,14,14,64]
 
     # Second pooling layer.
     with tf.name_scope('pool2'):
-        #MNIST#h_pool2 = max_pool(h_conv2,2) # [-1,7,7,64]  
-        h_pool2 = max_pool(h_conv2,4) # [-1,7,7,64]  
+        h_pool2 = max_pool(h_conv2,2) # [-1,7,7,64]  
+        #h_pool2 = max_pool(h_conv2,4) # [-1,7,7,64]  
 
     # Remember the order is skip-connection THEN upconv
     # x_image shape is [-1,28,28,1]
@@ -262,14 +261,14 @@ def hourglass_nn(x):
 
     with tf.name_scope('upconv2'):
         # No skip connection necessary on the innermost layer
-        #MNIST#wu2 = weight_variable([2,2,32,64])
-        wu2 = weight_variable([4,4,32,64])
+        wu2 = weight_variable([2,2,32,64])
+        #wu2 = weight_variable([4,4,32,64])
         h_upconv1 = tf.nn.relu(upconv2d(h_pool2, wu2)) # [-1,14,14,32]
         
     with tf.name_scope('upconv1'):
         h_sk1 = addSkipConnection(h_upconv1, h_pool1) # skip connection [-1,14,14,64]
-        #MNIST#wu1 = weight_variable([2,2,1,64])
-        wu1 = weight_variable([4,4,1,64])
+        wu1 = weight_variable([2,2,1,64])
+        #wu1 = weight_variable([4,4,1,64])
         heatmaps = tf.nn.relu(upconv2d(h_sk1, wu1)) # [-1,28,28,1]
         
     # The size of heatmap here should be [batch,28,28,1] for NMIST
@@ -440,6 +439,7 @@ if __name__ == "__main__":
     y_test_pmMask  = booleanMaskToPlusMinus(makeThresholdMask(x_test), trueVal=1,falseVal=-0.1)
     peekEveryNEpochs=50
     saveEveryNEpochs=100
+    nEpochs = 100
     '''
     
     # Get homebrewed video sequences and corresponding masks
@@ -459,14 +459,15 @@ if __name__ == "__main__":
     y_train, y_test = [y_all[:nbTrain,:,:], y_all[nbTrain:,:,:]]
     y_train_pmMask = booleanMaskToPlusMinus(y_train)
     y_test_pmMask  = booleanMaskToPlusMinus(y_test)
-    peekEveryNEpochs=1
-    saveEveryNEpochs=10
+    peekEveryNEpochs=50
+    saveEveryNEpochs=100
+    nEpochs = 1000
     
     
     # Run the complete training on the hourglass neural net
     heatmaps = train_hourglass_nn(x_train, y_train_pmMask, x_test, y_test_pmMask, 
         checkpointSaveDir = checkpointSaveDir, peekEveryNEpochs = peekEveryNEpochs,
-        saveEveryNEpochs=saveEveryNEpochs)
+        saveEveryNEpochs=saveEveryNEpochs, nEpochs=nEpochs)
         
     # Write out the first few heatmaps to file along with the associated
     # test data inputs for visualization

@@ -104,7 +104,7 @@ def sixTest(modelPath):
     
 # Example quadcopter frame
 def quadcopterTest(modelPath):
-    dataPath = os.path.join('.','PHO_quadcopterTest.jpg')
+    dataPath = os.path.join('.','PHO_babyQuadcopterTest.jpg')
     datapoint = cv2.imread(dataPath)
     datapoint = np.mean(datapoint,axis=2)/float(255)
     print("Running CNN at " + modelPath + " on " + dataPath)
@@ -127,4 +127,4 @@ if __name__ == "__main__":
     #print("\n\n")
     #sixTest(os.path.join('mnist_hourglass_nn_save','model_at100.ckpt'))
     print("\n\n")
-    quadcopterTest(os.path.join('homebrew_hourglass_nn_save','model_at20.ckpt'))
+    quadcopterTest(os.path.join('homebrew_hourglass_nn_save','model_at1000.ckpt'))

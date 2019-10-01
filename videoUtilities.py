@@ -300,8 +300,9 @@ def augment_sequence(inImageFileBase, inMaskFileBase, outputFolder,
         nbRandomCropResize = 8   
         nbRandomBrightContrast = 4
         nbRandomNoise = 4
+        print("Applying %d augmentations" % nbRandomCropResize*nbRandomBrightContrast)
         for iCropResize in range(nbRandomCropResize):
-            print("  Applying random crop/resize %d of %d" % (iCropResize,nbRandomCropResize))
+            #print("  Applying random crop/resize %d of %d" % (iCropResize,nbRandomCropResize))
             # Resize the image and mask
             resizedImage, resizedMask = random_resize(rawImage, rawMask, outShape)
             
@@ -356,7 +357,7 @@ def random_resize(image, mask, outShape):
     # Determine smallest scale factor that will still allow an outShape image
     # to be extracted afterwards.
     lowScl = np.max(np.divide(outShape,image.shape[1:3])) 
-    highScl = np.max([2*lowScl,1.0])
+    highScl = 2*lowScl
     scaleFactor = np.random.uniform(low=lowScl, high=highScl)
     outSizeSet = [np.ceil(dim * scaleFactor).astype(int) for dim in image.shape[1::-1]]
     
@@ -479,7 +480,7 @@ if __name__ == "__main__":
     augment_sequence(os.path.join("sequences","defaultGreenscreenVideo_over_PHO_hallway","frame_"),
                      os.path.join("sequences","defaultGreenscreenVideo_over_PHO_hallway","mask_"),
                      os.path.join("augmentedSequences","defaultGreenscreenVideo_over_PHO_hallway"),
-                     iStart=330, iEnd=340)
+                     iStart=250, iEnd=-1, outShape=[32,32])
     '''
     augment_sequence(os.path.join("sequences","defaultGreenscreenVideo_over_BOS_trainSidewalk","frame_"),
                      os.path.join("sequences","defaultGreenscreenVideo_over_BOS_trainSidewalk","mask_"),
