@@ -233,7 +233,8 @@ def hourglass_nn(x):
 
     # First convolutional layer - maps one grayscale image to 32 feature maps.
     with tf.name_scope('conv1'):
-        w1 = weight_variable([5,5,1,32])
+        #w1 = weight_variable([5,5,1,32])
+        w1 = weight_variable([7,7,1,32])
         h_conv1 = tf.nn.relu(conv2d(x_image,w1)) # [-1,28,28,32]
 
     # Pooling layer - downsamples by 2X.
@@ -243,8 +244,8 @@ def hourglass_nn(x):
 
     # Second convolutional layer -- maps 32 feature maps to 64.
     with tf.name_scope('conv2'):
-        w2 = weight_variable([5,5,32,64]) 
         #w2 = weight_variable([5,5,32,64]) 
+        w2 = weight_variable([7,7,32,64]) 
         h_conv2 = tf.nn.relu(conv2d(h_pool1,w2)) # [-1,14,14,64]
 
     # Second pooling layer.
@@ -347,6 +348,10 @@ def train_hourglass_nn(trainImages, trainMasks, testImages, testMasks, \
         gain = tf.reduce_mean(tf.cast(b_gainmaps,tf.float32))
         loss = tf.multiply(-1.0,gain)
         
+        # Perfect segementation would result in this gain value
+        booleanMask = tf.math.greater(b_masks,0)
+        perfectGain = tf.reduce_mean(tf.cast(booleanMask,tf.float32))
+        
     # Optimization calculation
     with tf.name_scope('adam_optimizer'):
         # Basic ADAM optimizer
@@ -382,10 +387,12 @@ def train_hourglass_nn(trainImages, trainMasks, testImages, testMasks, \
             # Check our progress on the training data every peekEveryNEpochs epochs
             if epoch % peekEveryNEpochs == (peekEveryNEpochs-1):
                 trainGain = gain.eval(feed_dict={b_images: batch[0], b_masks: batch[1]})
-                print('epoch %d of %d, training gain %g' % (epoch+1, nEpochs, trainGain))
+                perfectTrainGain = perfectGain.eval(feed_dict={b_images: batch[0], b_masks: batch[1]})
+                print('epoch %d of %d, training gain %g' % (epoch+1, nEpochs, trainGain/perfectTrainGain))
                 testBatch = extractBatch(10, testImages, testMasks, 0)
                 testGain = gain.eval(feed_dict={b_images: testBatch[0], b_masks: testBatch[1]})
-                print('epoch %d of %d, test gain %g' % (epoch+1, nEpochs, testGain))
+                perfectTestGain = perfectGain.eval(feed_dict={b_images: testBatch[0], b_masks: testBatch[1]})
+                print('epoch %d of %d, test gain %g' % (epoch+1, nEpochs, testGain/perfectTestGain))
             
             # Print elapsed time every peekEveryNEpochs epochs
             if epoch % peekEveryNEpochs == (peekEveryNEpochs-1):
@@ -450,7 +457,7 @@ if __name__ == "__main__":
     #x_all, y_all = vu.pull_aug_sequence(
     #    os.path.join("augmentedSequences","defaultGreenscreenVideo_over_BOS_trainSidewalk","augImage_"),
     #    os.path.join("augmentedSequences","defaultGreenscreenVideo_over_BOS_trainSidewalk","augMask_"))
-    checkpointSaveDir = "./homebrew_hourglass_nn_save";
+    checkpointSaveDir = "./homebrew_hourglass_nn_save_7x7convs";
     nBatch, nWidth, nHeight = x_all.shape
     # Simple first/last train-test split
     print("Splitting into training/testing sets")
