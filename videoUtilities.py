@@ -171,50 +171,59 @@ def pull_aug_sequence(inImageBase, inMaskBase, ext='.jpg', color=False):
     stackStarted = False
     stackCount = 0
     
-    # Iterate over every file in the directory
+    # Pre-read each image filename and create a dict with it
+    imageDict = {}
     for imageName in os.listdir(imagePath):
         # Pull only if the image name prefix is in the filename
         if imagePrefix in imageName:
             indexString = imageName[len(imagePrefix):].split('.')[0]
-            
-            # Loop over the masks in the mask directory
-            matchingMaskFound = False
-            for maskName in os.listdir(maskPath):
-                # Find the mask with the index matching the image
-                if indexString in maskName and maskPrefix in maskName:
-                    matchingMaskFound = True
-                    #print("Reading image and mask with suffix " + indexString)
-                    stackCount += 1
-                    if stackCount % 100 == 99:
-                        print("Read %d images" % (stackCount+1))
-                    
-                    # Read in both the image and the mask as a pair
-                    image = cv2.imread(inImageBase+indexString+ext)
-                    mask  = cv2.imread(inMaskBase +indexString+ext)
-                    width, height, nColors = image.shape
-                    if not color:
-                        image = image[:,:,0] # just pull 1st channel
-                        nColors = 1
-                    mask = mask[:,:,0] # just pull 1st channel, masks are always B/W
-                    
-                    # Create stacks if this is the first image read in
-                    if not stackStarted:
-                        imageStack = np.zeros([0,width,height,nColors])
-                        maskStack  = np.zeros([0,width,height]) == 1
-                        stackStarted = True
-                    
-                    # Reshape nicely and add to the stacks
-                    image = np.reshape(image,[1,width,height,nColors])
-                    mask  = np.reshape(mask, [1,width,height]) < 1
-                    imageStack = np.concatenate([imageStack,image],axis=0)
-                    maskStack  = np.concatenate([maskStack ,mask] ,axis=0)
-                # end if mask index matches image index
-            # end for mask name in maskPath
-            if not matchingMaskFound:
-                print("WARNING: Could not find a mask matching " + imageName+indexString+ext)
-        # end if imagePrefix in imageName
-    # end for imageName in imagePath
+            imageDict.update({indexString: imageName})
     
+    # Pre-read each mask filename and create a dict with it
+    maskDict = {}
+    for maskName in os.listdir(maskPath):
+        # Pull only if the mask name prefix is in the filename
+        if maskPrefix in maskName:
+            indexString = maskName[len(maskPrefix):].split('.')[0]
+            maskDict.update({indexString: maskName})
+    
+    
+    # Loop over each image, find matching mask if it is there, and read both
+    for indexString, imageName in imageDict.items():
+        if indexString in maskDict: # if matching mask exists
+            if stackCount % 100 == 99:
+                print("Read %d images" % (stackCount+1))
+            
+            # Read in both the image and the mask as a pair
+            image = cv2.imread(inImageBase+indexString+ext)
+            mask  = cv2.imread(inMaskBase +indexString+ext)
+            width, height, nColors = image.shape
+            if not color:
+                image = image[:,:,0] # just pull 1st channel
+                nColors = 1
+            mask = mask[:,:,0] # just pull 1st channel, masks are always B/W
+            
+            # Preallocate image and mask stacks for speed
+            if not stackStarted:
+                stackStarted = True
+                imageStack = np.zeros([len(imageDict),width,height,nColors])
+                maskStack  = np.zeros([len(imageDict),width,height]) == 1
+                        
+            # Reshape nicely and add to the stacks
+            image = np.reshape(image,[1,width,height,nColors])
+            mask  = np.reshape(mask, [1,width,height]) < 1
+            imageStack[stackCount,:,:,:] = image
+            maskStack[stackCount,:,:]  = mask
+            stackCount += 1
+        else:
+            print("WARNING: Could not find a mask matching " + imageName+indexString+ext)
+    # for all images
+    
+    # Trim off any unmatched images and masks
+    imageStack = imageStack[:stackCount,:,:,:]
+    maskStack  = maskStack [:stackCount,:,:]
+    
+    # Decolorize if so desired
     if not color:
         imageStack = imageStack[:,:,:,0]
         
