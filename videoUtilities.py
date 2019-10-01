@@ -16,6 +16,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import tensorflow as tf
+import random
 
 """
 FUNCTION:
@@ -463,6 +464,38 @@ def random_bright_contrast(image,alphaRange=[0.7,1.3],betaRange=[0.7,1.3]):
     
     return bcImage
 
+'''
+FUNCTION:
+    train_test_split() 
+    
+DESCRIPTION:
+    Applies a random train/test split to the images and masks with a given 
+    fraction as training data.
+    
+INPUTS: 
+    images: stack of images [nBatch,width,height,nChannels]
+    masks: stack of corresponding masks [nBatch,width,height]
+OPTIONAL INPUTS:
+    trainFraction: fraction of images as training (default 0.8)
+RETURNS: 
+    train_images: trainFraction of the input images
+    train_masks: trainFraction of the input masks corresponding to train_images
+    test_images: the other (1-trainFraction) of the input images
+    test_masks: the other (1-trainFraction) of the input masks corresponding to test_images
+'''
+def train_test_split(images, masks, trainFraction=0.8):
+    nBatch = images.shape[0]
+    indices = [i for i in range(nBatch)]
+    random.shuffle(indices)
+    nbTrain = int(nBatch*trainFraction)
+    train_images = images[indices[:nbTrain],:,:]
+    test_images = images[indices[nbTrain:],:,:]
+    train_masks = masks[indices[:nbTrain],:,:]
+    test_masks =  masks[indices[nbTrain:],:,:]
+    
+    return train_images, train_masks, test_images, test_masks
+    
+
 # Testing here
 if __name__ == "__main__":
     '''
@@ -485,7 +518,7 @@ if __name__ == "__main__":
     
     if not os.path.exists("augmentedSequences"):
         os.mkdir("augmentedSequences")
-    
+    '''
     augment_sequence(os.path.join("sequences","defaultGreenscreenVideo_over_PHO_hallway","frame_"),
                      os.path.join("sequences","defaultGreenscreenVideo_over_PHO_hallway","mask_"),
                      os.path.join("augmentedSequences","defaultGreenscreenVideo_over_PHO_hallway_64x64"),
@@ -493,6 +526,6 @@ if __name__ == "__main__":
     '''
     augment_sequence(os.path.join("sequences","defaultGreenscreenVideo_over_BOS_trainSidewalk","frame_"),
                      os.path.join("sequences","defaultGreenscreenVideo_over_BOS_trainSidewalk","mask_"),
-                     os.path.join("augmentedSequences","defaultGreenscreenVideo_over_BOS_trainSidewalk"),
-                     iStart=330, iEnd=340)
-    '''
+                     os.path.join("augmentedSequences","defaultGreenscreenVideo_over_BOS_trainSidewalk_64x64"),
+                     iStart=250, iEnd=-1, outShape=[64,64])
+    

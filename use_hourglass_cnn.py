@@ -127,4 +127,4 @@ if __name__ == "__main__":
     #print("\n\n")
     #sixTest(os.path.join('mnist_hourglass_nn_save','model_at100.ckpt'))
     print("\n\n")
-    quadcopterTest(os.path.join('homebrew_hourglass_nn_save','model_at4000.ckpt'))
+    quadcopterTest(os.path.join('homebrew_hourglass_nn_save','model_at475.ckpt'))

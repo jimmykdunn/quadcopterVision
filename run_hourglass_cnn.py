@@ -368,7 +368,8 @@ def train_hourglass_nn(trainImages, trainMasks, testImages, testMasks, \
     train_writer.add_graph(tf.get_default_graph())
     
     # Initialize class to save the CNN post-training
-    saver = tf.train.Saver()
+    # Save up to 100 along the way for comparisons
+    saver = tf.train.Saver(max_to_keep=100)
     
     # Start the clock
     start_sec = time.clock()
@@ -453,25 +454,28 @@ if __name__ == "__main__":
     
     # Get homebrewed video sequences and corresponding masks
     print("Reading augmented image and mask sequences")
-    x_all, y_all = vu.pull_aug_sequence(
+    checkpointSaveDir = "./homebrew_hourglass_nn_save";
+    x_set1, y_set1 = vu.pull_aug_sequence(
         os.path.join("augmentedSequences","defaultGreenscreenVideo_over_PHO_hallway_64x64","augImage_"),
         os.path.join("augmentedSequences","defaultGreenscreenVideo_over_PHO_hallway_64x64","augMask_"))
-    #x_all, y_all = vu.pull_aug_sequence(
-    #    os.path.join("augmentedSequences","defaultGreenscreenVideo_over_BOS_trainSidewalk","augImage_"),
-    #    os.path.join("augmentedSequences","defaultGreenscreenVideo_over_BOS_trainSidewalk","augMask_"))
-    checkpointSaveDir = "./homebrew_hourglass_nn_save";
-    nBatch, nWidth, nHeight = x_all.shape
-    # Simple first/last train-test split
-    print("Splitting into training/testing sets")
-    nbTrain = int(nBatch * 0.8)
-    x_train, x_test = [x_all[:nbTrain,:,:], x_all[nbTrain:,:,:]]
-    y_train, y_test = [y_all[:nbTrain,:,:], y_all[nbTrain:,:,:]]
+    x_set2, y_set2 = vu.pull_aug_sequence(
+        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_BOS_trainSidewalk_64x64","augImage_"),
+        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_BOS_trainSidewalk_64x64","augMask_"))
+    x_all = np.concatenate([x_set1,x_set2],axis=0)
+    y_all = np.concatenate([y_set1,y_set2],axis=0)
+    
+    # Split into train and test sets randomly
+    x_train, y_train, x_test, y_test = \
+        vu.train_test_split(x_all, y_all, trainFraction=0.8)
+
+    # Convert masks to appropriately-weighted +/- masks
     y_train_pmMask = booleanMaskToPlusMinus(y_train)
     y_test_pmMask  = booleanMaskToPlusMinus(y_test)
+    
+    # Epoch parameters
     peekEveryNEpochs=25
     saveEveryNEpochs=25
-    nEpochs = 4000
-    
+    nEpochs = 1000    
     
     # Run the complete training on the hourglass neural net
     heatmaps = train_hourglass_nn(x_train, y_train_pmMask, x_test, y_test_pmMask, 
@@ -482,7 +486,7 @@ if __name__ == "__main__":
     # test data inputs for visualization
     if not os.path.isdir('heatmaps'): # make the output dir if needed
         os.mkdir('heatmaps')
-    numToWrite = np.min([10,heatmaps.shape[0]])
+    numToWrite = np.min([16,heatmaps.shape[0]])
     filmstrip = []
     for iHeat in range(numToWrite):
         # Make the output images individually
