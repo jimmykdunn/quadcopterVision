@@ -139,8 +139,10 @@ def upconv2d(x, W):
     
     # Output dimension and stride calculations
     # use tf.shape(x)[0] instead of -1
-    outShape = tf.stack([tf.shape(x)[0], nkx*nx, nky*ny, nW]) 
-    stride = [1,nkx,nky,1]
+    #outShape = tf.stack([tf.shape(x)[0], nkx*nx, nky*ny, nW]) 
+    #stride = [1,nkx,nky,1]
+    outShape = tf.stack([tf.shape(x)[0], (nkx-1)*nx, (nky-1)*ny, nW]) 
+    stride = [1,nkx-1,nky-1,1]
     
     # Build the upconvolution layer
     xUpconv = tf.nn.conv2d_transpose(x, W, outShape, stride, padding='SAME') 
@@ -233,8 +235,8 @@ def hourglass_nn(x):
 
     # First convolutional layer - maps one grayscale image to 32 feature maps.
     with tf.name_scope('conv1'):
-        #w1 = weight_variable([5,5,1,32])
-        w1 = weight_variable([7,7,1,32])
+        w1 = weight_variable([5,5,1,32])
+        #w1 = weight_variable([7,7,1,32])
         h_conv1 = tf.nn.relu(conv2d(x_image,w1)) # [-1,28,28,32]
 
     # Pooling layer - downsamples by 2X.
@@ -244,8 +246,8 @@ def hourglass_nn(x):
 
     # Second convolutional layer -- maps 32 feature maps to 64.
     with tf.name_scope('conv2'):
-        #w2 = weight_variable([5,5,32,64]) 
-        w2 = weight_variable([7,7,32,64]) 
+        w2 = weight_variable([5,5,32,64]) 
+        #w2 = weight_variable([7,7,32,64]) 
         h_conv2 = tf.nn.relu(conv2d(h_pool1,w2)) # [-1,14,14,64]
 
     # Second pooling layer.
@@ -262,14 +264,14 @@ def hourglass_nn(x):
 
     with tf.name_scope('upconv2'):
         # No skip connection necessary on the innermost layer
-        wu2 = weight_variable([2,2,32,64])
-        #wu2 = weight_variable([4,4,32,64])
+        #wu2 = weight_variable([2,2,32,64])
+        wu2 = weight_variable([3,3,32,64])
         h_upconv1 = tf.nn.relu(upconv2d(h_pool2, wu2)) # [-1,14,14,32]
         
     with tf.name_scope('upconv1'):
         h_sk1 = addSkipConnection(h_upconv1, h_pool1) # skip connection [-1,14,14,64]
         #wu1 = weight_variable([2,2,1,64])
-        wu1 = weight_variable([4,4,1,64])
+        wu1 = weight_variable([5,5,1,64])
         heatmaps = tf.nn.relu(upconv2d(h_sk1, wu1)) # [-1,28,28,1]
         
     # The size of heatmap here should be [batch,28,28,1] for NMIST
@@ -457,7 +459,7 @@ if __name__ == "__main__":
     #x_all, y_all = vu.pull_aug_sequence(
     #    os.path.join("augmentedSequences","defaultGreenscreenVideo_over_BOS_trainSidewalk","augImage_"),
     #    os.path.join("augmentedSequences","defaultGreenscreenVideo_over_BOS_trainSidewalk","augMask_"))
-    checkpointSaveDir = "./homebrew_hourglass_nn_save_7x7convs";
+    checkpointSaveDir = "./homebrew_hourglass_nn_save";
     nBatch, nWidth, nHeight = x_all.shape
     # Simple first/last train-test split
     print("Splitting into training/testing sets")
