@@ -24,6 +24,7 @@ import time
 import cv2
 import copy
 import videoUtilities as vu
+import matplotlib.pyplot as plt
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
@@ -380,6 +381,9 @@ def train_hourglass_nn(trainImages, trainMasks, testImages, testMasks, \
         sess.run(tf.global_variables_initializer())
         
         # Loop over every epoch
+        peekSchedule = []
+        trainGainHistory = []
+        testGainHistory = []
         for epoch in range(nEpochs): 
             # Extract data for this batch
             batch = extractBatch(batchSize, trainImages, trainMasks, epoch)
@@ -392,10 +396,13 @@ def train_hourglass_nn(trainImages, trainMasks, testImages, testMasks, \
                 trainGain = gain.eval(feed_dict={b_images: batch[0], b_masks: batch[1]})
                 perfectTrainGain = perfectGain.eval(feed_dict={b_images: batch[0], b_masks: batch[1]})
                 print('epoch %d of %d, training gain %g' % (epoch+1, nEpochs, trainGain/perfectTrainGain))
-                testBatch = extractBatch(10, testImages, testMasks, 0)
+                testBatch = extractBatch(100, testImages, testMasks, 0)
                 testGain = gain.eval(feed_dict={b_images: testBatch[0], b_masks: testBatch[1]})
                 perfectTestGain = perfectGain.eval(feed_dict={b_images: testBatch[0], b_masks: testBatch[1]})
                 print('epoch %d of %d, test gain %g' % (epoch+1, nEpochs, testGain/perfectTestGain))
+                peekSchedule.append(epoch+1)
+                trainGainHistory.append(trainGain/perfectTrainGain)
+                testGainHistory.append(testGain/perfectTestGain)
             
             # Print elapsed time every peekEveryNEpochs epochs
             if epoch % peekEveryNEpochs == (peekEveryNEpochs-1):
@@ -428,6 +435,15 @@ def train_hourglass_nn(trainImages, trainMasks, testImages, testMasks, \
         # Print the location of the saved network
         print("Final trained network saved to: " + save_path)
         print("You can use use_cnn.py with this final network to classify new datapoints")
+        
+    # Generate a plot of the train vs test gain as a function of epoch
+    plt.plot(peekSchedule,trainGainHistory,'bo', linestyle='-')
+    plt.plot(peekSchedule,testGainHistory,'go', linestyle='-')
+    plt.legend(['Train Gain','Test Gain'])
+    plt.xlabel('Epoch')
+    plt.ylabel('Gain')
+    plt.savefig(os.path.join('heatmaps','trainTestHistory.png'))
+    plt.show()
         
     return test_heatmaps
 
@@ -483,7 +499,7 @@ if __name__ == "__main__":
     # Epoch parameters
     peekEveryNEpochs=25
     saveEveryNEpochs=25
-    nEpochs = 1000    
+    nEpochs = 1000
     
     # Run the complete training on the hourglass neural net
     heatmaps = train_hourglass_nn(x_train, y_train_pmMask, x_test, y_test_pmMask, 
