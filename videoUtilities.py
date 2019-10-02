@@ -163,7 +163,10 @@ OPTIONAL INPUTS:
     color: set to True to use color channel (default False)
     
 RETURNS: 
-    Series of augmented frames as a [nframes,nx,ny,nColors] 4D array
+    image_stack: Series of augmented frames as a [nframes,nx,ny,nColors] 4D array
+    mask_stack:  Series of augmented masks as a [nframes,nx,ny] 3D array
+    index_stack: List of strings with format "####_%%%%", where #### is the 
+        index of the parent image, and %%%% is the augmentation index
 """
 def pull_aug_sequence(inImageBase, inMaskBase, ext='.jpg', color=False):
     imagePath,imagePrefix = os.path.split(inImageBase)
@@ -209,12 +212,14 @@ def pull_aug_sequence(inImageBase, inMaskBase, ext='.jpg', color=False):
                 stackStarted = True
                 imageStack = np.zeros([len(imageDict),width,height,nColors])
                 maskStack  = np.zeros([len(imageDict),width,height]) == 1
+                indexStack = ['' for i in range(len(imageDict))]
                         
             # Reshape nicely and add to the stacks
             image = np.reshape(image,[1,width,height,nColors])
             mask  = np.reshape(mask, [1,width,height]) < 1
             imageStack[stackCount,:,:,:] = image
             maskStack[stackCount,:,:]  = mask
+            indexStack[stackCount] = indexString
             stackCount += 1
         else:
             print("WARNING: Could not find a mask matching " + imageName+indexString+ext)
@@ -223,6 +228,7 @@ def pull_aug_sequence(inImageBase, inMaskBase, ext='.jpg', color=False):
     # Trim off any unmatched images and masks
     imageStack = imageStack[:stackCount,:,:,:]
     maskStack  = maskStack [:stackCount,:,:]
+    indexStack = indexStack[:stackCount]
     
     # Decolorize if so desired
     if not color:
@@ -231,7 +237,7 @@ def pull_aug_sequence(inImageBase, inMaskBase, ext='.jpg', color=False):
     # Normalize image
     imageStack /= 255.0
     
-    return imageStack, maskStack
+    return imageStack, maskStack, indexStack
     
 """
 FUNCTION:
@@ -495,6 +501,73 @@ def train_test_split(images, masks, trainFraction=0.8):
     
     return train_images, train_masks, test_images, test_masks
     
+
+'''
+FUNCTION:
+    train_test_split_noCheat() 
+    
+DESCRIPTION:
+    Applies a random train/test split to the images and masks with a given 
+    fraction as training data. Takes into account the fact that images are
+    frequently augmented duplicates of one another and will not put augmented
+    duplicates in both train and test sets.
+    
+INPUTS: 
+    images: stack of images [nBatch,width,height,nChannels]
+    masks: stack of corresponding masks [nBatch,width,height]
+    indices: list of corresponding indices with the format ####_@@@@, where
+        #### represents the parent image index, and @@@@ represents the
+        augmentation index.
+OPTIONAL INPUTS:
+    trainFraction: fraction of images as training (default 0.8)
+RETURNS: 
+    train_images: trainFraction of the input images
+    train_masks: trainFraction of the input masks corresponding to train_images
+    test_images: the other (1-trainFraction) of the input images
+    test_masks: the other (1-trainFraction) of the input masks corresponding to test_images
+'''
+def train_test_split_noCheat(images, masks, indices, trainFraction=0.8):
+    # Generate a dictonary of the parent indices
+    parentList = {}
+    for index,indexString in enumerate(indices):
+        parentID = indexString[:4]
+        if not parentID in parentList:
+            parentList[parentID] = [] # initialize
+        parentList[parentID].append(index) # add this index to the child list
+    # endfor    
+    
+    # Divvy up the parent indices into train and test batches
+    nParents = len(parentList)
+    parentIndices = [i for i in range(nParents)]
+    random.shuffle(parentIndices)
+    nbTrain = int(nParents*trainFraction)
+    trainParentIndices = parentIndices[:nbTrain] # just pull the first nbTrain of the shuffled indices
+    
+    # Assign all the child images from each parent image to test or train per 
+    # the above assignment.
+    i = 0
+    trainIDList = []
+    testIDList = []
+    # Loop over each parent ID
+    for parentID, children in parentList.items():
+        for childID in children:
+            if i in trainParentIndices:
+                # Put this image into the training set
+                trainIDList.append(childID)
+            else:
+                # Put this image into the test set
+                testIDList.append(childID)
+        i += 1 # go to next parentID
+    # endfor parent IDs
+    
+    # Put each image and mask into the appropriate set
+    train_images = images[trainIDList,:,:]
+    test_images = images[testIDList,:,:]
+    train_masks = masks[trainIDList,:,:]
+    test_masks =  masks[testIDList,:,:]
+    
+    return train_images, train_masks, test_images, test_masks
+
 
 # Testing here
 if __name__ == "__main__":

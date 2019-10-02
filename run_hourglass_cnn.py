@@ -443,7 +443,7 @@ def train_hourglass_nn(trainImages, trainMasks, testImages, testMasks, \
     plt.xlabel('Epoch')
     plt.ylabel('Gain')
     plt.savefig(os.path.join('heatmaps','trainTestHistory.png'))
-    plt.show()
+    #plt.show()
         
     return test_heatmaps
 
@@ -472,25 +472,28 @@ if __name__ == "__main__":
     print("Reading augmented image and mask sequences")
     checkpointSaveDir = "./homebrew_hourglass_nn_save";
     '''
-    x_set1, y_set1 = vu.pull_aug_sequence(
+    x_set1, y_set1, idSet1 = vu.pull_aug_sequence(
         os.path.join("augmentedSequences","defaultGreenscreenVideo_over_PHO_hallway_64x64","augImage_"),
         os.path.join("augmentedSequences","defaultGreenscreenVideo_over_PHO_hallway_64x64","augMask_"))
-    x_set2, y_set2 = vu.pull_aug_sequence(
+    x_set2, y_set2, idSet2 = vu.pull_aug_sequence(
         os.path.join("augmentedSequences","defaultGreenscreenVideo_over_BOS_trainSidewalk_64x64","augImage_"),
         os.path.join("augmentedSequences","defaultGreenscreenVideo_over_BOS_trainSidewalk_64x64","augMask_"))
     '''
-    x_set1, y_set1 = vu.pull_aug_sequence(
+    x_set1, y_set1, id_set1 = vu.pull_aug_sequence(
         os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab1_64x64","augImage_"),
         os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab1_64x64","augMask_"))
-    x_set2, y_set2 = vu.pull_aug_sequence(
+    x_set2, y_set2, id_set2 = vu.pull_aug_sequence(
         os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab2_64x64","augImage_"),
         os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab2_64x64","augMask_"))
     x_all = np.concatenate([x_set1,x_set2],axis=0)
     y_all = np.concatenate([y_set1,y_set2],axis=0)
+    id_all = np.concatenate([id_set1,id_set2],axis=0)
     
     # Split into train and test sets randomly
+    #x_train, y_train, x_test, y_test = \
+    #    vu.train_test_split(x_all, y_all, trainFraction=0.8)
     x_train, y_train, x_test, y_test = \
-        vu.train_test_split(x_all, y_all, trainFraction=0.8)
+        vu.train_test_split_noCheat(x_all, y_all, id_all, trainFraction=0.8)
 
     # Convert masks to appropriately-weighted +/- masks
     y_train_pmMask = booleanMaskToPlusMinus(y_train)
