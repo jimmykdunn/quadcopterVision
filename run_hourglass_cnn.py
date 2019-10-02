@@ -455,12 +455,20 @@ if __name__ == "__main__":
     # Get homebrewed video sequences and corresponding masks
     print("Reading augmented image and mask sequences")
     checkpointSaveDir = "./homebrew_hourglass_nn_save";
+    '''
     x_set1, y_set1 = vu.pull_aug_sequence(
         os.path.join("augmentedSequences","defaultGreenscreenVideo_over_PHO_hallway_64x64","augImage_"),
         os.path.join("augmentedSequences","defaultGreenscreenVideo_over_PHO_hallway_64x64","augMask_"))
     x_set2, y_set2 = vu.pull_aug_sequence(
         os.path.join("augmentedSequences","defaultGreenscreenVideo_over_BOS_trainSidewalk_64x64","augImage_"),
         os.path.join("augmentedSequences","defaultGreenscreenVideo_over_BOS_trainSidewalk_64x64","augMask_"))
+    '''
+    x_set1, y_set1 = vu.pull_aug_sequence(
+        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab1_64x64","augImage_"),
+        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab1_64x64","augMask_"))
+    x_set2, y_set2 = vu.pull_aug_sequence(
+        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab2_64x64","augImage_"),
+        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab2_64x64","augMask_"))
     x_all = np.concatenate([x_set1,x_set2],axis=0)
     y_all = np.concatenate([y_set1,y_set2],axis=0)
     

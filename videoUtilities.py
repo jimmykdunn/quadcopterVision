@@ -524,8 +524,12 @@ if __name__ == "__main__":
                      os.path.join("augmentedSequences","defaultGreenscreenVideo_over_PHO_hallway_64x64"),
                      iStart=250, iEnd=-1, outShape=[64,64])
     '''
-    augment_sequence(os.path.join("sequences","defaultGreenscreenVideo_over_BOS_trainSidewalk","frame_"),
-                     os.path.join("sequences","defaultGreenscreenVideo_over_BOS_trainSidewalk","mask_"),
-                     os.path.join("augmentedSequences","defaultGreenscreenVideo_over_BOS_trainSidewalk_64x64"),
-                     iStart=250, iEnd=-1, outShape=[64,64])
+    augment_sequence(os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab1","frame_"),
+                     os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab1","mask_"),
+                     os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab1_64x64"),
+                     iStart=175, iEnd=637, outShape=[64,64])
+    augment_sequence(os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab2","frame_"),
+                     os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab2","mask_"),
+                     os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab2_64x64"),
+                     iStart=175, iEnd=637, outShape=[64,64])
     

@@ -32,7 +32,8 @@ import os
 import struct
 import numpy as np
 
-def run_videoInjection(greenVideoFile, backgroundVideoFile, bgRotate_deg=0):
+def run_videoInjection(greenVideoFile, backgroundVideoFile, bgRotate_deg=0,
+                       bgScale=1.0,shift=[600,300]):
     
     vidExt = '.avi'
     framerate = 30 # frames per second
@@ -121,8 +122,13 @@ def run_videoInjection(greenVideoFile, backgroundVideoFile, bgRotate_deg=0):
             if bgRotate_deg != 0:
                 backgroundFrame = np.rot90(backgroundFrame, k=int(bgRotate_deg/90), axes=(0,1))
             
+            # Scale up or down the background video frame if so desired
+            if bgScale != 1.0:
+                scaleSize = [int(dim*bgScale) for dim in backgroundFrame.shape[1::-1]]
+                backgroundFrame = cv2.resize(backgroundFrame, tuple(scaleSize))
+            
             # Inject the background
-            frame, mask = gst.injectBackground(greenFrame, backgroundFrame,[600,300])
+            frame, mask = gst.injectBackground(greenFrame, backgroundFrame,shift=shift)
             
             # Write mask to output video stream
             # .avi format
@@ -166,5 +172,7 @@ if __name__ == "__main__":
     #run_videoInjection("defaultGreenscreenVideo.avi", os.path.join("backgroundVideos","EPC_ramp.avi"),270)
     #run_videoInjection("defaultGreenscreenVideo.avi", os.path.join("backgroundVideos","EPC_hallway.avi"),270)
     #run_videoInjection("defaultGreenscreenVideo.avi", os.path.join("backgroundVideos","PHO_hallway.avi"),270)
-    run_videoInjection("defaultGreenscreenVideo.avi", os.path.join("backgroundVideos","BOS_trainSidewalk.avi"),270)
+    #run_videoInjection("defaultGreenscreenVideo.avi", os.path.join("backgroundVideos","BOS_trainSidewalk.avi"),270)
+    run_videoInjection("defaultGreenscreenVideo.avi", os.path.join("backgroundVideos","roboticsLab1.avi"),bgRotate_deg=270,bgScale=0.33, shift=[300,50])
+    run_videoInjection("defaultGreenscreenVideo.avi", os.path.join("backgroundVideos","roboticsLab2.avi"),bgRotate_deg=270,bgScale=0.33, shift=[300,50])
     
