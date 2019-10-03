@@ -667,6 +667,105 @@ def overlay_heatmap_and_mask(heatmap, mask, image, heatThreshold=0.5):
     
     return colorImage
 
+'''
+FUNCTION:
+    find_centerOfMass() 
+    
+DESCRIPTION:
+    Finds the center of mass of the input heatmap (or mask) in the usual way.
+    
+INPUTS: 
+    heatmap: 2D array of target likelihood values (width,height)
+RETURNS: 
+    The center of mass as a 2-element array, [xCOM,yCOM]
+'''
+def find_centerOfMass(heatmap):
+    if len(heatmap.shape) != 2:
+        heatmap = np.squeeze(heatmap)
+    if len(heatmap.shape) != 2:
+        print("Heatmap has wrong number of dimensions. Must be 2D:")
+        print(heatmap.shape)
+        
+    totalWeight = np.sum(heatmap)
+    
+    if totalWeight == 0:
+        # heatmap has no active pixels, return none
+        return [None,None]
+        
+    width, height = heatmap.shape
+    xSum, ySum = 0,0
+    for x in range(width):
+        for y in range(height):
+            xSum += x*heatmap[x,y]
+            ySum += y*heatmap[x,y]
+            
+    centerOfMass = [xSum/totalWeight, ySum/totalWeight]
+    
+    return centerOfMass
+
+'''
+FUNCTION:
+    overlay_point() 
+    
+DESCRIPTION:
+    Overlays a point at the coordinates xyPoint onto the image. Point has the
+    designated color and shape.  Point is injected into the image rather than
+    plotted on top of it. Size is 5x5 pixels regardless of image size.
+    
+INPUTS: 
+    image: 2D array to overlay point onto
+    xyPoint: [x,y] coordinates of point to draw, in pixels
+OPTIONAL INPUTS:
+    mark: type of mark to draw. '+','x', or 's' (default '+')
+    color: color of mark to draw. 'r','g', or 'b' (default 'g')
+RETURNS: 
+    Image with mark drawn over it in the designated color.
+'''
+def overlay_point(image,xyPoint,mark='+',color='g'):
+    # If point is empty (happens if center of mass cannot be calculated), 
+    # return original image.
+    if xyPoint[0] == None or xyPoint[1] == None:
+        return image
+    
+    # Colorize image if it is not yet colorized
+    if len(image.shape) == 2:
+        image = np.repeat(image[:,:,np.newaxis],3,axis=2)
+        
+    # Round xyPoint to nearest integer pixel
+    xyPoint = [int(np.round(value)) for value in xyPoint]
+        
+    # Select mark type   
+    if mark == '+':
+        markXY = [[-2,0],[-1,0],[0,0],[1,0],[2,0],\
+                    [0,-2],[0,-1],[0,1],[0,2]]
+    elif mark == 'x':
+        markXY = [[-2,-2],[-1,-1],[0,0],[1,1],[2,2], \
+                  [-2,2],[-1,1],[1,-1],[2,-2]]
+    elif mark == 's':
+        markXY = [[-2,-2],[-2,-1],[-2,0],[-2,1],[-2,2],[-1,2],[0,2],[1,2],[2,2],\
+                  [2,1],[2,0],[2,-1],[2,-2],[1,-2],[0,-2],[-1,-2]]
+    else:
+        print("Mark type not recognized. Using plus sign")
+        markXY = [[-2,0],[-1,0],[0,0],[1,0],[2,0],\
+                  [0,-2],[0,-1],[0,1],[0,2]] 
+        
+    # Select color from 'r', 'g', 'b'
+    if color == 'r':
+        colorAs3 = [0,0,255]
+    elif color == 'g':
+        colorAs3 = [0,255,0]
+    elif color == 'b':
+        colorAs3 = [255,0,0]
+    else:
+        print("Color not recognized. Using green")
+        colorAs3 = [0,255,0]
+
+    # Overlay each pixel of the mark onto the image
+    for x,y in markXY:
+        image[xyPoint[0]+x,xyPoint[1]+y,:] = colorAs3
+
+    return image
+
 # Testing here
 if __name__ == "__main__":
     '''

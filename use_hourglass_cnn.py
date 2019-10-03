@@ -148,7 +148,7 @@ def quadcopterBatchTest(modelPath,directory='goldenImages',ext='.jpg'):
                 maskpoint = cv2.imread(maskName)
                 
                 datapoint = np.mean(datapoint,axis=2)/float(255)
-                maskpoint = np.mean(maskpoint,axis=2) > 0
+                maskpoint = np.mean(maskpoint,axis=2) == 0
                 print("Running CNN at " + modelPath + " on " + os.path.join(directory,filename))
                 heatmap = use_hourglass_cnn(modelPath, 
                                      np.reshape(datapoint,[1,datapoint.shape[0],datapoint.shape[1]]),
@@ -157,7 +157,13 @@ def quadcopterBatchTest(modelPath,directory='goldenImages',ext='.jpg'):
                 # Overlay on outline of the heatmap in green onto the image
                 #greenedImage = vu.overlay_heatmap(heatmap,datapoint)
                 greenedImage = vu.overlay_heatmap_and_mask(heatmap,maskpoint,datapoint)
-                    
+                   
+                # Overlay heatmap and mask center of mask onto the image
+                heatmapCOM = vu.find_centerOfMass(heatmap)
+                greenedImage = vu.overlay_point(greenedImage,heatmapCOM,color='g')
+                maskCOM = vu.find_centerOfMass(maskpoint)
+                greenedImage = vu.overlay_point(greenedImage,maskCOM,   color='r')
+                
                 # Join heatmap and actual image to a single array for output
                 heatmapOutArray = np.squeeze(heatmap[0,:])*255.0
                 heatmapOutArray = np.minimum(heatmapOutArray,np.ones(heatmapOutArray.shape)*255)
@@ -194,4 +200,4 @@ if __name__ == "__main__":
     #print("\n\n")
     #quadcopterTest(os.path.join('homebrew_hourglass_nn_save','model_at750.ckpt'))
     print("\n\n")
-    quadcopterBatchTest(os.path.join('homebrew_hourglass_nn_save','model_at150.ckpt'))
+    quadcopterBatchTest(os.path.join('homebrew_hourglass_nn_save','model_at1000.ckpt'))

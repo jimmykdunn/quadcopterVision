@@ -528,7 +528,7 @@ if __name__ == "__main__":
         checkpointSaveDir = checkpointSaveDir, peekEveryNEpochs = peekEveryNEpochs,
         saveEveryNEpochs=saveEveryNEpochs, nEpochs=nEpochs, batchSize=batchSize)
         
-    # Write out the first few heatmaps to file along with the associated
+    # Write out the first few testset heatmaps to file along with the associated
     # test data inputs for visualization
     if not os.path.isdir('heatmaps'): # make the output dir if needed
         os.mkdir('heatmaps')
@@ -542,6 +542,10 @@ if __name__ == "__main__":
         
         # Overlay contour lines for thresholded heatmap and mask
         testOutArray = vu.overlay_heatmap_and_mask(heatmapOutArray,maskOutArray,testOutArray)
+        heatmapCOM = vu.find_centerOfMass(heatmapOutArray)
+        testOutArray = vu.overlay_point(testOutArray,heatmapCOM,color='g')
+        maskCOM = vu.find_centerOfMass(maskOutArray)
+        testOutArray = vu.overlay_point(testOutArray,maskCOM,   color='r')
         
         # Join heatmap and actual image to a single array for output
         joinedStr = 'joined_%04d.png' % iHeat
