@@ -443,6 +443,7 @@ def train_hourglass_nn(trainImages, trainMasks, testImages, testMasks, \
     plt.xlabel('Epoch')
     plt.ylabel('Gain')
     plt.savefig(os.path.join('heatmaps','trainTestHistory.png'))
+    print("Wrote trainTestHistory to " + os.path.join('heatmaps','trainTestHistory.png'))
     #plt.show()
         
     return test_heatmaps
@@ -471,6 +472,11 @@ if __name__ == "__main__":
     # Get homebrewed video sequences and corresponding masks
     print("Reading augmented image and mask sequences")
     checkpointSaveDir = "./homebrew_hourglass_nn_save";
+    # Epoch parameters
+    peekEveryNEpochs=25
+    saveEveryNEpochs=25
+    nEpochs = 1000
+    batchSize = 512
     '''
     x_set1, y_set1, idSet1 = vu.pull_aug_sequence(
         os.path.join("augmentedSequences","defaultGreenscreenVideo_over_PHO_hallway_64x64","augImage_"),
@@ -499,15 +505,11 @@ if __name__ == "__main__":
     y_train_pmMask = booleanMaskToPlusMinus(y_train)
     y_test_pmMask  = booleanMaskToPlusMinus(y_test)
     
-    # Epoch parameters
-    peekEveryNEpochs=25
-    saveEveryNEpochs=25
-    nEpochs = 1000
     
     # Run the complete training on the hourglass neural net
     heatmaps = train_hourglass_nn(x_train, y_train_pmMask, x_test, y_test_pmMask, 
         checkpointSaveDir = checkpointSaveDir, peekEveryNEpochs = peekEveryNEpochs,
-        saveEveryNEpochs=saveEveryNEpochs, nEpochs=nEpochs)
+        saveEveryNEpochs=saveEveryNEpochs, nEpochs=nEpochs, batchSize=batchSize)
         
     # Write out the first few heatmaps to file along with the associated
     # test data inputs for visualization
