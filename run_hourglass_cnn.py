@@ -25,6 +25,7 @@ import cv2
 import copy
 import videoUtilities as vu
 import matplotlib.pyplot as plt
+import random
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
@@ -37,16 +38,25 @@ INPUTS:
     x: full set of training images, [numImages,width,length]
     y_mask: full set of mask images, [numImages,width,length]
     epcoh: training epoch, integer starting at zero. Used to prevent overlap
+    OPTIONAL INPUTS:
+        randomDraw: set to true to extract batches randomly (default False)
 RETURNS:
     [x_batch, y_batch] subsets of the x and y inputs of length length. 
 """
-def extractBatch(length, x, y_mask, epoch):
+def extractBatch(length, x, y_mask, epoch, randomDraw=False):
     
     # Just pull them in order, wrapping to the beginning when we go over
     while (epoch+1)*length > len(x):
         epoch -= int(len(x)/length)
     
-    batch = [epoch*length + i for i in range(length)]
+    if not randomDraw:
+        # Pull in order
+        batch = [epoch*length + i for i in range(length)]
+    else:
+        # Extract random set of prescribed length
+        batch = [i for i in range(len(x))]
+        random.shuffle(batch)
+        batch = batch[:length]
     
     x_batch = x[batch,:,:]
     y_batch = y_mask[batch,:,:]
@@ -396,7 +406,7 @@ def train_hourglass_nn(trainImages, trainMasks, testImages, testMasks, \
                 trainGain = gain.eval(feed_dict={b_images: batch[0], b_masks: batch[1]})
                 perfectTrainGain = perfectGain.eval(feed_dict={b_images: batch[0], b_masks: batch[1]})
                 print('epoch %d of %d, training gain %g' % (epoch+1, nEpochs, trainGain/perfectTrainGain))
-                testBatch = extractBatch(100, testImages, testMasks, 0)
+                testBatch = extractBatch(100, testImages, testMasks, 0, randomDraw=True)
                 testGain = gain.eval(feed_dict={b_images: testBatch[0], b_masks: testBatch[1]})
                 perfectTestGain = perfectGain.eval(feed_dict={b_images: testBatch[0], b_masks: testBatch[1]})
                 print('epoch %d of %d, test gain %g' % (epoch+1, nEpochs, testGain/perfectTestGain))
@@ -429,8 +439,9 @@ def train_hourglass_nn(trainImages, trainMasks, testImages, testMasks, \
         # Finish off by running the test set.  Extract the entire test set.
         test_batch = extractBatch(len(testImages), testImages, testMasks, 0)
         test_gain = gain.eval(feed_dict={b_images: test_batch[0], b_masks: test_batch[1]})
+        perfectTestGain = perfectGain.eval(feed_dict={b_images: test_batch[0], b_masks: test_batch[1]})
         test_heatmaps = b_heatmaps.eval(feed_dict={b_images: test_batch[0], b_masks: test_batch[1]})
-        print('test gain %g' % test_gain)
+        print('test gain %g' % test_gain/perfectTestGain)
         
         # Print the location of the saved network
         print("Final trained network saved to: " + save_path)
