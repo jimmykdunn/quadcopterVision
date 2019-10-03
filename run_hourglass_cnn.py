@@ -485,6 +485,7 @@ if __name__ == "__main__":
         os.path.join("augmentedSequences","defaultGreenscreenVideo_over_BOS_trainSidewalk_64x64","augImage_"),
         os.path.join("augmentedSequences","defaultGreenscreenVideo_over_BOS_trainSidewalk_64x64","augMask_"))
     '''
+    
     x_set1, y_set1, id_set1 = vu.pull_aug_sequence(
         os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab1_64x64","augImage_"),
         os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab1_64x64","augMask_"))
@@ -494,6 +495,11 @@ if __name__ == "__main__":
     x_all = np.concatenate([x_set1,x_set2],axis=0)
     y_all = np.concatenate([y_set1,y_set2],axis=0)
     id_all = np.concatenate([id_set1,id_set2],axis=0)
+    '''
+    x_all, y_all, id_all = vu.pull_aug_sequence(
+        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_PHO_hallway_64x64","augImage_"),
+        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_PHO_hallway_64x64","augMask_"))
+    '''
     
     # Split into train and test sets randomly
     #x_train, y_train, x_test, y_test = \
@@ -519,12 +525,17 @@ if __name__ == "__main__":
     filmstrip = []
     for iHeat in range(numToWrite):
         # Make the output images individually
-        heatmapOutArray = np.squeeze(heatmaps[iHeat,:])*255.0
-        testOutArray = np.squeeze(x_test[iHeat,:])*255.0
+        heatmapOutArray = np.squeeze(heatmaps[iHeat,:])
+        testOutArray = np.squeeze(x_test[iHeat,:])
+        maskOutArray = np.squeeze(y_test[iHeat,:])
+        
+        # Overlay contour lines for thresholded heatmap and mask
+        testOutArray = vu.overlay_heatmap_and_mask(heatmapOutArray,maskOutArray,testOutArray)
         
         # Join heatmap and actual image to a single array for output
         joinedStr = 'joined_%04d.png' % iHeat
-        joined = np.concatenate([testOutArray, heatmapOutArray],axis=0)
+        heatmapOutArrayCol = np.repeat(255*heatmapOutArray[:,:,np.newaxis],3,axis=2)
+        joined = np.concatenate([testOutArray, heatmapOutArrayCol],axis=0)
         cv2.imwrite(os.path.join('heatmaps',joinedStr), joined)
         print('Wrote ' + os.path.join('heatmaps',joinedStr))
         

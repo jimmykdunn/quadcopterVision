@@ -611,6 +611,25 @@ def overlay_heatmap(heatmap, image, heatThreshold=0.5):
     return colorImage
 
 
+'''
+FUNCTION:
+    overlay_heatmap_and_mask() 
+    
+DESCRIPTION:
+    Takes the input heatmap, thresholds, cleans up, and finds edges.  Overlays
+    edges as green on the input image. Then overlays the truth mask edges as 
+    blue and returns as a color image
+    
+INPUTS: 
+    heatmap: 2D array of target likelihood values (width,height)
+    mask: 2D array of target truth values - binary (width,height)
+    image: original image from which heatmap was calculated (width,height)
+OPTIONAL INPUTS:
+    heatThreshold: heatmap pixels greater than heatThreshold are deemed target
+RETURNS: 
+    The input image with the outlines of heatmap displayed in green and the 
+    outlines of the truth mask displayed in blue.
+'''
 def overlay_heatmap_and_mask(heatmap, mask, image, heatThreshold=0.5):
     # Massage heatmap into a thresholded binary array
     heatmap = 255*np.minimum(heatmap,np.ones(heatmap.shape))
@@ -629,7 +648,7 @@ def overlay_heatmap_and_mask(heatmap, mask, image, heatThreshold=0.5):
     dilatedAgain = cv2.dilate(eroded,kernel3,iterations=1)
     outlines = (dilatedAgain-eroded) > 0
     
-    # Dilate and erode mask in teh same way
+    # Dilate and erode mask in the same way
     binaryMask = mask == False
     binaryMask = binaryMask.astype(np.uint8)
     dilatedMask = cv2.dilate(binaryMask,kernel3,iterations=1)
