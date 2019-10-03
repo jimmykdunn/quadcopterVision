@@ -568,6 +568,47 @@ def train_test_split_noCheat(images, masks, indices, trainFraction=0.8):
     
     return train_images, train_masks, test_images, test_masks
 
+'''
+FUNCTION:
+    overlay_heatmap() 
+    
+DESCRIPTION:
+    Takes the input heatmap, thresholds, cleans up, and finds edges.  Overlays
+    edges as green on the input image and returns as a color image.
+    
+INPUTS: 
+    heatmap: 2D array of target likelihood values (width,height)
+    image: original image from which heatmap was calculated (width,height)
+OPTIONAL INPUTS:
+    heatThreshold: heatmap pixels greater than heatThreshold are deemed target
+RETURNS: 
+    The input image with the outlines of heatmap displayed in green
+'''
+def overlay_heatmap(heatmap, image, heatThreshold=0.5):
+    # Massage heatmap into a thresholded binary array
+    heatmap = 255*np.minimum(heatmap,np.ones(heatmap.shape))
+    heatmap = heatmap.astype(np.uint8)
+    binaryHeatmap = np.squeeze(heatmap) > 255*heatThreshold
+    binaryHeatmap = binaryHeatmap.astype(np.uint8)
+    
+    # Dilate and erode heatmap to remove little holes and spikes
+    kernel2 = np.ones((2,2),np.uint8)
+    dilated = cv2.dilate(binaryHeatmap,kernel2,iterations=1)
+    eroded = cv2.erode(dilated,kernel2,iterations=1)
+    
+    # Dilate again by a 1-pixel larger kernel to get the outline of the 
+    # above-threshold region
+    kernel3 = np.ones((3,3),np.uint8)
+    dilatedAgain = cv2.dilate(eroded,kernel3,iterations=1)
+    outlines = (dilatedAgain-eroded) > 0
+    
+    # Make the outlines of the output image green
+    colorImage = np.repeat(image[:,:,np.newaxis]*255,3,axis=2).astype(np.uint8)
+    colorOutlines = np.zeros(colorImage.shape,np.uint8)
+    colorOutlines[:,:,1] = outlines
+    colorImage[colorOutlines>0] = 255
+    
+    return colorImage
 
 # Testing here
 if __name__ == "__main__":

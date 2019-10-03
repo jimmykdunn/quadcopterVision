@@ -26,6 +26,7 @@ import matplotlib.pyplot as plt
 import cv2
 import time
 import os
+import videoUtilities as vu
 
 def use_hourglass_cnn(modelPath, inputImages, numTimingTrials = 1):
     # Execute a single forward pass on a set of images to demonstrate how
@@ -112,10 +113,16 @@ def quadcopterTest(modelPath):
                          np.reshape(datapoint,[1,datapoint.shape[0],datapoint.shape[1]]),
                          numTimingTrials=100)
     
+    # Overlay on outline of the heatmap in green onto the image
+    greenedImage = vu.overlay_heatmap(heatmap,datapoint)
+        
     # Join heatmap and actual image to a single array for output
     heatmapOutArray = np.squeeze(heatmap[0,:])*255.0
-    testOutArray = np.squeeze(datapoint)*255.0
-    joined = np.concatenate([testOutArray, heatmapOutArray],axis=0)
+    heatmapOutArray = np.minimum(heatmapOutArray,np.ones(heatmapOutArray.shape)*255)
+    heatmapOutArray = np.maximum(heatmapOutArray,np.zeros(heatmapOutArray.shape))
+    heatmapOutArray = heatmapOutArray.astype(np.uint8)
+    heatmapOutArray = np.repeat(heatmapOutArray[:,:,np.newaxis],3,axis=2)
+    joined = np.concatenate([greenedImage, heatmapOutArray],axis=0)
     cv2.imwrite(os.path.join('heatmaps','quadcopterTest.png'), joined)
     print('Wrote ' + os.path.join('heatmaps','quadcopterTest.png'))
     plt.imshow(joined)
