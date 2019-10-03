@@ -610,6 +610,44 @@ def overlay_heatmap(heatmap, image, heatThreshold=0.5):
     
     return colorImage
 
+
+def overlay_heatmap_and_mask(heatmap, mask, image, heatThreshold=0.5):
+    # Massage heatmap into a thresholded binary array
+    heatmap = 255*np.minimum(heatmap,np.ones(heatmap.shape))
+    heatmap = heatmap.astype(np.uint8)
+    binaryHeatmap = np.squeeze(heatmap) > 255*heatThreshold
+    binaryHeatmap = binaryHeatmap.astype(np.uint8)
+    
+    # Dilate and erode heatmap to remove little holes and spikes
+    kernel2 = np.ones((2,2),np.uint8)
+    dilated = cv2.dilate(binaryHeatmap,kernel2,iterations=1)
+    eroded = cv2.erode(dilated,kernel2,iterations=1)
+    
+    # Dilate again by a 1-pixel larger kernel to get the outline of the 
+    # above-threshold region
+    kernel3 = np.ones((3,3),np.uint8)
+    dilatedAgain = cv2.dilate(eroded,kernel3,iterations=1)
+    outlines = (dilatedAgain-eroded) > 0
+    
+    # Dilate and erode mask in teh same way
+    binaryMask = mask == False
+    binaryMask = binaryMask.astype(np.uint8)
+    dilatedMask = cv2.dilate(binaryMask,kernel3,iterations=1)
+    maskOutlines = (dilatedMask-binaryMask) > 0
+    
+    # Make the outlines of the heatmap green
+    colorImage = np.repeat(image[:,:,np.newaxis]*255,3,axis=2).astype(np.uint8)
+    colorOutlines = np.zeros(colorImage.shape,np.uint8)
+    colorOutlines[:,:,1] = outlines
+    colorImage[colorOutlines>0] = 255
+    
+    # Make the outlines of the mask blue
+    colorMaskOutlines = np.zeros(colorImage.shape,np.uint8)
+    colorMaskOutlines[:,:,0] = maskOutlines
+    colorImage[colorMaskOutlines>0] = 255
+    
+    return colorImage
+
 # Testing here
 if __name__ == "__main__":
     '''

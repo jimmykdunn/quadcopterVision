@@ -126,6 +126,64 @@ def quadcopterTest(modelPath):
     cv2.imwrite(os.path.join('heatmaps','quadcopterTest.png'), joined)
     print('Wrote ' + os.path.join('heatmaps','quadcopterTest.png'))
     plt.imshow(joined)
+    
+    
+# Example quadcopter frames
+def quadcopterBatchTest(modelPath,directory='goldenImages',ext='.jpg'):
+    iImage = 0
+    filmstrip = []
+    # Loop over each file in the path
+    for filename in os.listdir(directory):
+        # Pull only if the image extension is in the filename
+        tokens = filename.split('_')
+        prefix = tokens[0]
+        parent = tokens[1]
+        augment = tokens[2].split('.')[0]
+        fileext = tokens[2].split('.')[1]
+        if ext in filename and 'mage' in prefix:
+            datapoint = cv2.imread(os.path.join(directory,filename))
+            # Find corresponding mask if it is there
+            maskName = os.path.join(directory,'augMask_'+parent+'_'+augment+'.'+fileext)
+            if os.path.isfile(maskName):
+                maskpoint = cv2.imread(maskName)
+                
+                datapoint = np.mean(datapoint,axis=2)/float(255)
+                maskpoint = np.mean(maskpoint,axis=2) > 0
+                print("Running CNN at " + modelPath + " on " + os.path.join(directory,filename))
+                heatmap = use_hourglass_cnn(modelPath, 
+                                     np.reshape(datapoint,[1,datapoint.shape[0],datapoint.shape[1]]),
+                                     numTimingTrials=100)
+                
+                # Overlay on outline of the heatmap in green onto the image
+                #greenedImage = vu.overlay_heatmap(heatmap,datapoint)
+                greenedImage = vu.overlay_heatmap_and_mask(heatmap,maskpoint,datapoint)
+                    
+                # Join heatmap and actual image to a single array for output
+                heatmapOutArray = np.squeeze(heatmap[0,:])*255.0
+                heatmapOutArray = np.minimum(heatmapOutArray,np.ones(heatmapOutArray.shape)*255)
+                heatmapOutArray = np.maximum(heatmapOutArray,np.zeros(heatmapOutArray.shape))
+                heatmapOutArray = heatmapOutArray.astype(np.uint8)
+                heatmapOutArray = np.repeat(heatmapOutArray[:,:,np.newaxis],3,axis=2)
+                pair = np.concatenate([greenedImage, heatmapOutArray],axis=0)
+                
+                # Create filmstrip if this is the first image in the folder, 
+                # otherwise tack it on
+                if iImage == 0:
+                    filmstrip = pair
+                else:
+                    filmstrip = np.concatenate([filmstrip,pair],axis=1)
+                    
+                # Increment counter
+                iImage += 1
+            # if corresponding mask exists
+        # if this file is an image
+    # for all files in directory
+    
+    
+    cv2.imwrite(os.path.join('heatmaps','goldenFilmstrip.png'), filmstrip)
+    print('Wrote ' + os.path.join('heatmaps','goldenFilmstrip.png'))
+    #plt.imshow(filmstrip)
+    #plt.show()
             
 # Run with defaults if at highest level
 if __name__ == "__main__":
@@ -133,5 +191,7 @@ if __name__ == "__main__":
     #twoTest(os.path.join('mnist_hourglass_nn_save','model_at100.ckpt'))
     #print("\n\n")
     #sixTest(os.path.join('mnist_hourglass_nn_save','model_at100.ckpt'))
+    #print("\n\n")
+    #quadcopterTest(os.path.join('homebrew_hourglass_nn_save','model_at750.ckpt'))
     print("\n\n")
-    quadcopterTest(os.path.join('homebrew_hourglass_nn_save','model_at750.ckpt'))
+    quadcopterBatchTest(os.path.join('homebrew_hourglass_nn_save','model_at1000.ckpt'))
