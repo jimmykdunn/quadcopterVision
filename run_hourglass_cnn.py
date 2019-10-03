@@ -441,7 +441,7 @@ def train_hourglass_nn(trainImages, trainMasks, testImages, testMasks, \
         test_gain = gain.eval(feed_dict={b_images: test_batch[0], b_masks: test_batch[1]})
         perfectTestGain = perfectGain.eval(feed_dict={b_images: test_batch[0], b_masks: test_batch[1]})
         test_heatmaps = b_heatmaps.eval(feed_dict={b_images: test_batch[0], b_masks: test_batch[1]})
-        print('test gain %g' % test_gain/perfectTestGain)
+        print('test gain %g' % (test_gain/perfectTestGain))
         
         # Print the location of the saved network
         print("Final trained network saved to: " + save_path)
