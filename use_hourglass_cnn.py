@@ -45,12 +45,12 @@ def use_hourglass_cnn(modelPath, inputImages, numTimingTrials = 1):
             saver.restore(sess,modelPath)
             
             # Get the entire dictionary of names (for debugging)
-            #names = [i.name for i in sess.graph.get_operations()]
+            names = [i.name for i in sess.graph.get_operations()]
             
             # Get the output class probabilities function
             outputFn = graph.get_operation_by_name("heatmaps/b_heatmaps").outputs[0]
-            b_images = graph.get_tensor_by_name("b_images:0")
-            b_masks = graph.get_tensor_by_name("b_masks:0")
+            b_images = graph.get_tensor_by_name("inputs/b_images:0")
+            b_masks = graph.get_tensor_by_name("inputs/b_masks:0")
             
             # Run the forward pass for the input datapoints
             # In a real-time implementation, this will be called inside of
@@ -67,6 +67,44 @@ def use_hourglass_cnn(modelPath, inputImages, numTimingTrials = 1):
                 print("%d trials in %g seconds" % (numTimingTrials,end_sec-start_sec))
                 print("Forward pass speed: %g Hz" % (numTimingTrials/(end_sec-start_sec)))
             
+    return heatmaps
+
+def use_hourglass_cnn_pb(modelPath, inputImages, numTimingTrials=1):
+    graph = tf.Graph()
+    sess = tf.InteractiveSession(graph=graph)
+    
+    with tf.gfile.GFile(modelPath, 'rb') as f:
+        graph_def = tf.GraphDef()
+        graph_def.ParseFromString(f.read())
+        
+        print ('Check out the input placeholders:')
+        nodes = [n.name + ' => ' + n.op for n in graph_def.node if n.op in ('Placeholder')]
+        for node in nodes:
+            print('     ' + node)
+        
+    # Define input tensor
+    b_images = tf.placeholder(np.float32, shape=[None,64,64], name='b_images')
+    tf.import_graph_def(graph_def, {'inputs/b_images': b_images})
+    
+    # Node names for debugging
+    names = [i.name for i in sess.graph.get_operations()]
+    
+    # Define output tensor (heatmap)
+    heatmap_tensor = graph.get_tensor_by_name("import/heatmaps/b_heatmaps:0")
+    
+    # Run forwad pass
+    start_sec = time.clock()
+    for i in range(numTimingTrials): # run many times to get timing information
+        heatmaps = sess.run(heatmap_tensor, feed_dict = {b_images: inputImages})
+    
+      
+    # Display timing trial information
+    end_sec = time.clock()
+    if numTimingTrials != 1:
+        print("%d trials in %g seconds" % (numTimingTrials,end_sec-start_sec))
+        print("Forward pass speed: %g Hz" % (numTimingTrials/(end_sec-start_sec)))
+    
+    
     return heatmaps
 
 # Example of a two being drawn
@@ -132,6 +170,7 @@ def quadcopterTest(modelPath):
 def quadcopterBatchTest(modelPath,directory='goldenImages',ext='.jpg'):
     iImage = 0
     filmstrip = []
+    modelExt = os.path.splitext(modelPath)[1]
     # Loop over each file in the path
     for filename in os.listdir(directory):
         # Pull only if the image extension is in the filename
@@ -150,9 +189,16 @@ def quadcopterBatchTest(modelPath,directory='goldenImages',ext='.jpg'):
                 datapoint = np.mean(datapoint,axis=2)/float(255)
                 maskpoint = np.mean(maskpoint,axis=2) == 0
                 print("Running CNN at " + modelPath + " on " + os.path.join(directory,filename))
-                heatmap = use_hourglass_cnn(modelPath, 
-                                     np.reshape(datapoint,[1,datapoint.shape[0],datapoint.shape[1]]),
-                                     numTimingTrials=100)
+                if modelExt == '.ckpt':
+                    heatmap = use_hourglass_cnn(modelPath,
+                        np.reshape(datapoint,[1,datapoint.shape[0],datapoint.shape[1]]),
+                        numTimingTrials=100)
+                elif modelExt == '.pb':
+                    heatmap = use_hourglass_cnn_pb(modelPath, 
+                        np.reshape(datapoint,[1,datapoint.shape[0],datapoint.shape[1]]),
+                        numTimingTrials=100)
+                else:
+                    print('Model type not recognized: ' + modelExt)
                 
                 # Overlay on outline of the heatmap in green onto the image
                 #greenedImage = vu.overlay_heatmap(heatmap,datapoint)
@@ -200,4 +246,5 @@ if __name__ == "__main__":
     #print("\n\n")
     #quadcopterTest(os.path.join('homebrew_hourglass_nn_save','model_at750.ckpt'))
     print("\n\n")
-    quadcopterBatchTest(os.path.join('homebrew_hourglass_nn_save','model_at1000.ckpt'))
+    #quadcopterBatchTest(os.path.join('homebrew_hourglass_nn_save','model_at10.ckpt'))
+    quadcopterBatchTest(os.path.join('homebrew_hourglass_nn_save','model_at10.pb'))

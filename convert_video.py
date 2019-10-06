@@ -65,8 +65,6 @@ def convert_video(inFile, outFile):
 
 # Run with defaults if at highest level
 if __name__ == "__main__":
-    convert_video(os.path.join('backgroundVideos','roboticsLab1.MOV'),
-                  os.path.join('backgroundVideos','roboticsLab1.avi'))
-    #convert_video(os.path.join("backgroundVideos","sophieTricycle.mov"), \
-    #              os.path.join("backgroundVideos","sophieTricycle.avi"))
+    convert_video(os.path.join('backgroundVideos','roboticsLab2.MOV'),
+                  os.path.join('backgroundVideos','roboticsLab2.avi'))
     

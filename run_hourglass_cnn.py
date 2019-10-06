@@ -245,24 +245,24 @@ def hourglass_nn(x):
         x_image = tf.reshape(x,[-1,nWidth,nHeight,1])
 
     # First convolutional layer - maps one grayscale image to 32 feature maps.
-    with tf.name_scope('conv1'):
+    with tf.name_scope('firstConv'):
         w1 = weight_variable([5,5,1,32])
         #w1 = weight_variable([7,7,1,32])
         h_conv1 = tf.nn.relu(conv2d(x_image,w1)) # [-1,28,28,32]
 
     # Pooling layer - downsamples by 2X.
-    with tf.name_scope('pool1'):
+    with tf.name_scope('firstPool'):
         #h_pool1 = max_pool(h_conv1,2) # [-1,14,14,32]
         h_pool1 = max_pool(h_conv1,4)
 
     # Second convolutional layer -- maps 32 feature maps to 64.
-    with tf.name_scope('conv2'):
+    with tf.name_scope('secondConv'):
         w2 = weight_variable([5,5,32,64]) 
         #w2 = weight_variable([7,7,32,64]) 
         h_conv2 = tf.nn.relu(conv2d(h_pool1,w2)) # [-1,14,14,64]
 
     # Second pooling layer.
-    with tf.name_scope('pool2'):
+    with tf.name_scope('secondPool'):
         h_pool2 = max_pool(h_conv2,2) # [-1,7,7,64]  
         #h_pool2 = max_pool(h_conv2,4) # [-1,7,7,64]  
 
@@ -273,13 +273,13 @@ def hourglass_nn(x):
     # h_conv2 shape is [-1,14,14,64]
     # h_pool2 shape is [-1,7,7,64]   
 
-    with tf.name_scope('upconv2'):
+    with tf.name_scope('secondUpconv'):
         # No skip connection necessary on the innermost layer
         #wu2 = weight_variable([2,2,32,64])
         wu2 = weight_variable([3,3,32,64])
         h_upconv1 = tf.nn.relu(upconv2d(h_pool2, wu2)) # [-1,14,14,32]
         
-    with tf.name_scope('upconv1'):
+    with tf.name_scope('firstUpconv'):
         h_sk1 = addSkipConnection(h_upconv1, h_pool1) # skip connection [-1,14,14,64]
         #wu1 = weight_variable([2,2,1,64])
         wu1 = weight_variable([5,5,1,64])
@@ -330,8 +330,9 @@ def train_hourglass_nn(trainImages, trainMasks, testImages, testMasks, \
 
     # Placeholders for the data and associated truth
     # "b_" prefix stands for "batch"
-    b_images = tf.placeholder(tf.float32, [None, nWidth,nHeight], name="b_images")
-    b_masks = tf.placeholder(tf.float32, [None, nWidth,nHeight], name="b_masks")
+    with tf.name_scope('inputs'):
+        b_images = tf.placeholder(tf.float32, [None, nWidth,nHeight], name="b_images")
+        b_masks = tf.placeholder(tf.float32, [None, nWidth,nHeight], name="b_masks")
     
     # Build the graph for the deep hourglass net
     # It is best to literally thing of this as just building the graph, since
