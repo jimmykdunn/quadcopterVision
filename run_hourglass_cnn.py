@@ -429,8 +429,8 @@ def train_hourglass_nn(trainImages, trainMasks, testImages, testMasks, \
                 save_path = saver.save(sess, checkpointSaveDir + "/model_at" + str(epoch+1) + ".ckpt")
                 print("    Checkpoint saved to: %s" % save_path)
                 
-                
-        #save_graph_protobuf(sess,checkpointSaveDir)
+        # Save graph and trained model as a protobuf       
+        save_graph_protobuf(sess,checkpointSaveDir)
         
         print("\n\n\n\n")
         print("============================")
@@ -505,12 +505,14 @@ def save_graph_protobuf(sess,directory,baseName='modelFinal'):
         name=pbtxt_filename, as_text=True)
 
     # Freeze graph. This saves all the actual weights to the file
-    from tensorflow.python.tools import freeze_graph
-    freeze_graph.freeze_graph(input_graph=pbtxt_filepath, input_saver='', 
-        input_binary=False, input_checkpoint=ckpt_filepath, 
-        output_node_names='heatmaps/b_heatmaps', restore_op_name='save/restore_all', 
-        filename_tensor_name='save/Const:0', output_graph=pb_filepath, 
-        clear_devices=True, initializer_nodes='')
+    graph = tf.get_default_graph()
+    input_graph_def = graph.as_graph_def()
+    output_node_names = ['heatmaps/b_heatmaps'] #['cnn/output']
+    output_graph_def = tf.graph_util.convert_variables_to_constants(
+            sess, input_graph_def, output_node_names)
+
+    with tf.gfile.GFile(pb_filepath, 'wb') as f:
+        f.write(output_graph_def.SerializeToString())
 # end save_graph_protobuf   
     
 
