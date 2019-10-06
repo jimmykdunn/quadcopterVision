@@ -377,6 +377,9 @@ def train_hourglass_nn(trainImages, trainMasks, testImages, testMasks, \
     print('Saving graph to: %s' % checkpointSaveDir)
     train_writer = tf.summary.FileWriter(checkpointSaveDir)
     train_writer.add_graph(tf.get_default_graph())
+    #
+    #@@@graph = tf.get_default_graph()
+    ###@input_graph_def = graph.as_graph_def()
     
     # Initialize class to save the CNN post-training
     # Save up to 100 along the way for comparisons
@@ -425,6 +428,9 @@ def train_hourglass_nn(trainImages, trainMasks, testImages, testMasks, \
             if epoch % saveEveryNEpochs == (saveEveryNEpochs-1) or epoch == (nEpochs-1):
                 save_path = saver.save(sess, checkpointSaveDir + "/model_at" + str(epoch+1) + ".ckpt")
                 print("    Checkpoint saved to: %s" % save_path)
+                
+                
+        #save_graph_protobuf(sess,checkpointSaveDir)
         
         print("\n\n\n\n")
         print("============================")
@@ -461,6 +467,54 @@ def train_hourglass_nn(trainImages, trainMasks, testImages, testMasks, \
 
 
 """
+save_graph_protobuf()
+    Saves a checkpoint file and protobuf files containing the graph (structure)
+    of a forward pass and the trained weights.  All of that is contained in the
+    sess variable.  The resulting files can be loaded at a later time and new
+    never-before-seen images can be run through them using the 
+    use_hourglass_cnn*.py scripts.
+INPUTS:
+    sess: tensorflow session to save
+    directory: base directory to save to.  Will have files added to it.
+OPTIONAL INPUTS:
+    baseName: name of saved files (without extensions), (default "modelFinal")
+EXAMPLE:
+    test_heatmaps = save_graph_protobuf(sess,'myTrainedModel')
+RETURNS:
+    Saves the graph to the directory+baseName appended with ".ckpt", ".pb", 
+    and ".pbtxt"
+
+Based on: https://leimao.github.io/blog/Save-Load-Inference-From-TF-Frozen-Graph/
+"""
+def save_graph_protobuf(sess,directory,baseName='modelFinal'):
+    # Save check point for graph frozen later.  By itself this could actually
+    # be used to reload and run a forward pass of the model, but it is not
+    # compatible with cv2.
+    saver = tf.train.Saver(max_to_keep=100)
+    ckpt_filepath = os.path.join(directory,baseName+'.ckpt')
+    saver.save(sess, ckpt_filepath)
+    
+    # Setup protobuf filenames
+    pbtxt_filename = baseName+'.pbtxt'
+    pbtxt_filepath = os.path.join(directory, pbtxt_filename)
+    pb_filepath = os.path.join(directory, baseName + '.pb')
+    
+    # This will only save the graph but the variables (weights) will not be 
+    # saved. This saves the ".pbtxt" file.
+    tf.train.write_graph(graph_or_graph_def=sess.graph_def, logdir=directory, 
+        name=pbtxt_filename, as_text=True)
+
+    # Freeze graph. This saves all the actual weights to the file
+    from tensorflow.python.tools import freeze_graph
+    freeze_graph.freeze_graph(input_graph=pbtxt_filepath, input_saver='', 
+        input_binary=False, input_checkpoint=ckpt_filepath, 
+        output_node_names='heatmaps/b_heatmaps', restore_op_name='save/restore_all', 
+        filename_tensor_name='save/Const:0', output_graph=pb_filepath, 
+        clear_devices=True, initializer_nodes='')
+# end save_graph_protobuf   
+    
+
+"""
 Build and train the hourglass CNN from the main level when this file is called.
 """
 
@@ -486,7 +540,7 @@ if __name__ == "__main__":
     # Epoch parameters
     peekEveryNEpochs=25
     saveEveryNEpochs=25
-    nEpochs = 1000
+    nEpochs = 10
     batchSize = 512
     '''
     x_set1, y_set1, idSet1 = vu.pull_aug_sequence(
