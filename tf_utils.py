@@ -34,6 +34,9 @@ INFO:
     Advisor: Dr. Roberto Tron
     Email: jkdunn@bu.edu
     Date: October 2019
+REFERENCES:
+    This function is based on
+    https://leimao.github.io/blog/Save-Load-Inference-From-TF-Frozen-Graph/
 """
 def ckpt_to_protobuf(ckptFile):
     baseName,ext = os.path.splitext(os.path.basename(ckptFile))
@@ -47,7 +50,8 @@ def ckpt_to_protobuf(ckptFile):
             saver = tf.train.import_meta_graph("{}.meta".format(ckptFile)) # the ENTIRE session is now in saver
             saver.restore(sess,ckptFile)
             
-            
+            #names = [i.name for i in sess.graph.get_operations()]
+                        
             # Setup protobuf filenames
             pbtxt_filename = baseName+'.pbtxt'
             pbtxt_filepath = os.path.join(directory, pbtxt_filename)
@@ -59,15 +63,31 @@ def ckpt_to_protobuf(ckptFile):
                 name=pbtxt_filename, as_text=True)
         
             # Freeze graph. This saves all the actual weights to the file
-            from tensorflow.python.tools import freeze_graph
-            freeze_graph.freeze_graph(input_graph=pbtxt_filepath, input_saver='', 
-                input_binary=False, input_checkpoint=ckptFile, 
-                output_node_names='heatmaps/b_heatmaps', restore_op_name='save/restore_all', 
-                filename_tensor_name='save/Const:0', output_graph=pb_filepath, 
-                clear_devices=True, initializer_nodes='')
+            graph = tf.get_default_graph()
+            input_graph_def = graph.as_graph_def()
+            output_node_names = ['heatmaps/b_heatmaps'] #['cnn/output']
+            output_graph_def = tf.graph_util.convert_variables_to_constants(
+                    sess, input_graph_def, output_node_names)
+    
+            with tf.gfile.GFile(pb_filepath, 'wb') as f:
+                f.write(output_graph_def.SerializeToString())
+    
+    
+            '''
+            #@@@
+            inference_graph = tf.graph_util.extract_sub_graph(input_graph_def, output_node_names)
+
+            for node in inference_graph.node:
+                print(node.name + " is a " + node.op)
+                if hasattr(node.attr, 'value'):
+                    stophere=1
+            #@@@
+            '''
+    
+            
 # end ckpt_to_protobuf
             
 # Run with defaults if at highest level
 if __name__ == "__main__":
     
-    ckpt_to_protobuf(os.path.join('homebrew_hourglass_nn_save','modelFinal.ckpt'))
+    ckpt_to_protobuf(os.path.join('homebrew_hourglass_nn_save_GOOD','model_at1000.ckpt'))
