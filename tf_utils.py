@@ -15,7 +15,6 @@ INFO:
 import tensorflow as tf
 import os
 from tensorflow.python.tools import optimize_for_inference_lib
-from tensorflow.python.tools import freeze_graph
 
 """
 ckpt_to_protobuf()
@@ -73,19 +72,28 @@ def ckpt_to_protobuf(ckptFile):
         
         # This will only save the graph; the variables (weights) will 
         # not be saved. Writes to the ".pbtxt" file.
-        print("Writing graph in protobuf txt format")
-        tf.train.write_graph(
-            graph_or_graph_def=sess.graph_def, 
-            logdir=directory, name=pbtxt_filename, as_text=True)
+        #print("Writing graph in protobuf txt format")
+        #tf.train.write_graph(
+        #    graph_or_graph_def=sess.graph_def, 
+        #    logdir=directory, name=pbtxt_filename, as_text=True)
         
         # Write the .pb file
         print("Freezing the graph in protobuf format")
-        freeze_graph.freeze_graph(input_graph=pbtxt_filepath, input_saver='',
-            input_binary=False, input_checkpoint=ckptFile, 
-            output_node_names=graphOutputs[0], 
-            restore_op_name='save/restore_all', filename_tensor_name='save/Const:0', 
-            output_graph=pb_filepath, clear_devices=True, initializer_nodes='')
+        #from tensorflow.python.tools import freeze_graph
+        #freeze_graph.freeze_graph(input_graph=pbtxt_filepath, input_saver='',
+        #    input_binary=False, input_checkpoint=ckptFile, 
+        #    output_node_names=graphOutputs[0], 
+        #    restore_op_name='save/restore_all', filename_tensor_name='save/Const:0', 
+        #    output_graph=pb_filepath, clear_devices=True, initializer_nodes='')
         
+        
+        #graph = tf.get_default_graph()
+        #input_graph_def = graph.as_graph_def()
+        output_graph_def = tf.graph_util.convert_variables_to_constants(
+                sess, sess.graph_def, graphOutputs)
+
+        with tf.gfile.GFile(pb_filepath, 'wb') as f:
+            f.write(output_graph_def.SerializeToString())
         
         
     
@@ -135,11 +143,18 @@ def ckpt_to_protobuf(ckptFile):
     print("Trimming to selected levels and saving off")
     # ok to here
     trim_to_output(graph_def,['heatmaps/secondPool/MaxPool'],os.path.join(directory, baseName+'_mp2.pb'))
-    #
+    # fails at tensorflowNet.forward()
     trim_to_output(graph_def,['heatmaps/secondUpconv/Shape'],os.path.join(directory, baseName+'_up2Shape.pb'))
-    #
+    # fails at tensorflowNet.forward()
     trim_to_output(graph_def,['heatmaps/secondUpconv/strided_slice'],os.path.join(directory, baseName+'_up2SS.pb'))
-    #
+    # fails at tensorflowNet.forward()
+    trim_to_output(graph_def,['heatmaps/secondUpconv/stack'],os.path.join(directory, baseName+'_up2stack.pb'))
+    # fails at cv2.dnn.readNet(modelPath+'.pb') (original fail point)
+    # THIS IS WHERE cv2 BARFS! At conv2d_transpose!
+    trim_to_output(graph_def,['heatmaps/secondUpconv/conv2d_transpose'],os.path.join(directory, baseName+'_up2conv2t.pb'))
+    # fails at cv2.dnn.readNet(modelPath+'.pb') (original fail point)
+    trim_to_output(graph_def,['heatmaps/secondUpconv/Relu'],os.path.join(directory, baseName+'_up2relu.pb'))
+    # fails at cv2.dnn.readNet(modelPath+'.pb') (original fail point)
     trim_to_output(graph_def,['heatmaps/firstUpconv/strided_slice'],os.path.join(directory, baseName+'_up1SS.pb'))
     #
     trim_to_output(graph_def,['heatmaps/b_heatmaps/shape'],os.path.join(directory, baseName+'_hmShape.pb'))
