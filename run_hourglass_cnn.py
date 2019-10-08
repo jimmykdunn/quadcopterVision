@@ -26,6 +26,7 @@ import copy
 import videoUtilities as vu
 import matplotlib.pyplot as plt
 import random
+import tf_utils
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
@@ -176,9 +177,11 @@ def upconv2d(x, wShape):
     # Build the upconvolution layer
     #xUpconv = tf.nn.conv2d_transpose(x, W, outShape, stride, padding='SAME') 
     # [3,3,32,64]
-    convStride = [wShape[0]-1,wShape[1]-1]
-    xUpconv = tf.layers.conv2d_transpose(wShape[2], wShape[:2], convStride,
-        padding='SAME',name='conv2d_transpose')
+    with tf.name_scope('myConv2dTranspose'):
+        convStride = [wShape[0]-1,wShape[1]-1]
+        # inputs, filters, kernelsize, stride
+        xUpconv = tf.layers.conv2d_transpose(x, filters=wShape[2], 
+            kernel_size=tuple(wShape[:2]), strides=tuple(convStride), padding='SAME')
     
     # good example code:
     # https://riptutorial.com/tensorflow/example/29767/using-tf-nn-conv2d-transpose-for-arbitary-batch-sizes-and-with-automatic-output-shape-calculation-
@@ -519,6 +522,10 @@ def save_graph_protobuf(sess,directory,baseName='modelFinal'):
     ckpt_filepath = os.path.join(directory,baseName+'.ckpt')
     saver.save(sess, ckpt_filepath)
     
+    # Convert to protobuf with the utility function
+    tf_utils.ckpt_to_protobuf(ckpt_filepath)
+    
+    '''
     # Setup protobuf filenames
     pbtxt_filename = baseName+'.pbtxt'
     pbtxt_filepath = os.path.join(directory, pbtxt_filename)
@@ -538,6 +545,7 @@ def save_graph_protobuf(sess,directory,baseName='modelFinal'):
 
     with tf.gfile.GFile(pb_filepath, 'wb') as f:
         f.write(output_graph_def.SerializeToString())
+    '''
 # end save_graph_protobuf   
     
 
@@ -577,7 +585,7 @@ if __name__ == "__main__":
         os.path.join("augmentedSequences","defaultGreenscreenVideo_over_BOS_trainSidewalk_64x64","augImage_"),
         os.path.join("augmentedSequences","defaultGreenscreenVideo_over_BOS_trainSidewalk_64x64","augMask_"))
     '''
-    
+    '''
     x_set1, y_set1, id_set1 = vu.pull_aug_sequence(
         os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab1_64x64","augImage_"),
         os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab1_64x64","augMask_"))
@@ -588,10 +596,11 @@ if __name__ == "__main__":
     y_all = np.concatenate([y_set1,y_set2],axis=0)
     id_all = np.concatenate([id_set1,id_set2],axis=0)
     '''
+    
     x_all, y_all, id_all = vu.pull_aug_sequence(
-        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_PHO_hallway_64x64","augImage_"),
-        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_PHO_hallway_64x64","augMask_"))
-    '''
+        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab1_64x64_mini","augImage_"),
+        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab1_64x64_mini","augMask_"))
+    
     
     # Split into train and test sets randomly
     #x_train, y_train, x_test, y_test = \
