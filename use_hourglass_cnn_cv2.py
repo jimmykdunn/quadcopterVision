@@ -15,7 +15,7 @@ INFO:
 """
 
 import numpy as np
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import cv2
 import time
 import os
@@ -116,7 +116,7 @@ def quadcopterTest(modelPath):
     joined = np.concatenate([greenedImage, heatmapOutArray],axis=0)
     cv2.imwrite(os.path.join('heatmaps','quadcopterTest.png'), joined)
     print('Wrote ' + os.path.join('heatmaps','quadcopterTest.png'))
-    plt.imshow(joined)
+    #plt.imshow(joined)
     
     
 """
