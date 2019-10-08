@@ -140,23 +140,45 @@ EXAMPLE:
 RETURNS:
     Larger resolution layer after upconvolution
 """
-def upconv2d(x, W):
+def upconv2d(x, wShape):
     # It is VERY IMPORTANT to get these variables in this way
-    nx = x.get_shape().as_list()[1]
-    ny = x.get_shape().as_list()[2]
-    nkx = W.get_shape().as_list()[0] 
-    nky = W.get_shape().as_list()[1] 
-    nW = W.get_shape().as_list()[2] 
+    # The funky "pack" issue is somewhere in here... cv2.dnn does NOT like
+    # pack variables (tuples or lists with undetermined dimensions)
+    # We MIGHT be able to pass in nx and ny as constants, but that would still
+    # leave the batch dimension as undetermined, no way to avoid that.
+    # Might also try something like initializing outShape as a tf.ones([4]),
+    # then filling it with values.  Still might get screwed by the need for a
+    # batch dimension.
+    # Might need a newer version of cv2
+    #!!!YOU MIGHT ALSO TRY USING tf.layers.conv2d_transpose() instead of tf.nn versions!!!
+    #!!!This is what they have for all the online examples!!!
+    #with tf.name_scope('getShapes'):
+    #    nx = x.get_shape().as_list()[1]
+    #    ny = x.get_shape().as_list()[2]
+    #    #nkx = W.get_shape().as_list()[0] 
+    #    #nky = W.get_shape().as_list()[1] 
+    #    #nW = W.get_shape().as_list()[2] 
+    #   nkx = wShape[0]
+    #    nky = wShape[1]
+    #    nW = wShape[2]
     
-    # Output dimension and stride calculations
-    # use tf.shape(x)[0] instead of -1
-    #outShape = tf.stack([tf.shape(x)[0], nkx*nx, nky*ny, nW]) 
-    #stride = [1,nkx,nky,1]
-    outShape = tf.stack([tf.shape(x)[0], (nkx-1)*nx, (nky-1)*ny, nW]) 
-    stride = [1,nkx-1,nky-1,1]
+    #with tf.name_scope('makeWeights'):
+    #    W = weight_variable(wShape)
+    
+    #with tf.name_scope('manualStack'):
+        # Output dimension and stride calculations
+        # use tf.shape(x)[0] instead of -1
+        #outShape = tf.stack([tf.shape(x)[0], (nkx-1)*nx, (nky-1)*ny, nW], name='outShapeStack') 
+        #outShape = [tf.shape(x)[0], (nkx-1)*nx, (nky-1)*ny, nW]
+        #@outShape = (tf.shape(x)[0], (nkx-1)*nx, (nky-1)*ny, nW)
+        #@stride = [1,nkx-1,nky-1,1]
     
     # Build the upconvolution layer
-    xUpconv = tf.nn.conv2d_transpose(x, W, outShape, stride, padding='SAME') 
+    #xUpconv = tf.nn.conv2d_transpose(x, W, outShape, stride, padding='SAME') 
+    # [3,3,32,64]
+    convStride = [wShape[0]-1,wShape[1]-1]
+    xUpconv = tf.layers.conv2d_transpose(wShape[2], wShape[:2], convStride,
+        padding='SAME',name='conv2d_transpose')
     
     # good example code:
     # https://riptutorial.com/tensorflow/example/29767/using-tf-nn-conv2d-transpose-for-arbitary-batch-sizes-and-with-automatic-output-shape-calculation-
@@ -276,14 +298,16 @@ def hourglass_nn(x):
     with tf.name_scope('secondUpconv'):
         # No skip connection necessary on the innermost layer
         #wu2 = weight_variable([2,2,32,64])
-        wu2 = weight_variable([3,3,32,64])
-        h_upconv1 = tf.nn.relu(upconv2d(h_pool2, wu2)) # [-1,14,14,32]
+        #wu2 = weight_variable([3,3,32,64])
+        #h_upconv1 = tf.nn.relu(upconv2d(h_pool2, wu2)) # [-1,14,14,32]
+        h_upconv1 = tf.nn.relu(upconv2d(h_pool2, [3,3,32,64])) # [-1,14,14,32]
         
     with tf.name_scope('firstUpconv'):
         h_sk1 = addSkipConnection(h_upconv1, h_pool1) # skip connection [-1,14,14,64]
         #wu1 = weight_variable([2,2,1,64])
-        wu1 = weight_variable([5,5,1,64])
-        heatmaps = tf.nn.relu(upconv2d(h_sk1, wu1)) # [-1,28,28,1]
+        #wu1 = weight_variable([5,5,1,64])
+        #heatmaps = tf.nn.relu(upconv2d(h_sk1, wu1)) # [-1,28,28,1]
+        heatmaps = tf.nn.relu(upconv2d(h_sk1, [5,5,1,64])) # [-1,28,28,1]
         
     # The size of heatmap here should be [batch,28,28,1] for NMIST
     return heatmaps

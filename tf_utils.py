@@ -145,7 +145,7 @@ def ckpt_to_protobuf(ckptFile):
     with tf.gfile.FastGFile(pb_opt_filepath, 'wb') as ff:
         ff.write(inference_graph.SerializeToString())
     
-    
+    '''
     print("Trimming to selected levels and saving off")
     # ok to here
     trim_to_output(graph_def,['heatmaps/secondPool/MaxPool'],os.path.join(directory, baseName+'_mp2.pb'))
@@ -172,6 +172,7 @@ def ckpt_to_protobuf(ckptFile):
     trim_to_output(graph_def,['heatmaps/b_heatmaps'],os.path.join(directory, baseName+'_hm.pb'))
     
     #@@@
+    '''
             
 # end ckpt_to_protobuf
     
