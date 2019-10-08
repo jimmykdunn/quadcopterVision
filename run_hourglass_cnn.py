@@ -414,7 +414,7 @@ def train_hourglass_nn(trainImages, trainMasks, testImages, testMasks, \
                 save_path = saver.save(sess, checkpointSaveDir + "/model_at" + str(epoch+1) + ".ckpt")
                 print("    Checkpoint saved to: %s" % save_path)
                 
-        # Save graph and trained model as a protobuf       
+        # Save graph and fully trained model as a protobuf       
         save_graph_protobuf(sess,checkpointSaveDir)
         
         print("\n\n\n\n")
@@ -510,7 +510,7 @@ if __name__ == "__main__":
     # Epoch parameters
     peekEveryNEpochs=25
     saveEveryNEpochs=25
-    nEpochs = 10
+    nEpochs = 1000
     batchSize = 512
     '''
     x_set1, y_set1, idSet1 = vu.pull_aug_sequence(
@@ -520,7 +520,7 @@ if __name__ == "__main__":
         os.path.join("augmentedSequences","defaultGreenscreenVideo_over_BOS_trainSidewalk_64x64","augImage_"),
         os.path.join("augmentedSequences","defaultGreenscreenVideo_over_BOS_trainSidewalk_64x64","augMask_"))
     '''
-    '''
+    
     x_set1, y_set1, id_set1 = vu.pull_aug_sequence(
         os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab1_64x64","augImage_"),
         os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab1_64x64","augMask_"))
@@ -530,12 +530,12 @@ if __name__ == "__main__":
     x_all = np.concatenate([x_set1,x_set2],axis=0)
     y_all = np.concatenate([y_set1,y_set2],axis=0)
     id_all = np.concatenate([id_set1,id_set2],axis=0)
-    '''
     
+    '''
     x_all, y_all, id_all = vu.pull_aug_sequence(
         os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab1_64x64_mini","augImage_"),
         os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab1_64x64_mini","augMask_"))
-    
+    '''
     
     # Split into train and test sets randomly
     #x_train, y_train, x_test, y_test = \

@@ -1,17 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-FUNCTION: use_hourglass_cnn
+FILE: use_hourglass_cnn
 DESCRIPTION:
     Uses a trained hourglass CNN on arbitrary input image(s)
     
     Based on: https://datascience.stackexchange.com/questions/16922/using-tensorflow-model-for-prediction
     
-INPUTS: 
-
-    
-OUTPUTS: 
-    
-
 INFO:
     Author: James Dunn, Boston University
     Thesis work for MS degree in ECE
@@ -28,6 +22,30 @@ import time
 import os
 import videoUtilities as vu
 
+"""
+use_hourglass_cnn()
+DESCRIPTION:
+    Runs a forward pass of the tensorflow graph in modelPath on input images.
+    Optionally runs multiple times to get more accurate timing statistics.
+    
+INPUTS: 
+    modelPath: checkpoint (".ckpt") file to run a forward pass with
+    inputImages: images to run forward pass on [numImages,width,height]
+
+OPTIONAL INPUTS:
+    numTimingTrials: number of times to repeat the same forward pass to get
+        better timing statistics. Default 1.
+    
+RETURNS: 
+    heatmaps: heatmaps that are the result of the forward pass in inputImages
+
+INFO:
+    Author: James Dunn, Boston University
+    Thesis work for MS degree in ECE
+    Advisor: Dr. Roberto Tron
+    Email: jkdunn@bu.edu
+    Date: October 2019
+"""
 def use_hourglass_cnn(modelPath, inputImages, numTimingTrials = 1):
     # Execute a single forward pass on a set of images to demonstrate how
     # the trained classifier would be used in real-time software.
@@ -45,7 +63,7 @@ def use_hourglass_cnn(modelPath, inputImages, numTimingTrials = 1):
             saver.restore(sess,modelPath)
             
             # Get the entire dictionary of names (for debugging)
-            names = [i.name for i in sess.graph.get_operations()]
+            #names = [i.name for i in sess.graph.get_operations()]
             
             # Get the output class probabilities function
             outputFn = graph.get_operation_by_name("heatmaps/b_heatmaps").outputs[0]
@@ -69,6 +87,30 @@ def use_hourglass_cnn(modelPath, inputImages, numTimingTrials = 1):
             
     return heatmaps
 
+"""
+use_hourglass_cnn_pb()
+DESCRIPTION:
+    Runs a forward pass of the tensorflow graph in modelPath on input images.
+    Optionally runs multiple times to get more accurate timing statistics.
+    
+INPUTS: 
+    modelPath: protobuf (".pb") file to run a forward pass with
+    inputImages: images to run forward pass on [numImages,width,height]
+
+OPTIONAL INPUTS:
+    numTimingTrials: number of times to repeat the same forward pass to get
+        better timing statistics. Default 1.
+    
+RETURNS: 
+    heatmaps: heatmaps that are the result of the forward pass in inputImages
+
+INFO:
+    Author: James Dunn, Boston University
+    Thesis work for MS degree in ECE
+    Advisor: Dr. Roberto Tron
+    Email: jkdunn@bu.edu
+    Date: October 2019
+"""
 def use_hourglass_cnn_pb(modelPath, inputImages, numTimingTrials=1):
     graph = tf.Graph()
     sess = tf.InteractiveSession(graph=graph)
@@ -87,7 +129,7 @@ def use_hourglass_cnn_pb(modelPath, inputImages, numTimingTrials=1):
     tf.import_graph_def(graph_def, {'inputs/b_images': b_images})
     
     # Node names for debugging
-    names = [i.name for i in sess.graph.get_operations()]
+    #names = [i.name for i in sess.graph.get_operations()]
     
     # Define output tensor (heatmap)
     heatmap_tensor = graph.get_tensor_by_name("import/heatmaps/b_heatmaps:0")
@@ -107,7 +149,25 @@ def use_hourglass_cnn_pb(modelPath, inputImages, numTimingTrials=1):
     
     return heatmaps
 
-# Example of a two being drawn
+"""
+twoTest()
+DESCRIPTION:
+    Debugging function that runs an MNIST handwritten digit CNN on a 
+    handwritten "2". Intended for hourglass (segmentation) nets.
+    
+INPUTS: 
+    modelPath: checkpoint (".ckpt") file to run a forward pass with
+    
+OUTPUTS: 
+    Displays the resulting heatmap and saves to file
+
+INFO:
+    Author: James Dunn, Boston University
+    Thesis work for MS degree in ECE
+    Advisor: Dr. Roberto Tron
+    Email: jkdunn@bu.edu
+    Date: September 2019
+"""
 def twoTest(modelPath):
     dataPath = os.path.join('.','mnist','jimmyDraws_2Blk.png')
     datapoint = np.mean(cv2.imread(dataPath),axis=2)/float(255)
@@ -124,7 +184,26 @@ def twoTest(modelPath):
     print('Wrote ' + os.path.join('heatmaps','twoTest.png'))
     plt.imshow(joined)
     
-# Example of a six being drawn
+
+"""
+sixTest()
+DESCRIPTION:
+    Debugging function that runs an MNIST handwritten digit CNN on a 
+    handwritten "6". Intended for hourglass (segmentation) nets.
+    
+INPUTS: 
+    modelPath: checkpoint (".ckpt") file to run a forward pass with
+    
+OUTPUTS: 
+    Displays the resulting heatmap and saves to file
+
+INFO:
+    Author: James Dunn, Boston University
+    Thesis work for MS degree in ECE
+    Advisor: Dr. Roberto Tron
+    Email: jkdunn@bu.edu
+    Date: September 2019
+"""
 def sixTest(modelPath):
     dataPath = os.path.join('.','mnist','jimmyDraws_6Blk.png')
     datapoint = np.mean(cv2.imread(dataPath),axis=2)/float(255)
@@ -140,8 +219,26 @@ def sixTest(modelPath):
     cv2.imwrite(os.path.join('heatmaps','sixTest.png'), joined)
     print('Wrote ' + os.path.join('heatmaps','sixTest.png'))
     plt.imshow(joined)
+
+"""
+quadcopterTest()
+DESCRIPTION:
+    Debugging function that runs a trained hourglass CNN on a basic quadcopter
+    image.
     
-# Example quadcopter frame
+INPUTS: 
+    modelPath: checkpoint (".ckpt") file to run a forward pass with
+    
+OUTPUTS: 
+    Displays the resulting heatmap and saves to file
+
+INFO:
+    Author: James Dunn, Boston University
+    Thesis work for MS degree in ECE
+    Advisor: Dr. Roberto Tron
+    Email: jkdunn@bu.edu
+    Date: September 2019
+"""
 def quadcopterTest(modelPath):
     dataPath = os.path.join('.','PHO_quadcopterTest_64x64.jpg')
     datapoint = cv2.imread(dataPath)
@@ -166,7 +263,30 @@ def quadcopterTest(modelPath):
     plt.imshow(joined)
     
     
-# Example quadcopter frames
+"""
+quadcopterBatchTest()
+DESCRIPTION:
+    Debugging function that runs a trained hourglass CNN on a series of basic 
+    quadcopter images.
+    
+INPUTS: 
+    modelPath: checkpoint (".ckpt") file to run a forward pass with
+    
+OPTIONAL INPUTS:
+    directory: directory containing the images to run the test on 
+        (default goldenImages)
+    ext: file extension of the images in directory (default .jpg)
+    
+OUTPUTS: 
+    Saves the resulting heatmaps to file
+
+INFO:
+    Author: James Dunn, Boston University
+    Thesis work for MS degree in ECE
+    Advisor: Dr. Roberto Tron
+    Email: jkdunn@bu.edu
+    Date: September 2019
+"""
 def quadcopterBatchTest(modelPath,directory='goldenImages',ext='.jpg'):
     iImage = 0
     filmstrip = []

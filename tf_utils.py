@@ -14,7 +14,6 @@ INFO:
 
 import tensorflow as tf
 import os
-from tensorflow.python.tools import optimize_for_inference_lib
 
 """
 ckpt_to_protobuf()
@@ -54,9 +53,9 @@ def ckpt_to_protobuf(ckptFile):
         #names = [i.name for i in sess.graph.get_operations()]
                     
         # Setup protobuf filenames
-        pbtxt_filename = baseName+'.pbtxt'
-        pb_filepath = os.path.join(directory, baseName + '.pb')
-        #pb_opt_filepath = os.path.join(directory, baseName + '_opt.pb')
+        pb_filepath = os.path.join(directory, baseName + '_full.pb')
+        pbtxt_filename = baseName+'_full.pbtxt'
+        pb_trimmed_filebase = os.path.join(directory, baseName + '_trim')
         
         # Write the .pb file
         print("Freezing the graph in protobuf format")
@@ -67,34 +66,69 @@ def ckpt_to_protobuf(ckptFile):
             
             
         print("Writing frozen graph definition in protobuf txt format")
-        tf.train.write_graph(
-            graph_or_graph_def=output_graph_def, 
+        tf.train.write_graph(graph_or_graph_def=output_graph_def, 
             logdir=directory, name=pbtxt_filename, as_text=True)
+        
+        print("Saved NN graph to " + pb_filepath)
+        print("Saved NN graph (text version) to " + pbtxt_filename)
         
     '''
     print("FULL NODE/VARIABLE LIST")
-    for node in graph_def.node:
+    for node in output_graph_def.node:
         print(node.name + " is a " + node.op)
-
-    # Artifically extract a subgraph
-    inference_graph = tf.graph_util.extract_sub_graph(output_graph_def, graphOutputs)
-  
-    # This saves the variables (weights) to a ".pb" file
-    with tf.gfile.FastGFile(pb_opt_filepath, 'wb') as ff:
-        ff.write(inference_graph.SerializeToString())
-    '''
+    '''    
+    
+    print("Trimming out variables from the graph that aren't used for " + \
+          "the forward pass")
+    trim_to_output(output_graph_def, graphOutputs, pb_trimmed_filebase)
             
 # end ckpt_to_protobuf
     
-def trim_to_output(graph_def, graphOutputs, outfile):
-    inference_graph = tf.graph_util.extract_sub_graph(graph_def, graphOutputs)
+"""
+trim_to_output()
+DESCRIPTION:
+    Uses extract_sub_graph from tensorflow library to trim away all parts
+    of the graph not involved in calculating graphOutputs. Saves the resulting
+    graph to outname as both a .pb and .pbtxt.
+    
+INPUTS: 
+    graphDef: Tensorflow graph to trim
+    graphOutputs: list of all output nodes desired from the forward pass
+    outname: directory + name (without extension) to save the .pb and .pbtxt to
+    
+OUTPUTS: 
+    Protobuf (.pb and .pbtxt) files written to outname
+
+EXAMPLE:
+    trim_to_ouptut(sess.graph_def, ['heatmaps/b_heatmap'], 'somedir/modelTrim')
+
+INFO:
+    Author: James Dunn, Boston University
+    Thesis work for MS degree in ECE
+    Advisor: Dr. Roberto Tron
+    Email: jkdunn@bu.edu
+    Date: October 2019
+"""
+def trim_to_output(graphDef, graphOutputs, outname):
+    directory = os.path.dirname(outname)
+    filename = os.path.basename(outname)
+    
+    # Trim the graph
+    inference_graph = tf.graph_util.extract_sub_graph(graphDef, graphOutputs)
     
     # This saves the variables (weights) to a ".pb" file
-    with tf.gfile.FastGFile(outfile, 'wb') as ff:
+    with tf.gfile.FastGFile(outname+'.pb', 'wb') as ff:
         ff.write(inference_graph.SerializeToString())
+        
+    # This saves the graph def to a pbtxt file
+    tf.train.write_graph(graph_or_graph_def=inference_graph, 
+        logdir=directory, name=filename+'.pbtxt', as_text=True)
+    
+    print("Saved trimmed NN graph to " + outname + '.pb')
+    print("Saved trimmed NN graph (text version) to " + outname + '.pbtxt')
 # end trim_to_output
             
+        
 # Run with defaults if at highest level
-if __name__ == "__main__":
-    
-    ckpt_to_protobuf(os.path.join('homebrew_hourglass_nn_save','model_at10.ckpt'))
+if __name__ == "__main__":    
+    ckpt_to_protobuf(os.path.join('homebrew_hourglass_nn_save','modelFinal.ckpt'))

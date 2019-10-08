@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-FUNCTION: use_hourglass_cnn_cv2
+FILE: use_hourglass_cnn_cv2
 DESCRIPTION:
     Uses a trained hourglass CNN on arbitrary input image(s) using cv2 library
     
@@ -21,9 +21,35 @@ import time
 import os
 import videoUtilities as vu
 
+"""
+use_hourglass_cnn()
+DESCRIPTION:
+    Runs a forward pass of the tensorflow graph in modelPath on input images.
+    Optionally runs multiple times to get more accurate timing statistics.
+    This uses the cv2 library, not tensorflow.  This enables quicker and
+    easier implementation on the SWAP-limited quadcopter's single board
+    computers (odroid xu4 as of this writing).
+    
+INPUTS: 
+    modelPath: protobuf (".pb") file to run a forward pass with
+    inputImages: images to run forward pass on [numImages,width,height]
+
+OPTIONAL INPUTS:
+    numTimingTrials: number of times to repeat the same forward pass to get
+        better timing statistics. Default 1.
+    
+RETURNS: 
+    heatmaps: heatmaps that are the result of the forward pass in inputImages
+
+INFO:
+    Author: James Dunn, Boston University
+    Thesis work for MS degree in ECE
+    Advisor: Dr. Roberto Tron
+    Email: jkdunn@bu.edu
+    Date: October 2019
+"""
 def use_hourglass_cnn(modelPath, inputImages, numTimingTrials = 1):
-    # Execute a single forward pass on a set of images to demonstrate how
-    # the trained classifier would be used in real-time software.
+    # Execute a single forward pass on a set of images
     
     # Check this for meta to pb conversion and simply writing pb in the first place
     #https://stackoverflow.com/questions/48701666/save-tensorflow-checkpoint-to-pb-protobuf-file     
@@ -36,7 +62,7 @@ def use_hourglass_cnn(modelPath, inputImages, numTimingTrials = 1):
     start_sec = time.clock()
     for i in range(numTimingTrials): # run many times to get timing information
         
-        tensorflowNet.setInput(np.squeeze(inputImages[0,:,:]))
+        tensorflowNet.setInput(np.squeeze(inputImages))
  
         # Runs a forward pass to compute the net output
         heatmaps = tensorflowNet.forward()
@@ -49,7 +75,26 @@ def use_hourglass_cnn(modelPath, inputImages, numTimingTrials = 1):
             
     return heatmaps
 
-# Example quadcopter frame
+
+"""
+quadcopterTest()
+DESCRIPTION:
+    Debugging function that runs a trained hourglass CNN on a basic quadcopter
+    image.
+    
+INPUTS: 
+    modelPath: protobuf (".pb") file to run a forward pass with
+    
+OUTPUTS: 
+    Displays the resulting heatmap and saves to file
+
+INFO:
+    Author: James Dunn, Boston University
+    Thesis work for MS degree in ECE
+    Advisor: Dr. Roberto Tron
+    Email: jkdunn@bu.edu
+    Date: September 2019
+"""
 def quadcopterTest(modelPath):
     dataPath = os.path.join('.','PHO_quadcopterTest_64x64.jpg')
     datapoint = cv2.imread(dataPath)
@@ -57,7 +102,7 @@ def quadcopterTest(modelPath):
     print("Running CNN at " + modelPath + " on " + dataPath)
     heatmap = use_hourglass_cnn(modelPath, 
                          np.reshape(datapoint,[1,datapoint.shape[0],datapoint.shape[1]]),
-                         numTimingTrials=100)
+                         numTimingTrials=500)
     
     # Overlay on outline of the heatmap in green onto the image
     greenedImage = vu.overlay_heatmap(heatmap,datapoint)
@@ -74,7 +119,30 @@ def quadcopterTest(modelPath):
     plt.imshow(joined)
     
     
-# Example quadcopter frames
+"""
+quadcopterBatchTest()
+DESCRIPTION:
+    Debugging function that runs a trained hourglass CNN on a series of basic 
+    quadcopter images.
+    
+INPUTS: 
+    modelPath: protobuf (".pb") file to run a forward pass with
+    
+OPTIONAL INPUTS:
+    directory: directory containing the images to run the test on 
+        (default goldenImages)
+    ext: file extension of the images in directory (default .jpg)
+    
+OUTPUTS: 
+    Saves the resulting heatmaps to file
+
+INFO:
+    Author: James Dunn, Boston University
+    Thesis work for MS degree in ECE
+    Advisor: Dr. Roberto Tron
+    Email: jkdunn@bu.edu
+    Date: September 2019
+"""
 def quadcopterBatchTest(modelPath,directory='goldenImages',ext='.jpg'):
     iImage = 0
     filmstrip = []
@@ -98,7 +166,7 @@ def quadcopterBatchTest(modelPath,directory='goldenImages',ext='.jpg'):
                 print("Running CNN at " + modelPath + " on " + os.path.join(directory,filename))
                 heatmap = use_hourglass_cnn(modelPath, 
                                      np.reshape(datapoint,[1,datapoint.shape[0],datapoint.shape[1]]),
-                                     numTimingTrials=100)
+                                     numTimingTrials=500)
                 
                 # Overlay on outline of the heatmap in green onto the image
                 #greenedImage = vu.overlay_heatmap(heatmap,datapoint)
@@ -139,7 +207,4 @@ def quadcopterBatchTest(modelPath,directory='goldenImages',ext='.jpg'):
             
 # Run with defaults if at highest level
 if __name__ == "__main__":
-    
-    #print("\n\n")
-    #quadcopterTest(os.path.join('homebrew_hourglass_nn_save','model_at750.ckpt'))
-    quadcopterBatchTest(os.path.join('homebrew_hourglass_nn_save','modelFinal'))
+    quadcopterBatchTest(os.path.join('homebrew_hourglass_nn_save','modelFinal_full'))
