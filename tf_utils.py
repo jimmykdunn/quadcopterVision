@@ -94,6 +94,12 @@ def ckpt_to_protobuf(ckptFile):
 
         with tf.gfile.GFile(pb_filepath, 'wb') as f:
             f.write(output_graph_def.SerializeToString())
+            
+            
+        print("Writing frozen graph definition in protobuf txt format")
+        tf.train.write_graph(
+            graph_or_graph_def=output_graph_def, 
+            logdir=directory, name=pbtxt_filename, as_text=True)
         
         
     
@@ -149,9 +155,13 @@ def ckpt_to_protobuf(ckptFile):
     trim_to_output(graph_def,['heatmaps/secondUpconv/strided_slice'],os.path.join(directory, baseName+'_up2SS.pb'))
     # fails at tensorflowNet.forward()
     trim_to_output(graph_def,['heatmaps/secondUpconv/stack'],os.path.join(directory, baseName+'_up2stack.pb'))
+    
     # fails at cv2.dnn.readNet(modelPath+'.pb') (original fail point)
     # THIS IS WHERE cv2 BARFS! At conv2d_transpose!
+    #!!!The error we are seeing here indicates that the prior layer ([heatmaps/secondUpconv/stack])
+    #IS NOT A CONSTANT FOR SOME REASON!!!
     trim_to_output(graph_def,['heatmaps/secondUpconv/conv2d_transpose'],os.path.join(directory, baseName+'_up2conv2t.pb'))
+    
     # fails at cv2.dnn.readNet(modelPath+'.pb') (original fail point)
     trim_to_output(graph_def,['heatmaps/secondUpconv/Relu'],os.path.join(directory, baseName+'_up2relu.pb'))
     # fails at cv2.dnn.readNet(modelPath+'.pb') (original fail point)
