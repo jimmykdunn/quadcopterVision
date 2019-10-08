@@ -149,4 +149,4 @@ if __name__ == "__main__":
     #quadcopterTest(os.path.join('homebrew_hourglass_nn_save','model_at750.ckpt'))
     print("\n\n")
     #quadcopterBatchTest(os.path.join('homebrew_hourglass_nn_save','model_at10'))
-    quadcopterBatchTest(os.path.join('homebrew_hourglass_nn_save','modelFinal_opt'))
+    quadcopterBatchTest(os.path.join('homebrew_hourglass_nn_save','modelFinal'))
