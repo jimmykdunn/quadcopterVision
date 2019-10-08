@@ -25,13 +25,8 @@ def use_hourglass_cnn(modelPath, inputImages, numTimingTrials = 1):
     # Execute a single forward pass on a set of images to demonstrate how
     # the trained classifier would be used in real-time software.
     
-    
-    
     # Check this for meta to pb conversion and simply writing pb in the first place
     #https://stackoverflow.com/questions/48701666/save-tensorflow-checkpoint-to-pb-protobuf-file     
-    #tensorflowNet = cv2.dnn.readNetFromTensorflow(modelPath+'.pb')   
-    #tensorflowNet = cv2.dnn.readNetFromTensorflow(modelPath+'.pb', modelPath+'.pbtxt')
-            #os.path.join('homebrew_hourglass_nn_save','hourglass_tf_graph.pb'))
     tensorflowNet = cv2.dnn.readNet(modelPath+'.pb')
             
     # Run the forward pass for the input datapoints
@@ -147,6 +142,4 @@ if __name__ == "__main__":
     
     #print("\n\n")
     #quadcopterTest(os.path.join('homebrew_hourglass_nn_save','model_at750.ckpt'))
-    print("\n\n")
-    #quadcopterBatchTest(os.path.join('homebrew_hourglass_nn_save','model_at10'))
     quadcopterBatchTest(os.path.join('homebrew_hourglass_nn_save','modelFinal'))

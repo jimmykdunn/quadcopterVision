@@ -141,42 +141,8 @@ EXAMPLE:
 RETURNS:
     Larger resolution layer after upconvolution
 """
-def upconv2d(x, wShape):
-    # It is VERY IMPORTANT to get these variables in this way
-    # The funky "pack" issue is somewhere in here... cv2.dnn does NOT like
-    # pack variables (tuples or lists with undetermined dimensions)
-    # We MIGHT be able to pass in nx and ny as constants, but that would still
-    # leave the batch dimension as undetermined, no way to avoid that.
-    # Might also try something like initializing outShape as a tf.ones([4]),
-    # then filling it with values.  Still might get screwed by the need for a
-    # batch dimension.
-    # Might need a newer version of cv2
-    #!!!YOU MIGHT ALSO TRY USING tf.layers.conv2d_transpose() instead of tf.nn versions!!!
-    #!!!This is what they have for all the online examples!!!
-    #with tf.name_scope('getShapes'):
-    #    nx = x.get_shape().as_list()[1]
-    #    ny = x.get_shape().as_list()[2]
-    #    #nkx = W.get_shape().as_list()[0] 
-    #    #nky = W.get_shape().as_list()[1] 
-    #    #nW = W.get_shape().as_list()[2] 
-    #   nkx = wShape[0]
-    #    nky = wShape[1]
-    #    nW = wShape[2]
-    
-    #with tf.name_scope('makeWeights'):
-    #    W = weight_variable(wShape)
-    
-    #with tf.name_scope('manualStack'):
-        # Output dimension and stride calculations
-        # use tf.shape(x)[0] instead of -1
-        #outShape = tf.stack([tf.shape(x)[0], (nkx-1)*nx, (nky-1)*ny, nW], name='outShapeStack') 
-        #outShape = [tf.shape(x)[0], (nkx-1)*nx, (nky-1)*ny, nW]
-        #@outShape = (tf.shape(x)[0], (nkx-1)*nx, (nky-1)*ny, nW)
-        #@stride = [1,nkx-1,nky-1,1]
-    
+def upconv2d(x, wShape):    
     # Build the upconvolution layer
-    #xUpconv = tf.nn.conv2d_transpose(x, W, outShape, stride, padding='SAME') 
-    # [3,3,32,64]
     with tf.name_scope('myConv2dTranspose'):
         convStride = [wShape[0]-1,wShape[1]-1]
         # inputs, filters, kernelsize, stride
@@ -300,16 +266,10 @@ def hourglass_nn(x):
 
     with tf.name_scope('secondUpconv'):
         # No skip connection necessary on the innermost layer
-        #wu2 = weight_variable([2,2,32,64])
-        #wu2 = weight_variable([3,3,32,64])
-        #h_upconv1 = tf.nn.relu(upconv2d(h_pool2, wu2)) # [-1,14,14,32]
         h_upconv1 = tf.nn.relu(upconv2d(h_pool2, [3,3,32,64])) # [-1,14,14,32]
         
     with tf.name_scope('firstUpconv'):
         h_sk1 = addSkipConnection(h_upconv1, h_pool1) # skip connection [-1,14,14,64]
-        #wu1 = weight_variable([2,2,1,64])
-        #wu1 = weight_variable([5,5,1,64])
-        #heatmaps = tf.nn.relu(upconv2d(h_sk1, wu1)) # [-1,28,28,1]
         heatmaps = tf.nn.relu(upconv2d(h_sk1, [5,5,1,64])) # [-1,28,28,1]
         
     # The size of heatmap here should be [batch,28,28,1] for NMIST
@@ -405,9 +365,6 @@ def train_hourglass_nn(trainImages, trainMasks, testImages, testMasks, \
     print('Saving graph to: %s' % checkpointSaveDir)
     train_writer = tf.summary.FileWriter(checkpointSaveDir)
     train_writer.add_graph(tf.get_default_graph())
-    #
-    #@@@graph = tf.get_default_graph()
-    ###@input_graph_def = graph.as_graph_def()
     
     # Initialize class to save the CNN post-training
     # Save up to 100 along the way for comparisons
@@ -524,28 +481,6 @@ def save_graph_protobuf(sess,directory,baseName='modelFinal'):
     
     # Convert to protobuf with the utility function
     tf_utils.ckpt_to_protobuf(ckpt_filepath)
-    
-    '''
-    # Setup protobuf filenames
-    pbtxt_filename = baseName+'.pbtxt'
-    pbtxt_filepath = os.path.join(directory, pbtxt_filename)
-    pb_filepath = os.path.join(directory, baseName + '.pb')
-    
-    # This will only save the graph but the variables (weights) will not be 
-    # saved. This saves the ".pbtxt" file.
-    tf.train.write_graph(graph_or_graph_def=sess.graph_def, logdir=directory, 
-        name=pbtxt_filename, as_text=True)
-
-    # Freeze graph. This saves all the actual weights to the file
-    graph = tf.get_default_graph()
-    input_graph_def = graph.as_graph_def()
-    output_node_names = ['heatmaps/b_heatmaps'] #['cnn/output']
-    output_graph_def = tf.graph_util.convert_variables_to_constants(
-            sess, input_graph_def, output_node_names)
-
-    with tf.gfile.GFile(pb_filepath, 'wb') as f:
-        f.write(output_graph_def.SerializeToString())
-    '''
 # end save_graph_protobuf   
     
 
