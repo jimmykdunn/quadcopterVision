@@ -46,11 +46,11 @@ def use_hourglass_cnn(modelPath, inputImages, numTimingTrials = 1):
         # Runs a forward pass to compute the net output
         heatmaps = tensorflowNet.forward()
  
-        # Display timing trial information
-        end_sec = time.clock()
-        if numTimingTrials != 1:
-            print("%d trials in %g seconds" % (numTimingTrials,end_sec-start_sec))
-            print("Forward pass speed: %g Hz" % (numTimingTrials/(end_sec-start_sec)))
+    # Display timing trial information
+    end_sec = time.clock()
+    if numTimingTrials != 1:
+        print("%d trials in %g seconds" % (numTimingTrials,end_sec-start_sec))
+        print("Forward pass speed: %g Hz" % (numTimingTrials/(end_sec-start_sec)))
             
     return heatmaps
 
@@ -148,4 +148,5 @@ if __name__ == "__main__":
     #print("\n\n")
     #quadcopterTest(os.path.join('homebrew_hourglass_nn_save','model_at750.ckpt'))
     print("\n\n")
-    quadcopterBatchTest(os.path.join('homebrew_hourglass_nn_save','model_at10'))
+    #quadcopterBatchTest(os.path.join('homebrew_hourglass_nn_save','model_at10'))
+    quadcopterBatchTest(os.path.join('homebrew_hourglass_nn_save','modelFinal_opt'))
