@@ -65,8 +65,8 @@ def use_hourglass_cnn(modelPath, inputImages, numTimingTrials = 1):
     for i in range(numTimingTrials): # run many times to get timing information
         print("Setting input image with shape:")
         print(inputImages.shape)
-        #tensorflowNet.setInput(np.squeeze(inputImages))
-        tensorflowNet.setInput(inputImages)
+        tensorflowNet.setInput(np.squeeze(inputImages))
+        #tensorflowNet.setInput(inputImages)
         print("Input image set")
  
         # Runs a forward pass to compute the net output

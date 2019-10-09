@@ -131,4 +131,4 @@ def trim_to_output(graphDef, graphOutputs, outname):
         
 # Run with defaults if at highest level
 if __name__ == "__main__":    
-    ckpt_to_protobuf(os.path.join('homebrew_hourglass_nn_save','modelFinal.ckpt'))
+    ckpt_to_protobuf(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal.ckpt'))
