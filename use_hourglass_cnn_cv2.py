@@ -53,7 +53,9 @@ def use_hourglass_cnn(modelPath, inputImages, numTimingTrials = 1):
     
     # Check this for meta to pb conversion and simply writing pb in the first place
     #https://stackoverflow.com/questions/48701666/save-tensorflow-checkpoint-to-pb-protobuf-file     
+    print("Loading saved neural network from " + modelPath+'.pb')
     tensorflowNet = cv2.dnn.readNet(modelPath+'.pb')
+    print("Neural network sucessfully loaded")
             
     # Run the forward pass for the input datapoints
     # In a real-time implementation, this will be called inside of
@@ -61,11 +63,16 @@ def use_hourglass_cnn(modelPath, inputImages, numTimingTrials = 1):
     # above preparation should be done ahead of time.
     start_sec = time.clock()
     for i in range(numTimingTrials): # run many times to get timing information
-        
-        tensorflowNet.setInput(np.squeeze(inputImages))
+        print("Setting input image with shape:")
+        print(inputImages.shape)
+        #tensorflowNet.setInput(np.squeeze(inputImages))
+        tensorflowNet.setInput(inputImages)
+        print("Input image set")
  
         # Runs a forward pass to compute the net output
+        print("Running forward pass")
         heatmaps = tensorflowNet.forward()
+        print("Forward pass complete")
  
     # Display timing trial information
     end_sec = time.clock()
@@ -207,4 +214,4 @@ def quadcopterBatchTest(modelPath,directory='goldenImages',ext='.jpg'):
             
 # Run with defaults if at highest level
 if __name__ == "__main__":
-    quadcopterBatchTest(os.path.join('homebrew_hourglass_nn_save','modelFinal_full'))
+    quadcopterBatchTest(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full'))
