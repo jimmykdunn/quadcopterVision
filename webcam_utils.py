@@ -36,7 +36,7 @@ REFERENCES:
    Used https://github.com/andfoy/textobjdetection/blob/master/ssd/demo/live.py
    as an example.
 """ 
-class videoStream
+class videoStream:
     def __init__(self):
         print("Initializing video stream")
         self.stream = WebcamVideoStream(src=0)
@@ -48,8 +48,11 @@ class videoStream
     # end init
     
     def grabFrame(self):
-        return stream.read() # grab a frame and return
-    # end grabFrame    
+        return self.stream.read() # grab a frame and return
+    # end grabFrame  
+    
+    def stop(self):
+        self.stream.stop()  
     
 # end class videoStream
  
@@ -98,6 +101,7 @@ def grabStream(folder='.',numFrames=100):
         cv2.imwrite(fullpath, frame)
         print("Wrote " + fullpath + ' ' + str(frame.shape))
     # end capture
+    stream.stop()
         
     # Calculate framerate
     end_time = datetime.now()  
