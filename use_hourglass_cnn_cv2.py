@@ -15,7 +15,7 @@ INFO:
 """
 
 import numpy as np
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 import cv2
 import time
 import os
@@ -63,16 +63,16 @@ def use_hourglass_cnn(modelPath, inputImages, numTimingTrials = 1):
     # above preparation should be done ahead of time.
     start_sec = time.clock()
     for i in range(numTimingTrials): # run many times to get timing information
-        print("Setting input image with shape:")
-        print(inputImages.shape)
+        #print("Setting input image with shape:")
+        #print(inputImages.shape)
         tensorflowNet.setInput(np.squeeze(inputImages))
         #tensorflowNet.setInput(inputImages)
-        print("Input image set")
+        #print("Input image set")
  
         # Runs a forward pass to compute the net output
-        print("Running forward pass")
+        #print("Running forward pass")
         heatmaps = tensorflowNet.forward()
-        print("Forward pass complete")
+        #print("Forward pass complete")
  
     # Display timing trial information
     end_sec = time.clock()
@@ -205,12 +205,14 @@ def quadcopterBatchTest(modelPath,directory='goldenImages',ext='.jpg'):
             # if corresponding mask exists
         # if this file is an image
     # for all files in directory
-    
-    
+   
+    # Write the resulting filmstrip of heatmaps and overlays to file
+    if not os.path.exists('heatmaps'):
+        os.mkdir('heatmaps')
     cv2.imwrite(os.path.join('heatmaps','goldenFilmstrip.png'), filmstrip)
     print('Wrote ' + os.path.join('heatmaps','goldenFilmstrip.png'))
-    #plt.imshow(filmstrip)
-    #plt.show()
+    plt.imshow(filmstrip)
+    plt.show()
             
 # Run with defaults if at highest level
 if __name__ == "__main__":
