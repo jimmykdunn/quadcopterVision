@@ -17,7 +17,7 @@ INFO:
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
-import time
+from datetime import datetime
 import os
 import videoUtilities as vu
 
@@ -61,7 +61,7 @@ def use_hourglass_cnn(modelPath, inputImages, numTimingTrials = 1):
     # In a real-time implementation, this will be called inside of
     # the data capture loop with single image datapoints. All of the
     # above preparation should be done ahead of time.
-    start_sec = time.clock()
+    start_time = datetime.now()
     for i in range(numTimingTrials): # run many times to get timing information
         #print("Setting input image with shape:")
         #print(inputImages.shape)
@@ -75,10 +75,10 @@ def use_hourglass_cnn(modelPath, inputImages, numTimingTrials = 1):
         #print("Forward pass complete")
  
     # Display timing trial information
-    end_sec = time.clock()
+    end_time = datetime.now()
     if numTimingTrials != 1:
-        print("%d trials in %g seconds" % (numTimingTrials,end_sec-start_sec))
-        print("Forward pass speed: %g Hz" % (numTimingTrials/(end_sec-start_sec)))
+        print("%d trials in %g seconds" % (numTimingTrials,(end_time-start_time).total_seconds()))
+        print("Forward pass speed: %g Hz" % (numTimingTrials/(end_time-start_time).total_seconds()))
             
     return heatmaps
 
@@ -109,7 +109,7 @@ def quadcopterTest(modelPath):
     print("Running CNN at " + modelPath + " on " + dataPath)
     heatmap = use_hourglass_cnn(modelPath, 
                          np.reshape(datapoint,[1,datapoint.shape[0],datapoint.shape[1]]),
-                         numTimingTrials=500)
+                         numTimingTrials=100)
     
     # Overlay on outline of the heatmap in green onto the image
     greenedImage = vu.overlay_heatmap(heatmap,datapoint)
@@ -173,7 +173,7 @@ def quadcopterBatchTest(modelPath,directory='goldenImages',ext='.jpg'):
                 print("Running CNN at " + modelPath + " on " + os.path.join(directory,filename))
                 heatmap = use_hourglass_cnn(modelPath, 
                                      np.reshape(datapoint,[1,datapoint.shape[0],datapoint.shape[1]]),
-                                     numTimingTrials=500)
+                                     numTimingTrials=100)
                 
                 # Overlay on outline of the heatmap in green onto the image
                 #greenedImage = vu.overlay_heatmap(heatmap,datapoint)
@@ -211,8 +211,8 @@ def quadcopterBatchTest(modelPath,directory='goldenImages',ext='.jpg'):
         os.mkdir('heatmaps')
     cv2.imwrite(os.path.join('heatmaps','goldenFilmstrip.png'), filmstrip)
     print('Wrote ' + os.path.join('heatmaps','goldenFilmstrip.png'))
-    plt.imshow(filmstrip)
-    plt.show()
+    #plt.imshow(filmstrip)
+    #plt.show()
             
 # Run with defaults if at highest level
 if __name__ == "__main__":
