@@ -18,6 +18,41 @@ import time
 from datetime import datetime
 import os
  
+
+"""
+Class: videoStream
+DESCRIPTION:
+    Basic class for starting and capturing frames from a video stream. 
+    Ultimately serves as a wrapper for imutils.video.WebcamVideoStream.
+
+INFO:
+    Author: James Dunn, Boston University
+    Thesis work for MS degree in ECE
+    Advisor: Dr. Roberto Tron
+    Email: jkdunn@bu.edu
+    Date: October 2019
+    
+REFERENCES:
+   Used https://github.com/andfoy/textobjdetection/blob/master/ssd/demo/live.py
+   as an example.
+""" 
+class videoStream
+    def __init__(self):
+        print("Initializing video stream")
+        self.stream = WebcamVideoStream(src=0)
+        
+        # Start the video stream
+        self.stream.start()
+        time.sleep(1.0) # wait for stream to initialize
+        print("Video stream initialized")
+    # end init
+    
+    def grabFrame(self):
+        return stream.read() # grab a frame and return
+    # end grabFrame    
+    
+# end class videoStream
+ 
 """
 grabStream()
 DESCRIPTION:
@@ -44,13 +79,7 @@ REFERENCES:
 """
 def grabStream(folder='.',numFrames=100):
     # Initialize
-    print("Initializing video stream")
-    stream = WebcamVideoStream(src=0)
-    
-    # Start the video stream
-    stream.start()
-    time.sleep(1.0) # wait for stream to initialize
-    print("Video stream initialized")
+    stream = videoStream()
     
     # Create the output folder if it does not yet exist
     if not os.path.exists(folder):
@@ -61,7 +90,7 @@ def grabStream(folder='.',numFrames=100):
     print("Capturing %d frames" % numFrames)
     start_time = datetime.now()
     for i in range(numFrames):
-        frame = stream.read() # grab next frame
+        frame = stream.grabFrame() # grab next frame
         
         # Save the frame to file
         filestr = "frame_%04d.jpg" % i
