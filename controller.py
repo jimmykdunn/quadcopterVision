@@ -18,13 +18,23 @@ import cv2
 import os
 import numpy as np
 import videoUtilities as vu
+import shutil
+from datetime import datetime
 
-def run(modelPath, nnFramesize=(64,64)):
+def run(modelPath, nnFramesize=(64,64), save=False, folder='webcam',showHeatmap=False):
     # Import the trained neural network
     print("Loading saved neural network from " + modelPath+'.pb')
     tensorflowNet = cv2.dnn.readNet(modelPath+'.pb')
     print("Neural network sucessfully loaded")
-
+    
+    # Prepare the output folder
+    if save:
+        if os.path.exists(folder): # only rm if it exists
+            shutil.rmtree(folder, ignore_errors=True)
+        if not os.path.exists(folder):
+            os.mkdir(folder)
+        
+        
     # Initialize the video stream from the camera
     webcam = wcam.videoStream()
     
@@ -33,8 +43,12 @@ def run(modelPath, nnFramesize=(64,64)):
     print("Press ESC key to quit")
     
     # Continuously pull and display frames from the camera until stopped
+    i=0
+    start_time = datetime.now()
     while True:
         frame = webcam.grabFrame() # grab a frame
+        if i == 0:
+            print("Raw frame shape: " + str(frame.shape))
         
         # Massage frame to be the right size and colorset
         nnFrameLargeColor = np.mean(frame,axis=2)/float(255)
@@ -52,28 +66,50 @@ def run(modelPath, nnFramesize=(64,64)):
         heatmapCOM = vu.find_centerOfMass(heatmap)
         overlaidNN = vu.overlay_point(overlaidNN,heatmapCOM,color='g')
         
-        # Display the heatmap and the image side-by-side
-        heatmap = np.minimum(heatmap,np.ones(heatmap.shape)*255)
-        heatmap = np.maximum(heatmap,np.zeros(heatmap.shape))
-        heatmap = heatmap.astype(np.uint8) # map to uint8 to match nnFrame
-        heatmapColor = np.repeat(heatmap[:,:,np.newaxis],3,axis=2)
-        pair = np.concatenate([overlaidNN, heatmapColor],axis=0)
+        if showHeatmap:
+            # Display the heatmap and the image side-by-side
+            heatmap = np.minimum(heatmap,np.ones(heatmap.shape)*255)
+            heatmap = np.maximum(heatmap,np.zeros(heatmap.shape))
+            heatmap = heatmap.astype(np.uint8) # map to uint8 to match nnFrame
+            heatmapColor = np.repeat(heatmap[:,:,np.newaxis],3,axis=2)
+            displayThis = np.concatenate([overlaidNN, heatmapColor],axis=0)
+        else:
+            # Just display image with outlines and COM
+            displayThis = overlaidNN
         
         # keypress control
         key = cv2.waitKey(1) & 0xFF
         if key == ord('p'): # pause
             while True:
                 key2 = cv2.waitKey(1) or 0xff
-                cv2.imshow('frame', pair) # show last grabbed frame
+                cv2.imshow('frame', displayThis) # show last grabbed frame
                 if key2 == ord('p'): # resume
                     break
         
         # Show the current frame with neural net mask
-        pair = cv2.resize(pair,(nnFramesize[0]*4,nnFramesize[1]*4*2)) # larger for ease of viewing
-        cv2.imshow('frame',pair)
+        #pair = cv2.resize(displayThis,(nnFramesize[0]*4,nnFramesize[1]*4*2)) # larger for ease of viewing
+        cv2.imshow('frame',displayThis)
         
+        # Save each frame if desired
+        if save:
+            filestr = "frame_%04d.jpg" % i
+            fullpath = os.path.join(folder, filestr)
+            cv2.imwrite(fullpath, displayThis)
+                
         if key == 27: # exit (Esc)
             break
+            
+        i+=1
+    # end while True
+    
+    # Calculate framerate statistics
+    end_time = datetime.now()
+    timeElapsed = (end_time-start_time).total_seconds()
+    print("%d frames captured in %g seconds: framerate = %g Hz" % 
+        (i,timeElapsed,i/timeElapsed))
+    
+    if save:
+        print("Wrote image pairs to " + folder + ' with shape ' + str(displayThis.shape))
             
     # Cleanup
     print("Cleaning up")
@@ -84,4 +120,4 @@ def run(modelPath, nnFramesize=(64,64)):
 
 # Run if called directly
 if __name__ == "__main__":
-    run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full'))
+    run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full'),save=True)
