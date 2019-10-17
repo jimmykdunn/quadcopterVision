@@ -51,19 +51,20 @@ def run(modelPath, nnFramesize=(64,64), save=False, folder='webcam',
         if i == 0:
             print("Raw frame shape: " + str(frame.shape))
         
-        # Massage frame to be the right size and colorset
-        # Somehow this takes forever... Good place for speedup in the future
-        nnFrameLargeColor = frame[:,:,0] * float(1.0/255.0)
-        nnFrame = cv2.resize(nnFrameLargeColor,nnFramesize)
+        # Massage frame to be the right size and colorset#
+        nnFrame = cv2.resize(frame,nnFramesize)
+        nnFrame = nnFrame[:,:,0] * float(1.0/255.0)
         nnFrame = np.squeeze(nnFrame)
         
         # Execute a forward pass of the neural network on the frame to get a
         # heatmap of target likelihood
+        # This is now by far the limiting temporal factor - without it the 
+        # framerate is in the 300Hz range, with it framerate is in the 50Hz range.
         tensorflowNet.setInput(nnFrame)
         heatmap = tensorflowNet.forward()
         heatmap = np.squeeze(heatmap)*255.0 # scale appropriately
         
-        # Overlay center of mass and heatmap contours onto the image
+        # Overlay center of mass and heatmap contours onto the image (speed negligible)
         overlaidNN = vu.overlay_heatmap(heatmap, nnFrame, heatThreshold=0.5)
         heatmapCOM = vu.find_centerOfMass(heatmap)
         overlaidNN = vu.overlay_point(overlaidNN,heatmapCOM,color='g')
@@ -144,4 +145,4 @@ def run(modelPath, nnFramesize=(64,64), save=False, folder='webcam',
 # Run if called directly
 if __name__ == "__main__":
     run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full'),
-        save=False, liveFeed=True)
+        save=True, liveFeed=True)
