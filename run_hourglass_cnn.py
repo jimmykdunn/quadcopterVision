@@ -491,32 +491,30 @@ if __name__ == "__main__":
     # Epoch parameters
     peekEveryNEpochs=25
     saveEveryNEpochs=25
-    nEpochs = 50
+    nEpochs = 5000
     batchSize = 512
-    '''
-    x_set1, y_set1, idSet1 = vu.pull_aug_sequence(
-        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_PHO_hallway_64x64","augImage_"),
-        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_PHO_hallway_64x64","augMask_"))
-    x_set2, y_set2, idSet2 = vu.pull_aug_sequence(
-        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_BOS_trainSidewalk_64x64","augImage_"),
-        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_BOS_trainSidewalk_64x64","augMask_"))
-    '''
-    '''
-    x_set1, y_set1, id_set1 = vu.pull_aug_sequence(
-        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab1_64x64","augImage_"),
-        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab1_64x64","augMask_"))
-    x_set2, y_set2, id_set2 = vu.pull_aug_sequence(
-        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab2_64x64","augImage_"),
-        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab2_64x64","augMask_"))
-    x_all = np.concatenate([x_set1,x_set2],axis=0)
-    y_all = np.concatenate([y_set1,y_set2],axis=0)
-    id_all = np.concatenate([id_set1,id_set2],axis=0)
-    '''
     
+    x_set1, y_set1, id_set1 = vu.pull_aug_sequence(
+        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48","augImage_"),
+        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48","augMask_"))
+    x_set2, y_set2, id_set2 = vu.pull_aug_sequence(
+        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab2_64x48","augImage_"),
+        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab2_64x48","augMask_"))
+    x_set3, y_set3, id_set3 = vu.pull_aug_sequence(
+        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab3_64x48","augImage_"),
+        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab3_64x48","augMask_"))
+    x_set4, y_set4, id_set4 = vu.pull_aug_sequence(
+        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab4_64x48","augImage_"),
+        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab4_64x48","augMask_"))
+    x_all = np.concatenate([x_set1,x_set2,x_set3,x_set4],axis=0)
+    y_all = np.concatenate([y_set1,y_set2,y_set3,y_set4],axis=0)
+    id_all = np.concatenate([id_set1,id_set2,id_set3,id_set4],axis=0)
+    
+    '''
     x_all, y_all, id_all = vu.pull_aug_sequence(
         os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48","augImage_"),
         os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48","augMask_"))
-    
+    '''
     
     # Split into train and test sets randomly
     #x_train, y_train, x_test, y_test = \
