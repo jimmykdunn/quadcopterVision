@@ -21,7 +21,7 @@ import videoUtilities as vu
 import shutil
 from datetime import datetime
 
-def run(modelPath, nnFramesize=(64,64), save=False, folder='webcam',
+def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
         showHeatmap=False, liveFeed=True, displayScale=1):
     # Import the trained neural network
     print("Loading saved neural network from " + modelPath+'.pb')
@@ -144,5 +144,5 @@ def run(modelPath, nnFramesize=(64,64), save=False, folder='webcam',
 
 # Run if called directly
 if __name__ == "__main__":
-    run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full'),
+    run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_64x48'),
         save=True, liveFeed=True)
