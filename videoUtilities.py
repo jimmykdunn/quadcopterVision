@@ -692,11 +692,12 @@ def find_centerOfMass(heatmap):
         return [None,None]
         
     width, height = heatmap.shape
-    xSum, ySum = 0,0
-    for x in range(width):
-        for y in range(height):
-            xSum += x*heatmap[x,y]
-            ySum += y*heatmap[x,y]
+          
+    # Do COM calculation with matrices for speed        
+    xx = np.repeat(np.expand_dims(np.arange(width ),axis=1),height,axis=1)
+    yy = np.repeat(np.expand_dims(np.arange(height),axis=0),width, axis=0)
+    xSum = np.sum(xx*heatmap)
+    ySum = np.sum(yy*heatmap)
             
     centerOfMass = [xSum/totalWeight, ySum/totalWeight]
     
