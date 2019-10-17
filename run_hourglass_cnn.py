@@ -239,40 +239,33 @@ def hourglass_nn(x):
     with tf.name_scope('firstConv'):
         w1 = weight_variable([5,5,1,32])
         #w1 = weight_variable([7,7,1,32])
-        h_conv1 = tf.nn.relu(conv2d(x_image,w1)) # [-1,28,28,32]
+        h_conv1 = tf.nn.relu(conv2d(x_image,w1)) # [-1,width,height,32]
 
     # Pooling layer - downsamples by 2X.
     with tf.name_scope('firstPool'):
-        #h_pool1 = max_pool(h_conv1,2) # [-1,14,14,32]
-        h_pool1 = max_pool(h_conv1,4)
+        h_pool1 = max_pool(h_conv1,4) # [-1,width/4,height/4,32]
 
     # Second convolutional layer -- maps 32 feature maps to 64.
     with tf.name_scope('secondConv'):
         w2 = weight_variable([5,5,32,64]) 
         #w2 = weight_variable([7,7,32,64]) 
-        h_conv2 = tf.nn.relu(conv2d(h_pool1,w2)) # [-1,14,14,64]
+        h_conv2 = tf.nn.relu(conv2d(h_pool1,w2)) # [-1,width/4,height/4,64]
 
     # Second pooling layer.
     with tf.name_scope('secondPool'):
-        h_pool2 = max_pool(h_conv2,2) # [-1,7,7,64]  
-        #h_pool2 = max_pool(h_conv2,4) # [-1,7,7,64]  
+        h_pool2 = max_pool(h_conv2,2) # [-1,width/8,height/8,64]  
 
-    # Remember the order is skip-connection THEN upconv
-    # x_image shape is [-1,28,28,1]
-    # h_conv1 shape is [-1,28,28,32]
-    # h_pool1 shape is [-1,14,14,32] 
-    # h_conv2 shape is [-1,14,14,64]
-    # h_pool2 shape is [-1,7,7,64]   
+    # Remember the order is skip-connection THEN upconv  
 
     with tf.name_scope('secondUpconv'):
         # No skip connection necessary on the innermost layer
-        h_upconv1 = tf.nn.relu(upconv2d(h_pool2, [3,3,32,64])) # [-1,14,14,32]
+        h_upconv1 = tf.nn.relu(upconv2d(h_pool2, [3,3,32,64])) # [-1,width/4,height/4,32]
         
     with tf.name_scope('firstUpconv'):
-        h_sk1 = addSkipConnection(h_upconv1, h_pool1) # skip connection [-1,14,14,64]
-        heatmaps = tf.nn.relu(upconv2d(h_sk1, [5,5,1,64])) # [-1,28,28,1]
+        h_sk1 = addSkipConnection(h_upconv1, h_pool1) # skip connection [-1,width/4,height/4,64]
+        heatmaps = tf.nn.relu(upconv2d(h_sk1, [5,5,1,64])) # [-1,width,height,1]
         
-    # The size of heatmap here should be [batch,28,28,1] for NMIST
+    # The size of heatmap here should be the same as the original images
     return heatmaps
     
 
@@ -491,18 +484,6 @@ Build and train the hourglass CNN from the main level when this file is called.
 if __name__ == "__main__":  
     
     #print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
-
-    '''
-    # Get the MNIST handwritten-digit data
-    x_train, y_train, x_test, y_test = mnist.getMNISTData()
-    checkpointSaveDir = "./mnist_hourglass_nn_save";
-    # Make MNIST mask truth by simple thresholding
-    y_train_pmMask = booleanMaskToPlusMinus(makeThresholdMask(x_train),trueVal=1,falseVal=-0.1)
-    y_test_pmMask  = booleanMaskToPlusMinus(makeThresholdMask(x_test), trueVal=1,falseVal=-0.1)
-    peekEveryNEpochs=50
-    saveEveryNEpochs=100
-    nEpochs = 100
-    '''
     
     # Get homebrewed video sequences and corresponding masks
     print("Reading augmented image and mask sequences")
@@ -510,7 +491,7 @@ if __name__ == "__main__":
     # Epoch parameters
     peekEveryNEpochs=25
     saveEveryNEpochs=25
-    nEpochs = 1000
+    nEpochs = 50
     batchSize = 512
     '''
     x_set1, y_set1, idSet1 = vu.pull_aug_sequence(
@@ -520,7 +501,7 @@ if __name__ == "__main__":
         os.path.join("augmentedSequences","defaultGreenscreenVideo_over_BOS_trainSidewalk_64x64","augImage_"),
         os.path.join("augmentedSequences","defaultGreenscreenVideo_over_BOS_trainSidewalk_64x64","augMask_"))
     '''
-    
+    '''
     x_set1, y_set1, id_set1 = vu.pull_aug_sequence(
         os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab1_64x64","augImage_"),
         os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab1_64x64","augMask_"))
@@ -530,12 +511,12 @@ if __name__ == "__main__":
     x_all = np.concatenate([x_set1,x_set2],axis=0)
     y_all = np.concatenate([y_set1,y_set2],axis=0)
     id_all = np.concatenate([id_set1,id_set2],axis=0)
+    '''
     
-    '''
     x_all, y_all, id_all = vu.pull_aug_sequence(
-        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab1_64x64_mini","augImage_"),
-        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab1_64x64_mini","augMask_"))
-    '''
+        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48","augImage_"),
+        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48","augMask_"))
+    
     
     # Split into train and test sets randomly
     #x_train, y_train, x_test, y_test = \

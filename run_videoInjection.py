@@ -173,6 +173,8 @@ if __name__ == "__main__":
     #run_videoInjection("defaultGreenscreenVideo.avi", os.path.join("backgroundVideos","EPC_hallway.avi"),270)
     #run_videoInjection("defaultGreenscreenVideo.avi", os.path.join("backgroundVideos","PHO_hallway.avi"),270)
     #run_videoInjection("defaultGreenscreenVideo.avi", os.path.join("backgroundVideos","BOS_trainSidewalk.avi"),270)
-    run_videoInjection("defaultGreenscreenVideo.avi", os.path.join("backgroundVideos","roboticsLab1.avi"),bgRotate_deg=270,bgScale=0.33, shift=[300,50])
-    run_videoInjection("defaultGreenscreenVideo.avi", os.path.join("backgroundVideos","roboticsLab2.avi"),bgRotate_deg=270,bgScale=0.33, shift=[300,50])
+    #run_videoInjection("defaultGreenscreenVideo.avi", os.path.join("backgroundVideos","roboticsLab1.avi"),bgRotate_deg=270,bgScale=0.33, shift=[300,50])
+    #run_videoInjection("defaultGreenscreenVideo.avi", os.path.join("backgroundVideos","roboticsLab2.avi"),bgRotate_deg=270,bgScale=0.33, shift=[300,50])
+    run_videoInjection("defaultGreenscreenVideo.avi", os.path.join("backgroundVideos","roboticsLab3.avi"),bgRotate_deg=270,bgScale=0.33, shift=[300,50])
+    run_videoInjection("defaultGreenscreenVideo.avi", os.path.join("backgroundVideos","roboticsLab4.avi"),bgRotate_deg=270,bgScale=0.33, shift=[300,50])
     
