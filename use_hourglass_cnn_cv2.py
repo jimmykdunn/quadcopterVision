@@ -216,4 +216,4 @@ def quadcopterBatchTest(modelPath,directory='goldenImages',ext='.jpg'):
             
 # Run with defaults if at highest level
 if __name__ == "__main__":
-    quadcopterBatchTest(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full'))
+    quadcopterBatchTest(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_64x48_20kepochs'))

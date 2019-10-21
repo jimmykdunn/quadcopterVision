@@ -491,7 +491,7 @@ if __name__ == "__main__":
     # Epoch parameters
     peekEveryNEpochs=25
     saveEveryNEpochs=25
-    nEpochs = 5000
+    nEpochs = 1000
     batchSize = 512
     
     x_set1, y_set1, id_set1 = vu.pull_aug_sequence(
@@ -523,8 +523,8 @@ if __name__ == "__main__":
         vu.train_test_split_noCheat(x_all, y_all, id_all, trainFraction=0.8)
 
     # Convert masks to appropriately-weighted +/- masks
-    y_train_pmMask = booleanMaskToPlusMinus(y_train)
-    y_test_pmMask  = booleanMaskToPlusMinus(y_test)
+    y_train_pmMask = booleanMaskToPlusMinus(y_train, falseVal=-0.001)
+    y_test_pmMask  = booleanMaskToPlusMinus(y_test, falseVal=-0.001)
     
     
     # Run the complete training on the hourglass neural net

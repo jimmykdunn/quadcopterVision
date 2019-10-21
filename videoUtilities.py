@@ -791,20 +791,20 @@ if __name__ == "__main__":
     if not os.path.exists("augmentedSequences"):
         os.mkdir("augmentedSequences")
     
-    augment_sequence(os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab1","frame_"),
-                     os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab1","mask_"),
+    augment_sequence(os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab1_baby","frame_"),
+                     os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab1_baby","mask_"),
                      os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48"),
                      iStart=175, iEnd=637, outShape=[48,64])
-    augment_sequence(os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab2","frame_"),
-                     os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab2","mask_"),
+    augment_sequence(os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab2_baby","frame_"),
+                     os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab2_baby","mask_"),
                      os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab2_64x48"),
                      iStart=175, iEnd=637, outShape=[48,64])
-    augment_sequence(os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab3","frame_"),
-                     os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab3","mask_"),
+    augment_sequence(os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab3_baby","frame_"),
+                     os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab3_baby","mask_"),
                      os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab3_64x48"),
                      iStart=175, iEnd=637, outShape=[48,64])
-    augment_sequence(os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab4","frame_"),
-                     os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab4","mask_"),
+    augment_sequence(os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab4_baby","frame_"),
+                     os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab4_baby","mask_"),
                      os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab4_64x48"),
                      iStart=175, iEnd=435, outShape=[48,64])
     
