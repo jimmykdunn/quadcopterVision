@@ -33,7 +33,7 @@ import struct
 import numpy as np
 
 def run_videoInjection(greenVideoFile, backgroundVideoFile, bgRotate_deg=0,
-                       bgScale=1.0,shift=[600,300]):
+                       bgScale=1.0,shift=[600,300], greenScale=1.0,label=''):
     
     vidExt = '.avi'
     framerate = 30 # frames per second
@@ -41,7 +41,7 @@ def run_videoInjection(greenVideoFile, backgroundVideoFile, bgRotate_deg=0,
     # Form the filename of the output video
     greenVideoName = os.path.splitext(greenVideoFile)[0]
     backgroundVideoName = os.path.splitext(backgroundVideoFile)[0].split(os.sep)[-1]
-    outVideoBase = greenVideoName + '_over_' + backgroundVideoName
+    outVideoBase = greenVideoName + '_over_' + backgroundVideoName + label
     outVideoFile = outVideoBase + vidExt
     outMaskBase = greenVideoName + '_mask'
     outMaskFile = outMaskBase + vidExt
@@ -60,6 +60,7 @@ def run_videoInjection(greenVideoFile, backgroundVideoFile, bgRotate_deg=0,
             int(greenVideoStream.get(3)), int(greenVideoStream.get(4))
         backgroundWidth, backgroundHeight = \
             int(backgroundVideoStream.get(3)), int(backgroundVideoStream.get(4))
+        greenNColors = 3
     else:
         greenVideoStream = open(greenVideoFile,'rb')  
         print("Opened "+greenVideoFile)
@@ -127,6 +128,18 @@ def run_videoInjection(greenVideoFile, backgroundVideoFile, bgRotate_deg=0,
                 scaleSize = [int(dim*bgScale) for dim in backgroundFrame.shape[1::-1]]
                 backgroundFrame = cv2.resize(backgroundFrame, tuple(scaleSize))
             
+            # Scale down the input image if desired. This is done by
+            # taking the original, scaling, and then padding with pure green
+            # pixels to mimic greenscreen
+            if greenScale != 1.0:
+                scaleSize = [int(dim*greenScale) for dim in greenFrame.shape[1::-1]]
+                scaledGreenFrame = cv2.resize(greenFrame, tuple(scaleSize))
+                greenFrame = np.zeros([greenHeight,greenWidth,greenNColors]).astype(np.uint8)
+                greenFrame[:,:,0] = 100  # greenscreen blue channel
+                greenFrame[:,:,1] = 145 # greenscreen green channel
+                greenFrame[:,:,2] = 125  # greenscreen red channel
+                greenFrame[:scaleSize[1],:scaleSize[0],:] = scaledGreenFrame
+            
             # Inject the background
             frame, mask = gst.injectBackground(greenFrame, backgroundFrame,shift=shift)
             
@@ -175,6 +188,11 @@ if __name__ == "__main__":
     #run_videoInjection("defaultGreenscreenVideo.avi", os.path.join("backgroundVideos","BOS_trainSidewalk.avi"),270)
     #run_videoInjection("defaultGreenscreenVideo.avi", os.path.join("backgroundVideos","roboticsLab1.avi"),bgRotate_deg=270,bgScale=0.33, shift=[300,50])
     #run_videoInjection("defaultGreenscreenVideo.avi", os.path.join("backgroundVideos","roboticsLab2.avi"),bgRotate_deg=270,bgScale=0.33, shift=[300,50])
-    run_videoInjection("defaultGreenscreenVideo.avi", os.path.join("backgroundVideos","roboticsLab3.avi"),bgRotate_deg=270,bgScale=0.33, shift=[300,50])
-    run_videoInjection("defaultGreenscreenVideo.avi", os.path.join("backgroundVideos","roboticsLab4.avi"),bgRotate_deg=270,bgScale=0.33, shift=[300,50])
+    #run_videoInjection("defaultGreenscreenVideo.avi", os.path.join("backgroundVideos","roboticsLab3.avi"),bgRotate_deg=270,bgScale=0.33, shift=[300,50])
+    #run_videoInjection("defaultGreenscreenVideo.avi", os.path.join("backgroundVideos","roboticsLab4.avi"),bgRotate_deg=270,bgScale=0.33, shift=[300,50])
+    run_videoInjection("defaultGreenscreenVideo.avi", os.path.join("backgroundVideos","roboticsLab1.avi"),bgRotate_deg=270,bgScale=0.33, greenScale=0.3, shift=[300,50],label='_baby')
+    run_videoInjection("defaultGreenscreenVideo.avi", os.path.join("backgroundVideos","roboticsLab2.avi"),bgRotate_deg=270,bgScale=0.33, greenScale=0.3, shift=[300,50],label='_baby')
+    run_videoInjection("defaultGreenscreenVideo.avi", os.path.join("backgroundVideos","roboticsLab3.avi"),bgRotate_deg=270,bgScale=0.33, greenScale=0.3, shift=[300,50],label='_baby')
+    run_videoInjection("defaultGreenscreenVideo.avi", os.path.join("backgroundVideos","roboticsLab4.avi"),bgRotate_deg=270,bgScale=0.33, greenScale=0.3, shift=[300,50],label='_baby')
+    
     
