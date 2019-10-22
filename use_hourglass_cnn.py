@@ -366,5 +366,5 @@ if __name__ == "__main__":
     #print("\n\n")
     #quadcopterTest(os.path.join('homebrew_hourglass_nn_save','model_at750.ckpt'))
     print("\n\n")
-    quadcopterBatchTest(os.path.join('homebrew_hourglass_nn_save','model_at150.ckpt'))
-    #quadcopterBatchTest(os.path.join('homebrew_hourglass_nn_save','model_at10.pb'))
+    #quadcopterBatchTest(os.path.join('homebrew_hourglass_nn_save','model_at1000.ckpt'))
+    quadcopterBatchTest(os.path.join('homebrew_hourglass_nn_save','model_at20000.ckpt'), directory='goldenImagesBaby')

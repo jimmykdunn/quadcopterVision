@@ -491,7 +491,7 @@ if __name__ == "__main__":
     # Epoch parameters
     peekEveryNEpochs=25
     saveEveryNEpochs=25
-    nEpochs = 1000
+    nEpochs = 20000
     batchSize = 512
     
     x_set1, y_set1, id_set1 = vu.pull_aug_sequence(
