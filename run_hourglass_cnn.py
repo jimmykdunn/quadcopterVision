@@ -535,8 +535,8 @@ if __name__ == "__main__":
         vu.train_test_split_noCheat(x_all, y_all, id_all, trainFraction=0.8)
 
     # Convert masks to appropriately-weighted +/- masks
-    y_train_pmMask = booleanMaskToPlusMinus(y_train, falseVal=-0.001)
-    y_test_pmMask  = booleanMaskToPlusMinus(y_test, falseVal=-0.001)
+    y_train_pmMask = booleanMaskToPlusMinus(y_train, falseVal=-0.01)
+    y_test_pmMask  = booleanMaskToPlusMinus(y_test, falseVal=-0.01)
     
     
     # Run the complete training on the hourglass neural net
