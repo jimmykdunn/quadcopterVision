@@ -108,11 +108,12 @@ def train_hourglass_nn(trainImages, trainMasks, testImages, testMasks, \
         
         # Calculate second moment loss - penalize for having heatmap energy
         # highly spread out.
-        #secondMomentLoss = nnu.calculateSecondMomentLoss(b_heatmaps,b_masks)
-        secondMomentLoss = tf.constant(0.0) # placeholder
+        #secondMomentLoss, stdX, stdY, COM_x, COM_y, totalEnergy = \
+        #    nnu.calculateSecondMomentLoss(b_heatmaps,b_masks)
         
         # Calculate the total loss
-        loss = tf.add(heatmapLoss,tf.multiply(tf.constant(0.5),secondMomentLoss))
+        #loss = tf.add(heatmapLoss,tf.multiply(tf.constant(0.1),secondMomentLoss))
+        loss = heatmapLoss
         
         # Perfect segementation would result in this gain value
         booleanMask = tf.math.greater(b_masks,0)
@@ -166,6 +167,30 @@ def train_hourglass_nn(trainImages, trainMasks, testImages, testMasks, \
                 peekSchedule.append(epoch+1)
                 trainGainHistory.append(trainGain/perfectTrainGain)
                 testGainHistory.append(testGain/perfectTestGain)
+                '''
+                # Calculate some helpful metrics
+                heatmapLossE = heatmapLoss.eval(feed_dict={b_images: testBatch[0], b_masks: testBatch[1]})
+                secondMomentLossE = secondMomentLoss.eval(feed_dict={b_images: testBatch[0], b_masks: testBatch[1]})
+                stdXE = stdX.eval(feed_dict={b_images: testBatch[0], b_masks: testBatch[1]})
+                stdYE = stdY.eval(feed_dict={b_images: testBatch[0], b_masks: testBatch[1]})
+                COM_xE = COM_x.eval(feed_dict={b_images: testBatch[0], b_masks: testBatch[1]})
+                COM_yE = COM_y.eval(feed_dict={b_images: testBatch[0], b_masks: testBatch[1]})
+                totalEnergyE = totalEnergy.eval(feed_dict={b_images: testBatch[0], b_masks: testBatch[1]})
+                print("heatmapLoss")
+                print(heatmapLossE)
+                print("secondMomentLoss")
+                print(secondMomentLossE)
+                print("stdX")
+                print(stdXE)
+                print("stdY")
+                print(stdYE)
+                print("COM_x")
+                print(COM_xE)
+                print("COM_y")
+                print(COM_yE)
+                print("totalEnergy")
+                print(totalEnergyE)
+                '''
             
             # Print elapsed time every peekEveryNEpochs epochs
             if epoch % peekEveryNEpochs == (peekEveryNEpochs-1):
@@ -230,8 +255,8 @@ if __name__ == "__main__":
     # Epoch parameters
     peekEveryNEpochs=100
     saveEveryNEpochs=100
-    nEpochs = 100 #20000
-    batchSize = 128
+    nEpochs = 1000 #20000
+    batchSize = 512
     '''
     x_set1, y_set1, id_set1 = vu.pull_aug_sequence(
         os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48","augImage_"),

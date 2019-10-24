@@ -257,8 +257,8 @@ def calculateSecondMomentLoss(b_heatmaps,b_masks):
     COM_x = tf.reduce_sum(tf.multiply(xpos,b_heatmaps),axis=(1,2)) # 1D [batch]
     COM_y = tf.reduce_sum(tf.multiply(ypos,b_heatmaps),axis=(1,2)) # 1D [batch]
     totalEnergy = tf.reduce_sum(b_heatmaps,axis=(1,2)) # 1D [batch]
-    COM_x = tf.divide(COM_x,totalEnergy) # divide by total energy of heatmap, 1D [batch]
-    COM_y = tf.divide(COM_y,totalEnergy) # divide by total energy of heatmap, 1D [batch]
+    COM_x = tf.divide(COM_x,tf.maximum(totalEnergy,1e-10)) # divide by total energy of heatmap, 1D [batch]
+    COM_y = tf.divide(COM_y,tf.maximum(totalEnergy,1e-10)) # divide by total energy of heatmap, 1D [batch]
     
     # Next calculate the 2nd moment as the integral of the pixel energy
     # multiplied by the distance from the first moment (mean or center of mass)
@@ -287,16 +287,16 @@ def calculateSecondMomentLoss(b_heatmaps,b_masks):
     #maskEnergy = tf.reduce_sum(booleanMasks,axis=(1,2))
     #stdXFracNorm = tf.divide(stdXFrac, tf.add(tf.constant(1.0), totalEnergy))
     #stdYFracNorm = tf.divide(stdYFrac, tf.add(tf.constant(1.0), totalEnergy))
-    #stdXFracNorm = tf.minimum(0.5,tf.maximum(stdXFrac,0.01)) #placeholder
-    #stdYFracNorm = tf.minimum(0.5,tf.maximum(stdYFrac,0.01)) #placeholder
-    stdXFracNorm = stdXFrac #placeholder
-    stdYFracNorm = stdYFrac #placeholder
+    stdXFracNorm = tf.minimum(0.5,tf.maximum(stdXFrac,0.05)) #placeholder
+    stdYFracNorm = tf.minimum(0.5,tf.maximum(stdYFrac,0.05)) #placeholder
+    #stdXFracNorm = stdXFrac #placeholder
+    #stdYFracNorm = stdYFrac #placeholder
     
     # Finally, to get the resulting loss figure, sum over all the images
     # and in both directions
     secondMomentLoss = tf.add(tf.reduce_mean(stdXFracNorm),tf.reduce_mean(stdYFracNorm))
     
-    return secondMomentLoss
+    return secondMomentLoss, stdX, stdY, COM_x, COM_y, totalEnergy
     
 # end calculateSecondMomentLoss
     
