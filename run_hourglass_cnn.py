@@ -101,7 +101,15 @@ def train_hourglass_nn(trainImages, trainMasks, testImages, testMasks, \
         
         # Average of gain across every pixel of every image
         gain = tf.reduce_mean(tf.cast(b_gainmaps,tf.float32))
-        loss = tf.multiply(-1.0,gain)
+        heatmapLoss = tf.multiply(-1.0,gain) # invert for gain -> loss
+        
+        # Calculate second moment loss - penalize for having heatmap energy
+        # highly spread out.
+        # !!! I STILL NEED TO BE TESTED !!!
+        secondMomentLoss = nnu.calculateSecondMomentLoss(b_heatmaps)
+        
+        # Calculate the total loss
+        loss = heatmapLoss + secondMomentLoss
         
         # Perfect segementation would result in this gain value
         booleanMask = tf.math.greater(b_masks,0)

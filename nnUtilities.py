@@ -231,3 +231,61 @@ def save_graph_protobuf(sess,directory,baseName='modelFinal'):
     tf_utils.ckpt_to_protobuf(ckpt_filepath)
 # end save_graph_protobuf   
 
+    
+"""
+calculateSecondMomentLoss()
+    Calculates the second moment of the heatmaps, i.e. the average distance
+    from the center of mass of the image to the energy in the heatmap.
+    Normalize by the size of the image and by the total energy in the heatmap.
+    This makes it okay to have a lot of energy in the heatmap, so long as it
+    is concentrated, and keeps a level playing field across images of different
+    resolutions.
+INPUTS:
+    b_heatmaps: array of heatmaps [nBatch,width,height]
+RETURNS:
+    Normalized second moment of the heatmap.
+"""
+def calculateSecondMomentLoss(b_heatmaps):
+    nBatch,width,height = tf.shape(b_heatmaps)
+    
+    # Start by calculating the first moment (mean or center of mass) as the 
+    # integral of the pixel energy multiplied by its pixel position
+    xpos, ypos = tf.meshgrid(tf.range(width),tf.range(height)) # create array of x & y positions [nBatch,width,height]
+    xpos = tf.broadcast_to(xpos, tf.shape(b_heatmaps)) # expand across the batch dimension
+    ypos = tf.broadcast_to(xpos, tf.shape(b_heatmaps)) # expand across the batch dimension
+    COM_x = tf.reduce_sum(tf.multiply(xpos,b_heatmaps),axis=(1,2)) # 1D [batch]
+    COM_y = tf.reduce_sum(tf.multiply(ypos,b_heatmaps),axis=(1,2)) # 1D [batch]
+    totalEnergy = tf.reduce_sum(b_heatmaps,axis=(1,2)) # 1D [batch]
+    COM_x = tf.divide(COM_x,totalEnergy) # divide by total energy of heatmap, 1D [batch]
+    COM_y = tf.divide(COM_y,totalEnergy) # divide by total energy of heatmap, 1D [batch]
+    
+    # Next calculate the 2nd moment as the integral of the pixel energy
+    # multiplied by the distance from the first moment (mean or center of mass)
+    # integral(energy*(pos-com)**2)
+    xFromCOM = tf.subtract(xpos,tf.broadcast_to(COM_x,tf.shape(xpos))) # 3D [nBatch,width,height]
+    yFromCOM = tf.subtract(ypos,tf.broadcast_to(COM_y,tf.shape(ypos))) # 3D [nBatch,width,height]
+    varX = tf.reduce_sum(tf.multiply(tf.square(xFromCOM),b_heatmaps),axis=(1,2)) # 1D [nBatch]
+    varY = tf.reduce_sum(tf.multiply(tf.square(yFromCOM),b_heatmaps),axis=(1,2)) # 1D [nBatch]
+    stdX,stdY = tf.sqrt(varX), tf.sqrt(varY) # 1D [nBatch]
+    
+    # stdX and stdY now contain the average distance from the COM in each 
+    # dimension for each image in the batch. Before returning, we need to 
+    # normalize by the size of the image, and then by the total energy in the
+    # heatmap.  This makes it so fine resolution (large) images and large
+    # targets are not unduly penalized.
+    
+    # Average distance from COM, as a fraction of the width and height of the image
+    stdXFrac, stdYFrac = tf.divide(stdX,width), tf.divide(stdY,height) # 1D [nBatch]
+    
+    # Normalize by total energy. Add 1 to denominator to deal with zero energy,
+    # which would be undefined 0/0 otherwise
+    stdXFracNorm = stdXFrac / tf.sum(tf.constant(1.0), totalEnergy)
+    stdYFracNorm = stdYFrac / tf.sum(tf.constant(1.0), totalEnergy)
+    
+    # Finally, to get the resulting loss figure, sum over all the images
+    # and in both directions
+    secondMomentLoss = tf.sum(tf.reduce_sum(stdXFracNorm),stdYFracNorm(stdYFracNorm))
+    
+    return secondMomentLoss
+    
+# end calculateSecondMomentLoss
