@@ -24,8 +24,6 @@ import cv2
 import copy
 import videoUtilities as vu
 import matplotlib.pyplot as plt
-import random
-import tf_utils
 import nnUtilities as nnu
 import neuralNetStructures as nns
 
@@ -224,37 +222,56 @@ if __name__ == "__main__":
     batchSize = 512
     '''
     x_set1, y_set1, id_set1 = vu.pull_aug_sequence(
-        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48","augImage_"),
-        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48","augMask_"))
+        os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48","augImage_"),
+        os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48","augMask_"))
     x_set2, y_set2, id_set2 = vu.pull_aug_sequence(
-        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab2_64x48","augImage_"),
-        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab2_64x48","augMask_"))
+        os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab2_64x48","augImage_"),
+        os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab2_64x48","augMask_"))
     x_set3, y_set3, id_set3 = vu.pull_aug_sequence(
-        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab3_64x48","augImage_"),
-        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab3_64x48","augMask_"))
+        os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab3_64x48","augImage_"),
+        os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab3_64x48","augMask_"))
     x_set4, y_set4, id_set4 = vu.pull_aug_sequence(
-        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab4_64x48","augImage_"),
-        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab4_64x48","augMask_"))
+        os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab4_64x48","augImage_"),
+        os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab4_64x48","augMask_"))
     x_set5, y_set5, id_set5 = vu.pull_aug_sequence(
-        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48_baby","augImage_"),
-        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48_baby","augMask_"))
+        os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48_baby","augImage_"),
+        os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48_baby","augMask_"))
     x_set6, y_set6, id_set6 = vu.pull_aug_sequence(
-        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab2_64x48_baby","augImage_"),
-        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab2_64x48_baby","augMask_"))
+        os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab2_64x48_baby","augImage_"),
+        os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab2_64x48_baby","augMask_"))
     x_set7, y_set7, id_set7 = vu.pull_aug_sequence(
-        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab3_64x48_baby","augImage_"),
-        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab3_64x48_baby","augMask_"))
+        os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab3_64x48_baby","augImage_"),
+        os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab3_64x48_baby","augMask_"))
     x_set8, y_set8, id_set8 = vu.pull_aug_sequence(
-        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab4_64x48_baby","augImage_"),
-        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab4_64x48_baby","augMask_"))
+        os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab4_64x48_baby","augImage_"),
+        os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab4_64x48_baby","augMask_"))
     x_all = np.concatenate([x_set1,x_set2,x_set3,x_set4,x_set5,x_set6,x_set7,x_set8],axis=0)
     y_all = np.concatenate([y_set1,y_set2,y_set3,y_set4,y_set5,y_set6,y_set7,y_set8],axis=0)
     id_all = np.concatenate([id_set1,id_set2,id_set3,id_set4,id_set5,id_set6,id_set7,id_set8],axis=0)
     '''
-    
+    '''
     x_all, y_all, id_all = vu.pull_aug_sequence(
-        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48","augImage_"),
-        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48","augMask_"))
+        os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48","augImage_"),
+        os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48","augMask_"))
+    '''
+    x_all, y_all, id_all = vu.pull_aug_sequence(
+        os.path.join("augmentedContinuousSequences","sortTest","augImage_"),
+        os.path.join("augmentedContinuousSequences","sortTest","augMask_"))
+    
+    x_all_s, y_all_s, id_all_s = vu.sort_aug_sequence(x_all, y_all, id_all)
+    
+    # !!!!LEFT OFF HERE 191023!!!
+    # Generate a logical train/test split on the images - probably makes the
+    # most sense to pull the final 4 augmentations over all time so that we
+    # get a full set.  Could pull the final N frames over all augmentations too.
+    # 
+    # After that is complete, split the images into [0:-5,:,:] and [5:,:,:]
+    # sets for direct feeding into the siamese network.  We can then easily
+    # run two simultaneous nns.hourglass_nn() on those two sets.
+    # The tricky part will be ensuring that the same weights are used on both
+    # sides, which probably means creating them early and supplying to 
+    # a copy of hourglass_nn() as inputs.
+    
     
     
     # Split into train and test sets randomly

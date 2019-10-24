@@ -162,9 +162,9 @@ OPTIONAL INPUTS:
     color: set to True to use color channel (default False)
     
 RETURNS: 
-    image_stack: Series of augmented frames as a [nframes,nx,ny,nColors] 4D array
-    mask_stack:  Series of augmented masks as a [nframes,nx,ny] 3D array
-    index_stack: List of strings with format "####_%%%%", where #### is the 
+    imageStack: Series of augmented frames as a [nframes,nx,ny,nColors] 4D array
+    maskStack:  Series of augmented masks as a [nframes,nx,ny] 3D array
+    indexStack: List of strings with format "####_%%%%", where #### is the 
         index of the parent image, and %%%% is the augmentation index
 """
 def pull_aug_sequence(inImageBase, inMaskBase, ext='.jpg', color=False):
@@ -237,6 +237,74 @@ def pull_aug_sequence(inImageBase, inMaskBase, ext='.jpg', color=False):
     imageStack /= 255.0
     
     return imageStack, maskStack, indexStack
+    
+"""
+FUNCTION:
+    sort_aug_sequence() 
+    
+DESCRIPTION:
+    Takes in an unordered but matching list of images, masks, and index strings,
+    then sorts them first by augmentation index (last 4 characters in index
+    string) and second by temporal index (first 4 characters in index string).
+    
+INPUTS: 
+    imageStack: Series of augmented frames as a [nframes,nx,ny] 3D array
+    maskStack:  Series of augmented masks as a [nframes,nx,ny] 3D array
+    indexStack: List of strings with format "####_%%%%", where #### is the 
+        index of the parent image, and %%%% is the augmentation index
+    
+RETURNS: 
+    image_stack_sorted: 4D array of images [nAugs,nframes,nx,ny], sorted
+    mask_stack_sorted: 4D array of masks [nAugs,nframes,nx,ny], sorted
+    index_stack_sorted: 2D list of strings [nAugs][nframes], sorted
+"""
+def sort_aug_sequence(imageStack, maskStack, indexStack):
+    print("Sorting augmented image sequences")
+    
+    # Dimensions of arrays
+    nImages,width,height = imageStack.shape[:3]
+
+    # First, we gather together each unique augmentation index
+    allAugIndices = [int(strIndex[-4:]) for strIndex in indexStack]
+    allTemporalIndices = [int(strIndex[:4]) for strIndex in indexStack]
+    augIndices = np.unique(allAugIndices)
+    temporalIndices = np.unique(allTemporalIndices)
+    
+    # Sort the augmented and temporal indices
+    augIndices.sort()
+    temporalIndices.sort()
+    nAugs = len(augIndices)
+    nFrames = len(temporalIndices)
+    
+    # Allocate sorted lists ahead of time for speed
+    image_stack_sorted = np.zeros([nAugs,nFrames,width,height])
+    mask_stack_sorted  = np.full([nAugs,nFrames,width,height],False)
+    index_stack_sorted = [['####_****']*nFrames]*nAugs
+    
+    # Loop over augmentations first
+    # Enumerations used to deal with case when augIndex or temporalIndex do not
+    # start at zero.
+    for i_aug, augIndex in enumerate(augIndices):
+        for i_temp, temporalIndex in enumerate(temporalIndices):
+            # Form the full string index out of the temporal and aug indices
+            indexStr = "%04d_%04d" % (temporalIndex,augIndex)
+            
+            # Ensure this combo actually exists
+            if indexStr in indexStack:
+                i = indexStack.index(indexStr)
+                image_stack_sorted[i_aug,i_temp,:,:] = imageStack[i,:,:]
+                mask_stack_sorted[i_aug,i_temp,:,:] = maskStack[i,:,:]
+                index_stack_sorted[i_aug][i_temp] = indexStack[i]
+            else:
+                print("WARNING: Missing augmentation % for frame %" % (augIndex,temporalIndex))
+                continue
+        # end for temporalIndex
+    # end for augIndex
+
+    print("Sorting complete")
+    return image_stack_sorted, mask_stack_sorted, index_stack_sorted
+
+# end sort_aug_sequence()
     
 """
 FUNCTION:
