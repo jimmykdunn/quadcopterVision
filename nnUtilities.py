@@ -242,17 +242,18 @@ calculateSecondMomentLoss()
     resolutions.
 INPUTS:
     b_heatmaps: array of heatmaps [nBatch,width,height]
+    b_masks: array of truth masks [nBatch,width,height]
 RETURNS:
     Normalized second moment of the heatmap.
 """
-def calculateSecondMomentLoss(b_heatmaps):
-    nBatch,width,height = tf.shape(b_heatmaps)
+def calculateSecondMomentLoss(b_heatmaps,b_masks):
+    heatmapShape = tf.shape(b_heatmaps)
     
     # Start by calculating the first moment (mean or center of mass) as the 
     # integral of the pixel energy multiplied by its pixel position
-    xpos, ypos = tf.meshgrid(tf.range(width),tf.range(height)) # create array of x & y positions [nBatch,width,height]
-    xpos = tf.broadcast_to(xpos, tf.shape(b_heatmaps)) # expand across the batch dimension
-    ypos = tf.broadcast_to(xpos, tf.shape(b_heatmaps)) # expand across the batch dimension
+    xpos, ypos = tf.meshgrid(tf.range(heatmapShape[2]),tf.range(heatmapShape[1])) # create array of x & y positions [nBatch,width,height]
+    xpos = tf.cast(repeatAlongBatch(xpos, heatmapShape[0]),tf.float32) # expand across the batch dimension
+    ypos = tf.cast(repeatAlongBatch(ypos, heatmapShape[0]),tf.float32) # expand across the batch dimension
     COM_x = tf.reduce_sum(tf.multiply(xpos,b_heatmaps),axis=(1,2)) # 1D [batch]
     COM_y = tf.reduce_sum(tf.multiply(ypos,b_heatmaps),axis=(1,2)) # 1D [batch]
     totalEnergy = tf.reduce_sum(b_heatmaps,axis=(1,2)) # 1D [batch]
@@ -262,10 +263,12 @@ def calculateSecondMomentLoss(b_heatmaps):
     # Next calculate the 2nd moment as the integral of the pixel energy
     # multiplied by the distance from the first moment (mean or center of mass)
     # integral(energy*(pos-com)**2)
-    xFromCOM = tf.subtract(xpos,tf.broadcast_to(COM_x,tf.shape(xpos))) # 3D [nBatch,width,height]
-    yFromCOM = tf.subtract(ypos,tf.broadcast_to(COM_y,tf.shape(ypos))) # 3D [nBatch,width,height]
+    xFromCOM = tf.subtract(xpos,repeatAlongLastTwice(COM_x,heatmapShape[1],heatmapShape[2])) # 3D [nBatch,width,height]
+    yFromCOM = tf.subtract(ypos,repeatAlongLastTwice(COM_y,heatmapShape[1],heatmapShape[2])) # 3D [nBatch,width,height]
     varX = tf.reduce_sum(tf.multiply(tf.square(xFromCOM),b_heatmaps),axis=(1,2)) # 1D [nBatch]
     varY = tf.reduce_sum(tf.multiply(tf.square(yFromCOM),b_heatmaps),axis=(1,2)) # 1D [nBatch]
+    varX = tf.divide(varX,tf.maximum(totalEnergy,1e-10))
+    varY = tf.divide(varY,tf.maximum(totalEnergy,1e-10))
     stdX,stdY = tf.sqrt(varX), tf.sqrt(varY) # 1D [nBatch]
     
     # stdX and stdY now contain the average distance from the COM in each 
@@ -275,17 +278,43 @@ def calculateSecondMomentLoss(b_heatmaps):
     # targets are not unduly penalized.
     
     # Average distance from COM, as a fraction of the width and height of the image
-    stdXFrac, stdYFrac = tf.divide(stdX,width), tf.divide(stdY,height) # 1D [nBatch]
+    stdXFrac, stdYFrac = tf.divide(stdX,tf.cast(heatmapShape[1],tf.float32)), \
+                         tf.divide(stdY,tf.cast(heatmapShape[2],tf.float32)) # 1D [nBatch]
     
     # Normalize by total energy. Add 1 to denominator to deal with zero energy,
     # which would be undefined 0/0 otherwise
-    stdXFracNorm = stdXFrac / tf.sum(tf.constant(1.0), totalEnergy)
-    stdYFracNorm = stdYFrac / tf.sum(tf.constant(1.0), totalEnergy)
+    #booleanMasks = tf.cast(tf.greater(b_masks,0.0),tf.float32)
+    #maskEnergy = tf.reduce_sum(booleanMasks,axis=(1,2))
+    #stdXFracNorm = tf.divide(stdXFrac, tf.add(tf.constant(1.0), totalEnergy))
+    #stdYFracNorm = tf.divide(stdYFrac, tf.add(tf.constant(1.0), totalEnergy))
+    #stdXFracNorm = tf.minimum(0.5,tf.maximum(stdXFrac,0.01)) #placeholder
+    #stdYFracNorm = tf.minimum(0.5,tf.maximum(stdYFrac,0.01)) #placeholder
+    stdXFracNorm = stdXFrac #placeholder
+    stdYFracNorm = stdYFrac #placeholder
     
     # Finally, to get the resulting loss figure, sum over all the images
     # and in both directions
-    secondMomentLoss = tf.sum(tf.reduce_sum(stdXFracNorm),stdYFracNorm(stdYFracNorm))
+    secondMomentLoss = tf.add(tf.reduce_mean(stdXFracNorm),tf.reduce_mean(stdYFracNorm))
     
     return secondMomentLoss
     
 # end calculateSecondMomentLoss
+    
+def repeatAlongBatch(array,N):
+    dims = tf.shape(array)
+    expandedArray = tf.expand_dims(array,0)
+    multiples = [N,1,1]
+    expandedArray = tf.tile(expandedArray, multiples = multiples)
+    expandedArray = tf.reshape(expandedArray, [N,dims[0],dims[1]])
+    return expandedArray
+# end repeatAlongBatch()
+    
+    
+def repeatAlongLastTwice(array,N1,N2):
+    dims = tf.shape(array)
+    expandedArray = tf.expand_dims(tf.expand_dims(array,-1),-1)
+    multiples = [1,N1,N2]
+    expandedArray = tf.tile(expandedArray, multiples = multiples)
+    expandedArray = tf.reshape(expandedArray, [dims[0],N1,N2])
+    return expandedArray
+# end repeatAlongBatch()

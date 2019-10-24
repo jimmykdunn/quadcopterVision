@@ -93,6 +93,9 @@ def train_hourglass_nn(trainImages, trainMasks, testImages, testMasks, \
         # To do this, targetmask must have +1's at target     locations
         # and         targetmask must have -1's at background locations
         # Make sure targetmask is formed in this way!!!
+        
+        # Force heatmap to be in the range 0 to 1
+        b_heatmaps = tf.math.maximum(b_heatmaps,tf.constant(0.0))
         b_gainmaps = tf.multiply(b_heatmaps, b_masks) # pixel-by-pixel gain
         b_gainmaps = tf.math.minimum(b_gainmaps, 1.0, name="b_gainmaps") # anything above 1 doesn't help
         
@@ -105,11 +108,11 @@ def train_hourglass_nn(trainImages, trainMasks, testImages, testMasks, \
         
         # Calculate second moment loss - penalize for having heatmap energy
         # highly spread out.
-        # !!! I STILL NEED TO BE TESTED !!!
-        secondMomentLoss = nnu.calculateSecondMomentLoss(b_heatmaps)
+        #secondMomentLoss = nnu.calculateSecondMomentLoss(b_heatmaps,b_masks)
+        secondMomentLoss = tf.constant(0.0) # placeholder
         
         # Calculate the total loss
-        loss = heatmapLoss + secondMomentLoss
+        loss = tf.add(heatmapLoss,tf.multiply(tf.constant(0.5),secondMomentLoss))
         
         # Perfect segementation would result in this gain value
         booleanMask = tf.math.greater(b_masks,0)
@@ -227,8 +230,8 @@ if __name__ == "__main__":
     # Epoch parameters
     peekEveryNEpochs=100
     saveEveryNEpochs=100
-    nEpochs = 100
-    batchSize = 512
+    nEpochs = 100 #20000
+    batchSize = 128
     '''
     x_set1, y_set1, id_set1 = vu.pull_aug_sequence(
         os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48","augImage_"),
@@ -260,8 +263,8 @@ if __name__ == "__main__":
     '''
     
     x_all, y_all, id_all = vu.pull_aug_sequence(
-        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48","augImage_"),
-        os.path.join("augmentedSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48","augMask_"))
+        os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab4_64x48","augImage_"),
+        os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab4_64x48","augMask_"))
     
     
     # Split into train and test sets randomly
