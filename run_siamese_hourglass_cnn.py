@@ -95,7 +95,7 @@ def train_siamese_hourglass_nn(trainImagesA, trainMasksA, testImagesA, testMasks
         # b_images here is the concatenation of both arms of the siamese
         # network, but we will only use the heatmaps from the first half
         # (the first arm) as the output
-        b_heatmapsAll = nns.hourglass_nn(b_images)
+        b_heatmapsAll = nns.hourglass_nn(b_images) # may want to rename this to be compatible with non-siamese versions
         b_heatmapsAll = tf.reshape(b_heatmapsAll,[-1,nWidth,nHeight],'b_heatmapsAll')
         
     with tf.name_scope('siameseSplit'):
@@ -175,8 +175,8 @@ def train_siamese_hourglass_nn(trainImagesA, trainMasksA, testImagesA, testMasks
             batchB = nnu.extractBatch(batchSize, trainImagesB, trainMasksB, epoch)
             
             # Run a single epoch with the extracted data batch
-            batchImages = tf.concat([batchA[0], batchB[0]], 0) # concatenate siamese arms
-            batchMasks = tf.concat([batchA[1], batchB[1]], 0) # concatenate siamese arms
+            batchImages = np.concatenate([batchA[0], batchB[0]], axis=0) # concatenate siamese arms
+            batchMasks = np.concatenate([batchA[1], batchB[1]], axis=0) # concatenate siamese arms
             train_step.run(feed_dict={b_images: batchImages, b_masks: batchMasks}) 
             
             # Check our progress on the training data every peekEveryNEpochs epochs
@@ -254,8 +254,8 @@ if __name__ == "__main__":
     print("Reading augmented image and mask sequences")
     checkpointSaveDir = "./homebrew_hourglass_nn_save";
     # Epoch parameters
-    peekEveryNEpochs=100
-    saveEveryNEpochs=100
+    peekEveryNEpochs=25
+    saveEveryNEpochs=25
     nEpochs = 100
     batchSize = 512
     '''
