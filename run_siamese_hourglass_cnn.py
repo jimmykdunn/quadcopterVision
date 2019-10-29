@@ -62,7 +62,7 @@ RETURNS:
 def train_siamese_hourglass_nn(trainImagesA, trainMasksA, testImagesA, testMasksA, \
                                trainImagesB, trainMasksB, testImagesB, testMasksB, \
     nEpochs=100, batchSize=100, checkpointSaveDir='./hourglass_nn_save', \
-    saveEveryNEpochs=500, peekEveryNEpochs=50, siameseWeight = 1.0):
+    saveEveryNEpochs=500, peekEveryNEpochs=50, siameseWeight = 0.05):
     
     print("BEGIN SIAMESE HOURGLASS NN TRAINING")
     
@@ -95,11 +95,11 @@ def train_siamese_hourglass_nn(trainImagesA, trainMasksA, testImagesA, testMasks
         # b_images here is the concatenation of both arms of the siamese
         # network, but we will only use the heatmaps from the first half
         # (the first arm) as the output
-        b_heatmapsAll = nns.hourglass_nn(b_images) # may want to rename this to be compatible with non-siamese versions
-        b_heatmapsAll = tf.reshape(b_heatmapsAll,[-1,nWidth,nHeight],'b_heatmapsAll')
+        b_heatmapsAll = nns.hourglass_nn(b_images)
+        b_heatmapsAll = tf.reshape(b_heatmapsAll,[-1,nWidth,nHeight],'b_heatmaps')
         
     with tf.name_scope('siameseSplit'):
-        # Split off into 
+        # Split off into siamese halves
         heatmapShape = tf.shape(b_heatmapsAll)
         nBatch = tf.cast(tf.divide(heatmapShape[0],2),tf.int32)
         b_heatmapsA = b_heatmapsAll[:nBatch,:,:] # arm A heatmaps
@@ -184,7 +184,7 @@ def train_siamese_hourglass_nn(trainImagesA, trainMasksA, testImagesA, testMasks
                 trainGain = heatmapGain.eval(feed_dict={b_images: batchImages, b_masks: batchMasks})
                 perfectTrainGain = perfectGain.eval(feed_dict={b_images: batchImages, b_masks: batchMasks})
                 trainLoss = loss.eval(feed_dict={b_images: batchImages, b_masks: batchMasks})
-                print('epoch %d of %d, training heatmap gain %g, training loss' % (epoch+1, nEpochs, trainGain/perfectTrainGain, trainLoss))
+                print('epoch %d of %d, training heatmap gain %g, training loss %g' % (epoch+1, nEpochs, trainGain/perfectTrainGain, trainLoss))
                 testBatch = nnu.extractBatch(100, testImagesA, testMasksA, 0, randomDraw=True)
                 testGain = heatmapGain.eval(feed_dict={b_images: testBatch[0], b_masks: testBatch[1]})
                 perfectTestGain = perfectGain.eval(feed_dict={b_images: testBatch[0], b_masks: testBatch[1]})
@@ -256,7 +256,7 @@ if __name__ == "__main__":
     # Epoch parameters
     peekEveryNEpochs=25
     saveEveryNEpochs=25
-    nEpochs = 100
+    nEpochs = 5000
     batchSize = 512
     '''
     x_set1, y_set1, id_set1 = vu.pull_aug_sequence(
