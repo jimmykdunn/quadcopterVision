@@ -62,7 +62,7 @@ RETURNS:
 def train_siamese_hourglass_nn(trainImagesA, trainMasksA, testImagesA, testMasksA, \
                                trainImagesB, trainMasksB, testImagesB, testMasksB, \
     nEpochs=100, batchSize=100, checkpointSaveDir='./hourglass_nn_save', \
-    saveEveryNEpochs=500, peekEveryNEpochs=50, siameseWeight = 0.05):
+    saveEveryNEpochs=500, peekEveryNEpochs=50, siameseWeight = 1.0):
     
     print("BEGIN SIAMESE HOURGLASS NN TRAINING")
     
@@ -181,17 +181,18 @@ def train_siamese_hourglass_nn(trainImagesA, trainMasksA, testImagesA, testMasks
             
             # Check our progress on the training data every peekEveryNEpochs epochs
             if epoch % peekEveryNEpochs == (peekEveryNEpochs-1):
-                trainGain = heatmapGain.eval(feed_dict={b_images: batchImages, b_masks: batchMasks})
-                perfectTrainGain = perfectGain.eval(feed_dict={b_images: batchImages, b_masks: batchMasks})
-                trainLoss = loss.eval(feed_dict={b_images: batchImages, b_masks: batchMasks})
-                print('epoch %d of %d, training heatmap gain %g, training loss %g' % (epoch+1, nEpochs, trainGain/perfectTrainGain, trainLoss))
+                trainHeatmapLoss = heatmapLoss.eval(feed_dict={b_images: batchImages, b_masks: batchMasks})
+                trainSiameseLoss = siameseLoss.eval(feed_dict={b_images: batchImages, b_masks: batchMasks})
+                trainTotalLoss = loss.eval(feed_dict={b_images: batchImages, b_masks: batchMasks})
+                print('epoch %d of %d, training heatmap loss %g, training siamese loss %g, training total loss %g' % (epoch+1, nEpochs, trainHeatmapLoss, trainSiameseLoss, trainTotalLoss))
                 testBatch = nnu.extractBatch(100, testImagesA, testMasksA, 0, randomDraw=True)
-                testGain = heatmapGain.eval(feed_dict={b_images: testBatch[0], b_masks: testBatch[1]})
+                testHeatmapLoss = heatmapLoss.eval(feed_dict={b_images: testBatch[0], b_masks: testBatch[1]})
+                testHeatmapGain = heatmapGain.eval(feed_dict={b_images: testBatch[0], b_masks: testBatch[1]})
                 perfectTestGain = perfectGain.eval(feed_dict={b_images: testBatch[0], b_masks: testBatch[1]})
-                print('epoch %d of %d, test heatmap gain %g' % (epoch+1, nEpochs, testGain/perfectTestGain))
+                print('epoch %d of %d, test heatmap gain (max 1.0) %g, testHeatmapLoss %g' % (epoch+1, nEpochs, testHeatmapGain/perfectTestGain, testHeatmapLoss))
                 peekSchedule.append(epoch+1)
-                trainGainHistory.append(trainGain/perfectTrainGain)
-                testGainHistory.append(testGain/perfectTestGain)
+                trainGainHistory.append(-trainHeatmapLoss)
+                testGainHistory.append(-testHeatmapLoss)
             
             # Print elapsed time every peekEveryNEpochs epochs
             if epoch % peekEveryNEpochs == (peekEveryNEpochs-1):
