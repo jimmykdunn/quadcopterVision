@@ -255,7 +255,7 @@ if __name__ == "__main__":
     print("Reading augmented image and mask sequences")
     checkpointSaveDir = "./homebrew_hourglass_nn_save";
     # Epoch parameters
-    peekEveryNEpochs=25
+    peekEveryNEpochs=1
     saveEveryNEpochs=25
     nEpochs = 5000
     batchSize = 512
@@ -263,27 +263,35 @@ if __name__ == "__main__":
     x_set1, y_set1, id_set1 = vu.pull_aug_sequence(
         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48","augImage_"),
         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48","augMask_"))
+    id_set1 = [id+"_01" for id in id_set1]
     x_set2, y_set2, id_set2 = vu.pull_aug_sequence(
         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab2_64x48","augImage_"),
         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab2_64x48","augMask_"))
+    id_set2 = [id+"_02" for id in id_set2]
     x_set3, y_set3, id_set3 = vu.pull_aug_sequence(
         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab3_64x48","augImage_"),
         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab3_64x48","augMask_"))
+    id_set3 = [id+"_03" for id in id_set3]
     x_set4, y_set4, id_set4 = vu.pull_aug_sequence(
         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab4_64x48","augImage_"),
         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab4_64x48","augMask_"))
+    id_set4 = [id+"_04" for id in id_set4]
     x_set5, y_set5, id_set5 = vu.pull_aug_sequence(
         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48_baby","augImage_"),
         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48_baby","augMask_"))
+    id_set5 = [id+"_05" for id in id_set5]
     x_set6, y_set6, id_set6 = vu.pull_aug_sequence(
         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab2_64x48_baby","augImage_"),
         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab2_64x48_baby","augMask_"))
+    id_set6 = [id+"_06" for id in id_set6]
     x_set7, y_set7, id_set7 = vu.pull_aug_sequence(
         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab3_64x48_baby","augImage_"),
         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab3_64x48_baby","augMask_"))
+    id_set7 = [id+"_07" for id in id_set7]
     x_set8, y_set8, id_set8 = vu.pull_aug_sequence(
         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab4_64x48_baby","augImage_"),
         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab4_64x48_baby","augMask_"))
+    id_set8 = [id+"_08" for id in id_set8]
     x_all = np.concatenate([x_set1,x_set2,x_set3,x_set4,x_set5,x_set6,x_set7,x_set8],axis=0)
     y_all = np.concatenate([y_set1,y_set2,y_set3,y_set4,y_set5,y_set6,y_set7,y_set8],axis=0)
     id_all = np.concatenate([id_set1,id_set2,id_set3,id_set4,id_set5,id_set6,id_set7,id_set8],axis=0)
@@ -295,24 +303,74 @@ if __name__ == "__main__":
     x_all, y_all, id_all = vu.pull_aug_sequence(
         os.path.join("augmentedContinuousSequences","sortTest","augImage_"),
         os.path.join("augmentedContinuousSequences","sortTest","augMask_"))
-    '''
+    '''    
     
-    x_all_s, y_all_s, id_all_s = vu.sort_aug_sequence(x_all, y_all, id_all)
-    
-    # Split into train and test sets temporally: first bunch to train, second
-    # bunch to test
-    nAugs, nFrames, width, height = x_all_s.shape
-    trainFraction = 0.75
-    nTrain = int(nFrames * trainFraction)
-    x_train = x_all_s[:,:nTrain,:,:] # [nAugs,nframes,nx,ny]
-    y_train = y_all_s[:,:nTrain,:,:]
-    x_test  = x_all_s[:,nTrain:,:,:]
-    y_test  = y_all_s[:,nTrain:,:,:]
     
     # Convert masks to appropriately-weighted +/- masks
-    y_train_pmMask = nnu.booleanMaskToPlusMinus(y_train, falseVal=-0.01)
-    y_test_pmMask  = nnu.booleanMaskToPlusMinus(y_test, falseVal=-0.01)
+    print("Converting boolean masks into weighted +/- masks")
+    y_all_pmMask = nnu.booleanMaskToPlusMinus(y_all, falseVal=-0.01)
     
+    # Split into train and test sets randomly
+    print("Splitting into training and test sets randomly")
+    x_train, y_train_pmMask, x_test, y_test_pmMask, id_train, id_test = \
+        vu.train_test_split_noCheat(x_all, y_all_pmMask, id_all, trainFraction=0.8)
+    
+        
+    # Find all the siamese matches for each of the training and testing images
+    # Allocate memory ahead of time for speed
+    print("Allocating memory for both arms of the Siamese network")
+    x_trainA, y_train_pmMaskA, x_testA, y_test_pmMaskA = \
+        np.zeros_like(x_train), np.zeros_like(y_train_pmMask), np.zeros_like(x_test), np.zeros_like(y_test_pmMask)
+    x_trainB, y_train_pmMaskB, x_testB, y_test_pmMaskB =  \
+        np.zeros_like(x_train), np.zeros_like(y_train_pmMask), np.zeros_like(x_test), np.zeros_like(y_test_pmMask)
+    
+    
+    # Find all existing training image matches
+    print("Finding siamese matches for training images")
+    numFound = 0
+    for i in range(len(id_train)):
+        # Search thru all images - simaese match may not be in same set
+        pairedImage, pairedMask, pairedIndexString = vu.find_siamese_match(
+            id_train[i], x_all, y_all_pmMask, id_all)
+        if pairedIndexString != "****_****": # if there is a siamese match
+            x_trainA[numFound,:,:] = x_train[i,:,:]
+            y_train_pmMaskA[numFound,:,:] = y_train_pmMask[i,:,:]
+            x_trainB[numFound,:,:] = pairedImage
+            y_train_pmMaskB[numFound,:,:] = pairedMask
+            numFound += 1
+        else:
+            print("Match not found for train image " + id_train[i])
+    # end for training images
+    # Cut off the excess
+    x_trainA = x_trainA[:numFound,:,:]
+    y_train_pmMaskA = y_train_pmMaskA[:numFound,:,:]
+    x_trainB = x_trainB[:numFound,:,:]
+    y_train_pmMaskB = y_train_pmMaskB[:numFound,:,:]
+    
+    
+    # Find all existing testing image matches
+    print("Finding siamese matches for test images")
+    numFound = 0
+    for i in range(len(id_test)):
+        # Search thru all images - simaese match may not be in same set
+        pairedImage, pairedMask, pairedIndexString = vu.find_siamese_match(
+            id_test[i], x_all, y_all_pmMask, id_all)
+        if pairedIndexString != "****_****": # if there is a siamese match
+            x_testA[numFound,:,:] = x_test[i,:,:]
+            y_test_pmMaskA[numFound,:,:] = y_test_pmMask[i,:,:]
+            x_testB[numFound,:,:] = pairedImage
+            y_test_pmMaskB[numFound,:,:] = pairedMask
+            numFound += 1
+        else:
+            print("Match not found for test image " + id_test[i])
+    # end for test images
+    # Cut off the excess
+    x_testA = x_testA[:numFound,:,:]
+    y_test_pmMaskA = y_test_pmMaskA[:numFound,:,:]
+    x_testB = x_testB[:numFound,:,:]
+    y_test_pmMaskB = y_test_pmMaskB[:numFound,:,:]
+    
+    '''
     # Assemble each siamese arm. This is the 1-frame delta temporal siamese version.
     x_trainA        = x_train       [:,:-1,:,:] # extract all but last temporal frame
     y_train_pmMaskA = y_train_pmMask[:,:-1,:,:] # extract all but last temporal frame
@@ -332,16 +390,20 @@ if __name__ == "__main__":
     y_train_pmMaskB = y_train_pmMaskB.reshape(-1, *y_train_pmMaskB.shape[-2:])
     x_testB         = x_testB.reshape        (-1, *x_testB.shape[-2:])
     y_test_pmMaskB  = y_test_pmMaskB.reshape (-1, *y_test_pmMaskB.shape[-2:])
+    '''
     
     # Run the complete training on the hourglass neural net
+    print("Running siamese hourglass training")
     heatmaps = train_siamese_hourglass_nn(
             x_trainA, y_train_pmMaskA, x_testA, y_test_pmMaskA, 
             x_trainB, y_train_pmMaskB, x_testB, y_test_pmMaskB, 
         checkpointSaveDir = checkpointSaveDir, peekEveryNEpochs = peekEveryNEpochs,
-        saveEveryNEpochs=saveEveryNEpochs, nEpochs=nEpochs, batchSize=batchSize)
+        saveEveryNEpochs=saveEveryNEpochs, nEpochs=nEpochs, batchSize=batchSize,
+        siameseWeight=0.0)
         
     # Write out the first few testset heatmaps to file along with the associated
     # test data inputs for visualization
+    print("Generating some sample heatmap images for visualization")
     if not os.path.isdir('heatmaps'): # make the output dir if needed
         os.mkdir('heatmaps')
     numToWrite = np.min([16,heatmaps.shape[0]])

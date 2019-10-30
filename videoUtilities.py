@@ -306,6 +306,98 @@ def sort_aug_sequence(imageStack, maskStack, indexStack):
 
 # end sort_aug_sequence()
     
+
+"""
+FUNCTION:
+    extract_random_frame() 
+    
+DESCRIPTION:
+    Extracts a single frame from the input stack of images randomly
+    
+INPUTS: 
+    imageStack: Series of augmented frames as a [nframes,nx,ny] 3D array
+    maskStack:  Series of augmented masks as a [nframes,nx,ny] 3D array
+    indexStack: List of strings with format "####_%%%%", where #### is the 
+        index of the parent image, and %%%% is the augmentation index
+    
+RETURNS: 
+    image: randomly selected image from the stack
+    mask: corresponding binary mask
+    index: corresponding index string
+"""
+def extract_random_frame(imageStack, maskStack, indexStack):
+
+    nFrames = imageStack.shape[0]
+
+    # Pull a random number and use it to select a single frame
+    idx = np.floor(np.random.uniform(low=0, high=nFrames-1)).astype(int)
+
+    return imageStack[idx,:,:], maskStack[idx,:,:], indexStack[idx]
+# end extract_random_frame
+
+
+"""
+FUNCTION:
+    find_siamese_match() 
+    
+DESCRIPTION:
+    Takes the input index string and returns the image, mask, and index string
+    of its "siamese match" - the frame which we expect it to be (nearly)
+    identical to from a target heatmap perspective.  By default, this is a 
+    neighboring temporal frame with the same augmentation index to ensure
+    an indentical crop, scaling, and brightness/contrast adjustment.
+    
+INPUTS: 
+    indexString: String of image to find the siamese match for
+    imageStack: Series of augmented frames as a [nframes,nx,ny] 3D array
+    maskStack:  Series of augmented masks as a [nframes,nx,ny] 3D array
+    indexStack: List of strings with format "####_%%%%", where #### is the 
+        index of the parent image, and %%%% is the augmentation index
+    
+OPTIONAL INPUTS:
+    offset: number of frames after the input index to pull as the siamese match.
+            This can be negative to pull a frame in the past. Default 1.
+    
+RETURNS: 
+    pairedImage: siamese matched index
+    pairedMask: siamese matched mask
+    pariedIndexString: siamese matched index string. Will be "****_****" if a
+        siamese match for the input image is not found. This should be checked
+        for and dealt by the calling function.
+"""
+def find_siamese_match(indexString, imageStack, maskStack, indexStack, offset=1):
+    
+    # Number of images available
+    nImages = imageStack.shape[0]
+    
+    # Extract this frame's indices
+    temporalIndex = int(indexString[:4])
+    augIndex = int(indexString[-4:])
+    
+    # Determine temporal index of siamese match
+    matchedTemporalIndex = temporalIndex + offset
+    matchedAugIndex = augIndex
+    
+    matchedIndexStr = "%04d_%04d" % (matchedTemporalIndex,matchedAugIndex)
+    
+    if matchedIndexStr in indexStack:
+        pairIdx = indexStack.index(matchedIndexStr) # this may be a speed bottleneck, could use preformed dict to speedup
+        pairedImage = imageStack[pairIdx,:,:]
+        pairedMask = maskStack[pairIdx,:,:]
+        pairedIndexString = indexStack[pairIdx]
+    else:
+        # No appropriate siamese match found (likely the input frame is too 
+        # near to the start or end of the sequence)
+        pairedImage = np.zeros(imageStack.shape[1:3])   
+        pairedMask = np.zeros(imageStack.shape[1:3]) 
+        pairedIndexString = "****_****" # flags match not found
+        
+        
+    return pairedImage, pairedMask, pairedIndexString
+
+# end find_siamese_match
+  
+    
 """
 FUNCTION:
     augment_sequence() 
@@ -725,6 +817,8 @@ RETURNS:
     train_masks: trainFraction of the input masks corresponding to train_images
     test_images: the other (1-trainFraction) of the input images
     test_masks: the other (1-trainFraction) of the input masks corresponding to test_images
+    train_ids: list of ####_@@@@ format indices as above for the training set
+    test_ids:  list of ####_@@@@ format indices as above for the test set
 '''
 def train_test_split_noCheat(images, masks, indices, trainFraction=0.8):
     # Generate a dictonary of the parent indices
@@ -765,8 +859,10 @@ def train_test_split_noCheat(images, masks, indices, trainFraction=0.8):
     test_images = images[testIDList,:,:]
     train_masks = masks[trainIDList,:,:]
     test_masks =  masks[testIDList,:,:]
+    train_ids = np.array(indices)[trainIDList]
+    test_ids = np.array(indices)[testIDList]
     
-    return train_images, train_masks, test_images, test_masks
+    return train_images, train_masks, test_images, test_masks, train_ids, test_ids
 
 '''
 FUNCTION:

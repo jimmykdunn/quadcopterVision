@@ -295,7 +295,7 @@ if __name__ == "__main__":
     # Split into train and test sets randomly
     #x_train, y_train, x_test, y_test = \
     #    vu.train_test_split(x_all, y_all, trainFraction=0.8)
-    x_train, y_train, x_test, y_test = \
+    x_train, y_train, x_test, y_test, foo, bar = \
         vu.train_test_split_noCheat(x_all, y_all, id_all, trainFraction=0.8)
 
     # Convert masks to appropriately-weighted +/- masks
