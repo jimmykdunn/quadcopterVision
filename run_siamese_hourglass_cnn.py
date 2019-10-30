@@ -399,7 +399,7 @@ if __name__ == "__main__":
             x_trainB, y_train_pmMaskB, x_testB, y_test_pmMaskB, 
         checkpointSaveDir = checkpointSaveDir, peekEveryNEpochs = peekEveryNEpochs,
         saveEveryNEpochs=saveEveryNEpochs, nEpochs=nEpochs, batchSize=batchSize,
-        siameseWeight=0.0)
+        siameseWeight=1.0)
         
     # Write out the first few testset heatmaps to file along with the associated
     # test data inputs for visualization
