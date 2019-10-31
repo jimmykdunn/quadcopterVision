@@ -365,23 +365,25 @@ RETURNS:
         siamese match for the input image is not found. This should be checked
         for and dealt by the calling function.
 """
-def find_siamese_match(indexString, imageStack, maskStack, indexStack, offset=1):
+def find_siamese_match(indexString, imageStack, maskStack, indexStack, indexStack_plus, offset=1):
     
     # Number of images available
     nImages = imageStack.shape[0]
     
     # Extract this frame's indices
     temporalIndex = int(indexString[:4])
-    augIndex = int(indexString[-4:])
+    augIndex = int(indexString[5:9])
+    vidIndex = int(indexString[-2:])
     
     # Determine temporal index of siamese match
     matchedTemporalIndex = temporalIndex + offset
     matchedAugIndex = augIndex
+    matchedVidIndex = vidIndex
     
-    matchedIndexStr = "%04d_%04d" % (matchedTemporalIndex,matchedAugIndex)
+    matchedIndexStr = "%04d_%04d_%02d" % (matchedTemporalIndex,matchedAugIndex,matchedVidIndex)
     
-    if matchedIndexStr in indexStack:
-        pairIdx = indexStack.index(matchedIndexStr) # this may be a speed bottleneck, could use preformed dict to speedup
+    if matchedIndexStr in indexStack_plus:
+        pairIdx = indexStack_plus.tolist().index(matchedIndexStr) # this may be a speed bottleneck, could use preformed dict to speedup
         pairedImage = imageStack[pairIdx,:,:]
         pairedMask = maskStack[pairIdx,:,:]
         pairedIndexString = indexStack[pairIdx]
@@ -810,6 +812,7 @@ INPUTS:
     indices: list of corresponding indices with the format ####_@@@@, where
         #### represents the parent image index, and @@@@ represents the
         augmentation index.
+    indices_plus: indices with video number label appended as "_**"
 OPTIONAL INPUTS:
     trainFraction: fraction of images as training (default 0.8)
 RETURNS: 
@@ -819,8 +822,10 @@ RETURNS:
     test_masks: the other (1-trainFraction) of the input masks corresponding to test_images
     train_ids: list of ####_@@@@ format indices as above for the training set
     test_ids:  list of ####_@@@@ format indices as above for the test set
+    train_ids_plus: train_ids wth video number label appended as "_**"
+    test_ids_plus: test_ids with video number label appended as "_**"
 '''
-def train_test_split_noCheat(images, masks, indices, trainFraction=0.8):
+def train_test_split_noCheat(images, masks, indices, indices_plus, trainFraction=0.8):
     # Generate a dictonary of the parent indices
     parentList = {}
     for index,indexString in enumerate(indices):
@@ -861,8 +866,10 @@ def train_test_split_noCheat(images, masks, indices, trainFraction=0.8):
     test_masks =  masks[testIDList,:,:]
     train_ids = np.array(indices)[trainIDList]
     test_ids = np.array(indices)[testIDList]
+    train_ids_plus = np.array(indices_plus)[trainIDList]
+    test_ids_plus = np.array(indices_plus)[testIDList]
     
-    return train_images, train_masks, test_images, test_masks, train_ids, test_ids
+    return train_images, train_masks, test_images, test_masks, train_ids, test_ids, train_ids_plus, test_ids_plus
 
 '''
 FUNCTION:
