@@ -25,6 +25,7 @@ import videoUtilities as vu
 import matplotlib.pyplot as plt
 import nnUtilities as nnu
 import neuralNetStructures as nns
+import sys
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
@@ -248,12 +249,20 @@ Build and train the hourglass CNN from the main level when this file is called.
 """
 
 if __name__ == "__main__":  
+
+    print("Running:")
+    for arg in sys.argv:
+        print(arg)
+    siameseWeight = float(sys.argv[1])
+    saveName = sys.argv[2]
+    print("siameseWeight = %g" % siameseWeight)
+    print("saveName = " + saveName)
     
     #print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
     
     # Get homebrewed video sequences and corresponding masks
     print("Reading augmented image and mask sequences")
-    checkpointSaveDir = "./homebrew_hourglass_nn_save_8vids";
+    checkpointSaveDir = "./savedNetworks/" + saveName
     # Epoch parameters
     peekEveryNEpochs=25
     saveEveryNEpochs=25
@@ -410,7 +419,7 @@ if __name__ == "__main__":
             x_trainB, y_train_pmMaskB, x_testB, y_test_pmMaskB, 
         checkpointSaveDir = checkpointSaveDir, peekEveryNEpochs = peekEveryNEpochs,
         saveEveryNEpochs=saveEveryNEpochs, nEpochs=nEpochs, batchSize=batchSize,
-        siameseWeight=1.0)
+        siameseWeight=siameseWeight)
         
     # Write out the first few testset heatmaps to file along with the associated
     # test data inputs for visualization
