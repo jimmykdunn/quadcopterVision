@@ -6,7 +6,7 @@
 #$ -l h_rt=120:00:00
 #
 ## Give the job a name.
-#$ -N hCNN00p00
+#$ -N hCRS00p30
 #
 ## Redirect error output to standard output
 #$ -j y
@@ -18,4 +18,4 @@ source ~/thesis/quadcopterVision/loadModules.sh
 
 # program name or command and its options and arguments
 cd /usr3/graduate/jkdunn/thesis/quadcopterVision/
-python run_siamese_hourglass_cnn.py 0.00 sWeight00p00
+python run_siamese_hourglass_cnn.py 0.30 timeRandSign_sWeight00p30

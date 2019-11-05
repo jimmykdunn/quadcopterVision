@@ -381,7 +381,7 @@ def find_siamese_match(indexString, imageStack, maskStack, indexStack,
     
     # Randomize offset direction if desired
     if randomSign:
-        if np.random.rand() < 0.5 # 50% shot of flipping sign
+        if np.random.rand() < 0.5: # 50% shot of flipping sign
             offset = int(-1*offset)
     
     # Determine temporal index of siamese match
