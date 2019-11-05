@@ -1045,6 +1045,9 @@ def overlay_point(image,xyPoint,mark='+',color='g'):
         image = np.repeat(image[:,:,np.newaxis],3,axis=2)
         
     # Round xyPoint to nearest integer pixel and enforce boundaries
+    for i,point in enumerate(xyPoint):
+        if np.isnan(point):
+            xyPoint[i] = 0.0
     xyPoint = [int(np.round(value)) for value in xyPoint]
     xyPoint = [np.min([np.max([2,val]),image.shape[i]-3]) for i,val in enumerate(xyPoint)]
        
