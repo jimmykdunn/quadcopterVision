@@ -351,7 +351,7 @@ if __name__ == "__main__":
     for i in range(len(id_train_plus)):
         # Search thru all images - simaese match may not be in same set
         pairedImage, pairedMask, pairedIndexString = vu.find_siamese_match(
-            id_train_plus[i], x_all, y_all_pmMask, id_all, id_all_plus)
+            id_train_plus[i], x_all, y_all_pmMask, id_all, id_all_plus, randomSign=True)
         if pairedIndexString != "****_****": # if there is a siamese match
             x_trainA[numFound,:,:] = x_train[i,:,:]
             y_train_pmMaskA[numFound,:,:] = y_train_pmMask[i,:,:]

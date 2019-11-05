@@ -357,6 +357,9 @@ INPUTS:
 OPTIONAL INPUTS:
     offset: number of frames after the input index to pull as the siamese match.
             This can be negative to pull a frame in the past. Default 1.
+    randomSign: Set to true for the sign of offset to be randomly determined.
+            This makes temporal order irrelevant - in particular removing bias
+            due to a consistent direction of motion.
     
 RETURNS: 
     pairedImage: siamese matched index
@@ -365,7 +368,8 @@ RETURNS:
         siamese match for the input image is not found. This should be checked
         for and dealt by the calling function.
 """
-def find_siamese_match(indexString, imageStack, maskStack, indexStack, indexStack_plus, offset=1):
+def find_siamese_match(indexString, imageStack, maskStack, indexStack, 
+    indexStack_plus, offset=1, randomSign=False):
     
     # Number of images available
     nImages = imageStack.shape[0]
@@ -374,6 +378,11 @@ def find_siamese_match(indexString, imageStack, maskStack, indexStack, indexStac
     temporalIndex = int(indexString[:4])
     augIndex = int(indexString[5:9])
     vidIndex = int(indexString[-2:])
+    
+    # Randomize offset direction if desired
+    if randomSign:
+        if np.random.rand() < 0.5 # 50% shot of flipping sign
+            offset = int(-1*offset)
     
     # Determine temporal index of siamese match
     matchedTemporalIndex = temporalIndex + offset
