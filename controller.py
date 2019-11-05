@@ -25,7 +25,7 @@ def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
         showHeatmap=False, liveFeed=True, displayScale=1):
     # Import the trained neural network
     print("Loading saved neural network from " + modelPath+'.pb')
-    tensorflowNet = cv2.dnn.readNet(modelPath+'.pb')
+    tensorflowNet = cv2.dnn.readNetFromTensorflow(modelPath+'.pb')
     print("Neural network sucessfully loaded")
     
     # Prepare the output folder
@@ -144,5 +144,5 @@ def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
 
 # Run if called directly
 if __name__ == "__main__":
-    run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_64x48'),
-        save=True, liveFeed=True)
+    run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_sWeight00p30'),
+        save=True, liveFeed=True, showHeatmap=True)
