@@ -88,16 +88,16 @@ class kalman_filter:
         # Update the state vector. Simply the state we projected to plus the
         # Kalman-gain-weighted difference between the measurement and the 
         # projected state vector.
-        self.stateVector = self.stateVector + \
+    	self.stateVector = self.stateVector + \
                            np.dot(K, measurement - np.dot(self.H, self.stateVector))
     
         # Update the covariance matrix based on the kalman gain
-        self.covMatrix = self.covMatrix - np.dot(K, np.dot(self.H, self.covMatrix))
-        
+    	self.covMatrix = self.covMatrix - np.dot(K, np.dot(self.H, self.covMatrix))
+    	
     # Prints the state of the Kalman filter
     def printState(self):
-    	print self.stateVector
+    	print(self.stateVector)
     	
     # Prints the covariance of the Kalman filter
     def printCovariance(self):
-        print self.covMatrix
+        print(self.covMatrix)

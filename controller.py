@@ -20,6 +20,9 @@ import numpy as np
 import videoUtilities as vu
 import shutil
 from datetime import datetime
+import kalman
+
+USE_KALMAN = True
 
 def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
         showHeatmap=False, liveFeed=True, displayScale=1):
@@ -43,13 +46,28 @@ def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
     print("Press P key to pause/play")
     print("Press ESC key to quit")
     
+    
+    
     # Continuously pull and display frames from the camera until stopped
     i=0
     start_time = datetime.now()
+    prev_time = start_time
     while True:
         frame = webcam.grabFrame() # grab a frame
         if i == 0:
             print("Raw frame shape: " + str(frame.shape))
+            
+            
+        # Initialize Kalman filter as motionless at center of image if this
+        # is the first frame. Uncertainty is the size of the image.
+        if i == 0:
+            kalmanFilter = kalman.kalman_filter(
+                    frame.shape[0]/2,frame.shape[1]/2, # x,y
+                    0,0,                               # vx, vy
+                    frame.shape[0]/2,frame.shape[1]/2, # sigX, sigY
+                    0,0)                               # sigVX, sigVY
+            
+        curr_time = datetime.now()
         
         # Massage frame to be the right size and colorset#
         nnFrame = cv2.resize(frame,nnFramesize)
@@ -64,10 +82,25 @@ def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
         heatmap = tensorflowNet.forward()
         heatmap = np.squeeze(heatmap)*255.0 # scale appropriately
         
-        # Overlay center of mass and heatmap contours onto the image (speed negligible)
+        # Overlay heatmap contours onto the image (speed negligible)
         overlaidNN = vu.overlay_heatmap(heatmap, nnFrame, heatThreshold=0.5)
+        
+        # Find the center of mass for this frame
         heatmapCOM = vu.find_centerOfMass(heatmap)
+        
+        # Apply Kalman filter to the COM centroid measurement if desired
+        # NEXT: this should not be done if we have no confidence that there
+        # was a heatmap target in the first place!
+        if USE_KALMAN:
+            kalmanFilter.project((curr_time-prev_time).total_seconds())
+            sigX = 5.0 # constant for now, should be heatmap 2nd moment
+            sigY = 5.0 # constant for now, should be heatmap 2nd moment
+            kalmanFilter.update(heatmapCOM, [[sigX, 0],[0, sigY]])
+            heatmapCOM = kalmanFilter.stateVector[:2]
+        
+        # Overlay the target location
         overlaidNN = vu.overlay_point(overlaidNN,heatmapCOM,color='g')
+        print(heatmapCOM)
         
         if showHeatmap:
             # Display the heatmap and the image side-by-side
@@ -122,6 +155,9 @@ def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
         
         # Increment frame loop counter
         i+=1
+        
+        # Save off time for use by kalman filter
+        prev_time = curr_time
     # end while True
     
     # Calculate framerate statistics
@@ -144,5 +180,5 @@ def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
 
 # Run if called directly
 if __name__ == "__main__":
-    run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_sWeight00p30'),
+    run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_sWeight00p00'),
         save=True, liveFeed=True, showHeatmap=True)
