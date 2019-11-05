@@ -54,6 +54,8 @@ OPTIONAL INPUTS:
     saveEveryNEpochs: save checkpoint every this many epochs (and at the end) (default 500)
     peekEveryNEpochs: print the training gain with a forward pass every this many epochs (default 50)
     siameseWeight: weight to apply to siamese deltas relative to heatmap gain (default 1.0)
+    firstMomentWeight: weight to apply to first moment loss relative to heatmap gain (default 1.0)
+    secondMomentWeight: weight to apply to second moment loss relative to heatmap gain (default 1.0)
 EXAMPLE:
     test_heatmaps = train_hourglass_nn(x)
 RETURNS:
@@ -63,7 +65,8 @@ RETURNS:
 def train_siamese_hourglass_nn(trainImagesA, trainMasksA, testImagesA, testMasksA, \
                                trainImagesB, trainMasksB, testImagesB, testMasksB, \
     nEpochs=100, batchSize=100, checkpointSaveDir='./hourglass_nn_save', \
-    saveEveryNEpochs=500, peekEveryNEpochs=50, siameseWeight = 1.0):
+    saveEveryNEpochs=500, peekEveryNEpochs=50, siameseWeight = 1.0,
+    firstMomentWeight = 1.0, secondMomentWeight = 1.0):
     
     print("BEGIN SIAMESE HOURGLASS NN TRAINING")
     
@@ -137,10 +140,23 @@ def train_siamese_hourglass_nn(trainImagesA, trainMasksA, testImagesA, testMasks
         b_siameseDelta = tf.square(b_siameseDelta)
         siameseLoss = tf.reduce_mean(tf.cast(b_siameseDelta,tf.float32))
         
+    with tf.name_scope('momentLoss'):
+        # Calculate first moment loss
+        firstMomentLoss, xCOM, yCOM, xMaskCOM, yMaskCOM = nnu.calculateFirstMomentLoss(b_heatmapsA,b_masksA)
+        
+        # Calculate second moment loss
+        secondMomentLoss, xSTD, ySTD = nnu.calculateSecondMomentLoss(b_heatmapsA,b_masksA)
+        
     with tf.name_scope('overallLoss'):
-        # Overall loss is just the sum of the heatmap loss and weighted
-        # siamese loss
-        loss = tf.add(heatmapLoss, tf.multiply(siameseWeight, siameseLoss))
+        # Overall loss is just the weighted sum of all the loss terms
+        loss = tf.add(heatmapLoss, 
+                      tf.multiply(siameseWeight, siameseLoss))
+        #loss = tf.add(
+        #       tf.add(heatmapLoss, 
+        #              tf.multiply(siameseWeight, siameseLoss)),
+        #       tf.add(tf.multiply(firstMomentWeight,  firstMomentLoss),
+        #              tf.multiply(secondMomentWeight, secondMomentLoss)))
+                      
         
         
     # Optimization calculation
@@ -182,15 +198,44 @@ def train_siamese_hourglass_nn(trainImagesA, trainMasksA, testImagesA, testMasks
             
             # Check our progress on the training data every peekEveryNEpochs epochs
             if epoch % peekEveryNEpochs == (peekEveryNEpochs-1):
-                trainHeatmapLoss = heatmapLoss.eval(feed_dict={b_images: batchImages, b_masks: batchMasks})
-                trainSiameseLoss = siameseLoss.eval(feed_dict={b_images: batchImages, b_masks: batchMasks})
-                trainTotalLoss = loss.eval(feed_dict={b_images: batchImages, b_masks: batchMasks})
-                print('epoch %d of %d, training heatmap loss %g, training siamese loss %g, training total loss %g' % (epoch+1, nEpochs, trainHeatmapLoss, trainSiameseLoss, trainTotalLoss))
+                trainHeatmapLoss   = heatmapLoss.eval(     feed_dict={b_images: batchImages, b_masks: batchMasks})
+                trainSiameseLoss   = siameseLoss.eval(     feed_dict={b_images: batchImages, b_masks: batchMasks})
+                train1stMomentLoss = firstMomentLoss.eval( feed_dict={b_images: batchImages, b_masks: batchMasks})
+                train2ndMomentLoss = secondMomentLoss.eval(feed_dict={b_images: batchImages, b_masks: batchMasks})
+                trainTotalLoss     = loss.eval(            feed_dict={b_images: batchImages, b_masks: batchMasks})
+                print('epoch %d of %d, training heatmap loss %g, training siamese loss %g, training 1st moment loss %g, training 2nd moment loss %g, training total loss %g' % (epoch+1, nEpochs, trainHeatmapLoss, trainSiameseLoss, train1stMomentLoss, train2ndMomentLoss, trainTotalLoss))
                 testBatch = nnu.extractBatch(100, testImagesA, testMasksA, 0, randomDraw=True)
                 testHeatmapLoss = heatmapLoss.eval(feed_dict={b_images: testBatch[0], b_masks: testBatch[1]})
                 testHeatmapGain = heatmapGain.eval(feed_dict={b_images: testBatch[0], b_masks: testBatch[1]})
                 perfectTestGain = perfectGain.eval(feed_dict={b_images: testBatch[0], b_masks: testBatch[1]})
                 print('epoch %d of %d, test heatmap gain (max 1.0) %g, testHeatmapLoss %g' % (epoch+1, nEpochs, testHeatmapGain/perfectTestGain, testHeatmapLoss))
+                
+                '''
+                # DEBUGGUNG PEEKS
+                heatmapsAll = b_heatmapsA.eval(feed_dict={b_images: batchImages, b_masks: batchMasks})
+                xCOMAll = xCOM.eval(feed_dict={b_images: batchImages, b_masks: batchMasks})
+                yCOMAll = yCOM.eval(feed_dict={b_images: batchImages, b_masks: batchMasks})
+                xMaskCOMAll = xMaskCOM.eval(feed_dict={b_images: batchImages, b_masks: batchMasks})
+                yMaskCOMAll = yMaskCOM.eval(feed_dict={b_images: batchImages, b_masks: batchMasks})
+                xSTDAll = xSTD.eval(feed_dict={b_images: batchImages, b_masks: batchMasks})
+                ySTDAll = ySTD.eval(feed_dict={b_images: batchImages, b_masks: batchMasks})
+                print('heatmaps')
+                print(heatmapsAll[0,:,:])
+                print('xCOM')
+                print(xCOMAll[:20])
+                print('yCOM')
+                print(yCOMAll[:20])
+                print('xMaskCOM')
+                print(xMaskCOMAll[:20])
+                print('yMaskCOM')
+                print(yMaskCOMAll[:20])
+                print('xSTD')
+                print(xSTDAll[:20])
+                print('ySTD')
+                print(ySTDAll[:20])
+                # DEBUGGUNG PEEKS
+                '''
+                
                 peekSchedule.append(epoch+1)
                 trainGainHistory.append(-trainHeatmapLoss)
                 testGainHistory.append(-testHeatmapLoss)
@@ -254,8 +299,12 @@ if __name__ == "__main__":
     for arg in sys.argv:
         print(arg)
     siameseWeight = float(sys.argv[1])
-    saveName = sys.argv[2]
+    firstMomentWeight = float(sys.argv[2])
+    secondMomentWeight = float(sys.argv[3])
+    saveName = sys.argv[4]
     print("siameseWeight = %g" % siameseWeight)
+    print("firstMomentWeight = %g" % firstMomentWeight)
+    print("secondMomentWeight = %g" % secondMomentWeight)
     print("saveName = " + saveName)
     
     #print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
@@ -269,6 +318,8 @@ if __name__ == "__main__":
     nEpochs = 20000
     batchSize = 512
     
+    
+    # Complete datasets
     x_set1, y_set1, id_set1 = vu.pull_aug_sequence(
         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48","augImage_"),
         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48","augMask_"))
@@ -307,17 +358,19 @@ if __name__ == "__main__":
     y_all = np.concatenate([y_set1,y_set2,y_set3,y_set4,y_set5,y_set6,y_set7,y_set8],axis=0)
     id_all = np.concatenate([id_set1,id_set2,id_set3,id_set4,id_set5,id_set6,id_set7,id_set8],axis=0)
     id_all_plus = np.concatenate([id_set1_plus,id_set2_plus,id_set3_plus,id_set4_plus,id_set5_plus,id_set6_plus,id_set7_plus,id_set8_plus],axis=0)
+    
     '''
     x_all = np.concatenate([x_set1,x_set2])
     y_all = np.concatenate([y_set1,y_set2])
     id_all = np.concatenate([id_set1,id_set2])
     id_all_plus = np.concatenate([id_set1_plus,id_set2_plus])
     '''
-    
     '''
+    # Smaller datasets for faster debugging    
     x_all, y_all, id_all = vu.pull_aug_sequence(
         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48","augImage_"),
         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48","augMask_"))
+    id_all_plus = [id+"_01" for id in id_all]
     '''
     '''
     x_all, y_all, id_all = vu.pull_aug_sequence(
@@ -419,7 +472,7 @@ if __name__ == "__main__":
             x_trainB, y_train_pmMaskB, x_testB, y_test_pmMaskB, 
         checkpointSaveDir = checkpointSaveDir, peekEveryNEpochs = peekEveryNEpochs,
         saveEveryNEpochs=saveEveryNEpochs, nEpochs=nEpochs, batchSize=batchSize,
-        siameseWeight=siameseWeight)
+        siameseWeight=siameseWeight, firstMomentWeight=firstMomentWeight, secondMomentWeight=secondMomentWeight)
         
     # Write out the first few testset heatmaps to file along with the associated
     # test data inputs for visualization

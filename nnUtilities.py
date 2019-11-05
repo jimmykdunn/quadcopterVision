@@ -231,34 +231,66 @@ def save_graph_protobuf(sess,directory,baseName='modelFinal'):
     tf_utils.ckpt_to_protobuf(ckpt_filepath)
 # end save_graph_protobuf   
 
-    
+
 """
-calculateSecondMomentLoss()
-    Calculates the second moment of the heatmaps, i.e. the average distance
-    from the center of mass of the image to the energy in the heatmap.
-    Normalize by the size of the image and by the total energy in the heatmap.
-    This makes it okay to have a lot of energy in the heatmap, so long as it
-    is concentrated, and keeps a level playing field across images of different
-    resolutions.
+calculateFirstMoment()
+    Calculates the first moment of the heatmaps, i.e. the centroid or center of
+    mass of the meatmap.
 INPUTS:
     b_heatmaps: array of heatmaps [nBatch,width,height]
-    b_masks: array of truth masks [nBatch,width,height]
 RETURNS:
-    Normalized second moment of the heatmap.
+    COM_x: horizontal first moment of the heatmaps [nBatch]
+    COM_y: vertical first moment of the heatmaps [nBatch]
 """
-def calculateSecondMomentLoss(b_heatmaps,b_masks):
+def calculateFirstMoment(b_heatmaps):
+    # Prepare necessary variables
     heatmapShape = tf.shape(b_heatmaps)
-    
-    # Start by calculating the first moment (mean or center of mass) as the 
-    # integral of the pixel energy multiplied by its pixel position
     xpos, ypos = tf.meshgrid(tf.range(heatmapShape[2]),tf.range(heatmapShape[1])) # create array of x & y positions [nBatch,width,height]
     xpos = tf.cast(repeatAlongBatch(xpos, heatmapShape[0]),tf.float32) # expand across the batch dimension
     ypos = tf.cast(repeatAlongBatch(ypos, heatmapShape[0]),tf.float32) # expand across the batch dimension
+    
+    # Calculate COM
     COM_x = tf.reduce_sum(tf.multiply(xpos,b_heatmaps),axis=(1,2)) # 1D [batch]
     COM_y = tf.reduce_sum(tf.multiply(ypos,b_heatmaps),axis=(1,2)) # 1D [batch]
     totalEnergy = tf.reduce_sum(b_heatmaps,axis=(1,2)) # 1D [batch]
+    
+    # Normalize
     COM_x = tf.divide(COM_x,tf.maximum(totalEnergy,1e-10)) # divide by total energy of heatmap, 1D [batch]
     COM_y = tf.divide(COM_y,tf.maximum(totalEnergy,1e-10)) # divide by total energy of heatmap, 1D [batch]
+    
+    # Frames with zero total energy (this can and does happen, especially when
+    # there is no target present) should have their COM at the center pixel.
+    midX = tf.divide(tf.cast(heatmapShape[1],tf.float32),tf.constant(2.0))
+    midY = tf.divide(tf.cast(heatmapShape[2],tf.float32),tf.constant(2.0))
+    midX = tf.add(tf.zeros(heatmapShape[0]),midX)
+    midY = tf.add(tf.zeros(heatmapShape[0]),midY)
+    COM_x = tf.where(tf.less_equal(totalEnergy,0.0),midX,COM_x)
+    COM_y = tf.where(tf.less_equal(totalEnergy,0.0),midY,COM_y)
+    
+    return COM_x, COM_y
+# end calculateFirstMoment
+
+
+"""
+calculateSecondMoment()
+    Calculates the second moment of the heatmaps, i.e. the average distance 
+    from the centroid.
+INPUTS:
+    b_heatmaps: array of heatmaps [nBatch,width,height]
+RETURNS:
+    stdX: horizontal 2nd moment of the heatmaps [nBatch]
+    stdY: vertical 2nd moment of the heatmaps [nBatch]
+"""
+def calculateSecondMoment(b_heatmaps):
+    # Prepare necessary variables
+    heatmapShape = tf.shape(b_heatmaps)
+    xpos, ypos = tf.meshgrid(tf.range(heatmapShape[2]),tf.range(heatmapShape[1])) # create array of x & y positions [nBatch,width,height]
+    xpos = tf.cast(repeatAlongBatch(xpos, heatmapShape[0]),tf.float32) # expand across the batch dimension
+    ypos = tf.cast(repeatAlongBatch(ypos, heatmapShape[0]),tf.float32) # expand across the batch dimension
+    
+    # Start by calculating the first moment (center of mass)
+    COM_x, COM_y = calculateFirstMoment(b_heatmaps)
+    totalEnergy = tf.reduce_sum(b_heatmaps,axis=(1,2)) # 1D [batch]
     
     # Next calculate the 2nd moment as the integral of the pixel energy
     # multiplied by the distance from the first moment (mean or center of mass)
@@ -271,34 +303,92 @@ def calculateSecondMomentLoss(b_heatmaps,b_masks):
     varY = tf.divide(varY,tf.maximum(totalEnergy,1e-10))
     stdX,stdY = tf.sqrt(varX), tf.sqrt(varY) # 1D [nBatch]
     
-    # stdX and stdY now contain the average distance from the COM in each 
-    # dimension for each image in the batch. Before returning, we need to 
-    # normalize by the size of the image, and then by the total energy in the
-    # heatmap.  This makes it so fine resolution (large) images and large
-    # targets are not unduly penalized.
+    return stdX, stdY
+
+# end calculateSecondMoment
     
-    # Average distance from COM, as a fraction of the width and height of the image
-    stdXFrac, stdYFrac = tf.divide(stdX,tf.cast(heatmapShape[1],tf.float32)), \
-                         tf.divide(stdY,tf.cast(heatmapShape[2],tf.float32)) # 1D [nBatch]
+       
+"""
+calculateFirstMomentLoss()
+    Calculates the first moment of the heatmaps, i.e. the average location of
+    energy in the heatmap. Loss is the square of the difference between the 
+    heatmaps' 1st moment and the masks' 1st moment.
+INPUTS:
+    b_heatmaps: array of heatmaps [nBatch,width,height]
+    b_masks: array of truth masks [nBatch,width,height]
+RETURNS:
+    Loss term for the difference of the first moment of heatmap vs mask
+"""
+def calculateFirstMomentLoss(b_heatmaps,b_masks):
+    heatmapShape = tf.shape(b_heatmaps)
     
-    # Normalize by total energy. Add 1 to denominator to deal with zero energy,
-    # which would be undefined 0/0 otherwise
-    #booleanMasks = tf.cast(tf.greater(b_masks,0.0),tf.float32)
-    #maskEnergy = tf.reduce_sum(booleanMasks,axis=(1,2))
-    #stdXFracNorm = tf.divide(stdXFrac, tf.add(tf.constant(1.0), totalEnergy))
-    #stdYFracNorm = tf.divide(stdYFrac, tf.add(tf.constant(1.0), totalEnergy))
-    stdXFracNorm = tf.minimum(0.5,tf.maximum(stdXFrac,0.05)) #placeholder
-    stdYFracNorm = tf.minimum(0.5,tf.maximum(stdYFrac,0.05)) #placeholder
-    #stdXFracNorm = stdXFrac #placeholder
-    #stdYFracNorm = stdYFrac #placeholder
+    # Calculate the 1st moments
+    comX, comY = calculateFirstMoment(b_heatmaps)
+    b_masksBinary = tf.cast(tf.greater(b_masks,0.0),tf.float32)
+    comXMask, comYMask = calculateFirstMoment(b_masksBinary)
+    
+    # Convert to a fraction of the width and height of the image
+    comXFrac, comYFrac = \
+        tf.divide(comX,tf.cast(heatmapShape[1],tf.float32)), \
+        tf.divide(comY,tf.cast(heatmapShape[2],tf.float32)) # 1D [nBatch]
+    comXFracMask, comYFracMask = \
+        tf.divide(comXMask,tf.cast(heatmapShape[1],tf.float32)), \
+        tf.divide(comYMask,tf.cast(heatmapShape[2],tf.float32)) # 1D [nBatch]
+    
+    # The difference between the heatmap COM and the mask COM is the loss term
+    deltaXCOM = tf.square(tf.subtract(comXFrac,comXFracMask))
+    deltaYCOM = tf.square(tf.subtract(comYFrac,comYFracMask))
     
     # Finally, to get the resulting loss figure, sum over all the images
     # and in both directions
-    secondMomentLoss = tf.add(tf.reduce_mean(stdXFracNorm),tf.reduce_mean(stdYFracNorm))
+    firstMomentLoss = tf.add(tf.reduce_mean(deltaXCOM),tf.reduce_mean(deltaYCOM))
     
-    return secondMomentLoss, stdX, stdY, COM_x, COM_y, totalEnergy
+    return firstMomentLoss, comX, comY, comXMask, comYMask
+    
+# end calculateFirstMomentLoss
+    
+"""
+calculateSecondMomentLoss()
+    Calculates the second moment of the heatmaps, i.e. the average distance
+    from the center of mass of the image to the energy in the heatmap. Loss
+    is the square of the difference between the heatmaps' 2nd moment and the
+    masks' 2nd moment.
+INPUTS:
+    b_heatmaps: array of heatmaps [nBatch,width,height]
+    b_masks: array of truth masks [nBatch,width,height]
+RETURNS:
+    Loss term for the difference of the second moment  of heatmap vs mask
+"""
+def calculateSecondMomentLoss(b_heatmaps,b_masks):
+    heatmapShape = tf.shape(b_heatmaps)
+    
+    # Calculate the 2nd moment as the integral of the pixel energy
+    # multiplied by the distance from the first moment (mean or center of mass)
+    # integral(energy*(pos-com)**2)
+    stdX,stdY = calculateSecondMoment(b_heatmaps)
+    b_masksBinary = tf.cast(tf.greater(b_masks,0.0),tf.float32)
+    stdXMask, stdYMask = calculateSecondMoment(b_masksBinary)
+    
+    # Average distance from COM, as a fraction of the width and height of the image
+    stdXFrac, stdYFrac = \
+        tf.divide(stdX,tf.cast(heatmapShape[1],tf.float32)), \
+        tf.divide(stdY,tf.cast(heatmapShape[2],tf.float32)) # 1D [nBatch]
+    stdXFracMask, stdYFracMask = \
+        tf.divide(stdXMask,tf.cast(heatmapShape[1],tf.float32)), \
+        tf.divide(stdYMask,tf.cast(heatmapShape[2],tf.float32)) # 1D [nBatch]
+    
+    # The difference between the heatmap STD and the mask STD is the loss term
+    deltaXStd = tf.square(tf.subtract(stdXFrac,stdXFracMask))
+    deltaYStd = tf.square(tf.subtract(stdYFrac,stdYFracMask))
+    
+    # Finally, to get the resulting loss figure, sum over all the images
+    # and in both directions
+    secondMomentLoss = tf.add(tf.reduce_mean(deltaXStd),tf.reduce_mean(deltaYStd))
+    
+    return secondMomentLoss, stdX,stdY
     
 # end calculateSecondMomentLoss
+
     
 def repeatAlongBatch(array,N):
     dims = tf.shape(array)
