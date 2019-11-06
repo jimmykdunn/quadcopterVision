@@ -900,7 +900,7 @@ def overlay_heatmap(heatmap, image, heatThreshold=0.5):
     # Massage heatmap into a thresholded binary array
     heatmap = 255*np.minimum(heatmap,np.ones(heatmap.shape))
     heatmap = heatmap.astype(np.uint8)
-    binaryHeatmap = np.squeeze(heatmap) > 255*heatThreshold
+    binaryHeatmap = np.squeeze(heatmap) >= 255*heatThreshold
     binaryHeatmap = binaryHeatmap.astype(np.uint8)
     
     # Dilate and erode heatmap to remove little holes and spikes

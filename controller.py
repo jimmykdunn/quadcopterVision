@@ -22,10 +22,9 @@ import shutil
 from datetime import datetime
 import kalman
 
-USE_KALMAN = True
 
 def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
-        showHeatmap=False, liveFeed=True, displayScale=1):
+        showHeatmap=False, liveFeed=True, displayScale=1, USE_KALMAN=True):
     # Import the trained neural network
     print("Loading saved neural network from " + modelPath+'.pb')
     tensorflowNet = cv2.dnn.readNetFromTensorflow(modelPath+'.pb')
@@ -37,6 +36,7 @@ def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
             shutil.rmtree(folder, ignore_errors=True)
         if not os.path.exists(folder):
             os.mkdir(folder)
+            
         
         
     # Initialize the video stream from the camera
@@ -53,26 +53,30 @@ def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
     start_time = datetime.now()
     prev_time = start_time
     while True:
+        #!!!ADD ABILITY TO RUN FROM FILES INSTEAD OF CAMERA FEED!!!
         frame = webcam.grabFrame() # grab a frame
         if i == 0:
             print("Raw frame shape: " + str(frame.shape))
             
-            
-        # Initialize Kalman filter as motionless at center of image if this
-        # is the first frame. Uncertainty is the size of the image.
-        if i == 0:
-            kalmanFilter = kalman.kalman_filter(
-                    frame.shape[0]/2,frame.shape[1]/2, # x,y
-                    0,0,                               # vx, vy
-                    frame.shape[0]/2,frame.shape[1]/2, # sigX, sigY
-                    0,0)                               # sigVX, sigVY
-            
+                   
         curr_time = datetime.now()
         
         # Massage frame to be the right size and colorset#
         nnFrame = cv2.resize(frame,nnFramesize)
         nnFrame = nnFrame[:,:,0] * float(1.0/255.0)
         nnFrame = np.squeeze(nnFrame)
+        
+        # Initialize Kalman filter as motionless at center of image if this
+        # is the first frame. Uncertainty is the size of the image.
+        if i == 0:
+            kalmanFilter = kalman.kalman_filter(
+                nnFrame.shape[0]/2,nnFrame.shape[1]/2, # x,y
+                0,0,                                   # vx, vy
+                nnFrame.shape[0]/2,nnFrame.shape[1]/2, # sigX, sigY
+                0,0)                                   # sigVX, sigVY
+            # Initialize useful arrays for later
+            allZeros = np.zeros_like(nnFrame)
+            all255  = np.ones_like(nnFrame)*255
         
         # Execute a forward pass of the neural network on the frame to get a
         # heatmap of target likelihood
@@ -83,24 +87,38 @@ def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
         heatmap = np.squeeze(heatmap)*255.0 # scale appropriately
         
         # Overlay heatmap contours onto the image (speed negligible)
-        overlaidNN = vu.overlay_heatmap(heatmap, nnFrame, heatThreshold=0.5)
+        overlaidNN = vu.overlay_heatmap(heatmap, nnFrame, heatThreshold=1.0)
         
         # Find the center of mass for this frame
         heatmapCOM = vu.find_centerOfMass(heatmap)
+        print("Frame %04d" % i) 
+        print("    Pre-kalman:  %02d, %02d" % (heatmapCOM[0], heatmapCOM[1]))
         
         # Apply Kalman filter to the COM centroid measurement if desired
-        # NEXT: this should not be done if we have no confidence that there
-        # was a heatmap target in the first place!
         if USE_KALMAN:
             kalmanFilter.project((curr_time-prev_time).total_seconds())
-            sigX = 5.0 # constant for now, should be heatmap 2nd moment
-            sigY = 5.0 # constant for now, should be heatmap 2nd moment
+            
+            # Massage the heatmap and calculate average per-pixel energy
+            heatmapClip = np.maximum(np.minimum(heatmap,all255),allZeros) # range is 0 to 255
+            heatmapClip = heatmapClip.astype(np.float32)
+            heatmapMeanEnergy = np.mean(heatmapClip)/255.0 # range is 0 to 1
+            print("    Heatmap mean energy: %g" % heatmapMeanEnergy)
+                        
+            # Calculate the measurement error as the inverse of total heatmap 
+            # energy becuase more energy = better localization accuracy
+            sigX = 0.08 * 0.5 * nnFrame.shape[0] / (heatmapMeanEnergy + 0.01)
+            sigY = 0.08 * 0.5 * nnFrame.shape[1] / (heatmapMeanEnergy + 0.01)
+            print("    (sigX, sigY) = (%g,%g)" % (sigX,sigY))
+            
+            # Update the kalman filter with the measured COM and measurement error
             kalmanFilter.update(heatmapCOM, [[sigX, 0],[0, sigY]])
             heatmapCOM = kalmanFilter.stateVector[:2]
+        # endif USE_KALMAN
         
         # Overlay the target location
         overlaidNN = vu.overlay_point(overlaidNN,heatmapCOM,color='g')
-        print(heatmapCOM)
+        print("    Post-kalman: %02d, %02d" % (heatmapCOM[0], heatmapCOM[1]))
+        print('')
         
         if showHeatmap:
             # Display the heatmap and the image side-by-side
@@ -141,7 +159,13 @@ def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
         
         # Save each frame if desired
         if save:
-            filestr = "frame_%04d.jpg" % i
+            # Save raw frame
+            filestr = "frameRaw_%04d.jpg" % i
+            fullpath = os.path.join(folder, filestr)
+            cv2.imwrite(fullpath, nnFrame*255.0)
+            
+            # Save displayed frame (with heatmap overlay)
+            filestr = "frameDisplay_%04d.jpg" % i
             fullpath = os.path.join(folder, filestr)
             cv2.imwrite(fullpath, displayThis)
         
@@ -180,5 +204,7 @@ def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
 
 # Run if called directly
 if __name__ == "__main__":
-    run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_sWeight00p00'),
-        save=True, liveFeed=True, showHeatmap=True)
+    run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_timeRandSign_sWeight00p50'),
+        save=True, liveFeed=True, showHeatmap=True, USE_KALMAN=True)
+
+
