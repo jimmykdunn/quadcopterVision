@@ -21,10 +21,12 @@ import videoUtilities as vu
 import shutil
 from datetime import datetime
 import kalman
+import matplotlib.pyplot as plt
 
 
 def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
-        showHeatmap=False, liveFeed=True, displayScale=1, USE_KALMAN=True):
+        showHeatmap=False, liveFeed=True, displayScale=1, USE_KALMAN=True,
+        filestream=None):
     # Import the trained neural network
     print("Loading saved neural network from " + modelPath+'.pb')
     tensorflowNet = cv2.dnn.readNetFromTensorflow(modelPath+'.pb')
@@ -37,24 +39,39 @@ def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
         if not os.path.exists(folder):
             os.mkdir(folder)
             
-        
+    # Initialize COM history vectors
+    history_rawCOM = np.array([[],[]])
+    history_kalmanCOM = np.array([[],[]])
         
     # Initialize the video stream from the camera
-    webcam = wcam.videoStream()
-    
-    print("Video stream started")
-    print("Press P key to pause/play")
-    print("Press ESC key to quit")
-    
-    
+    if filestream == None:
+        webcam = wcam.videoStream()
+        
+        print("Video stream started")
+        print("Press P key to pause/play")
+        print("Press ESC key to quit")
+    else:
+        print("Reading image sequence from " + filestream)
+        frameset = vu.pull_sequence(filestream)
+        print("Image sequence shape:")
+        print(frameset.shape)
     
     # Continuously pull and display frames from the camera until stopped
     i=0
     start_time = datetime.now()
     prev_time = start_time
     while True:
-        #!!!ADD ABILITY TO RUN FROM FILES INSTEAD OF CAMERA FEED!!!
-        frame = webcam.grabFrame() # grab a frame
+        if filestream == None:
+            # Pull from camera   
+            frame = webcam.grabFrame() # grab a frame
+        else:
+            # Break off and exit if past end of sequence
+            if i >= frameset.shape[0]:
+                break
+                
+            # Pull from file
+            frame = np.repeat(frameset[i,:,:,:],3,axis=2)
+            
         if i == 0:
             print("Raw frame shape: " + str(frame.shape))
             
@@ -93,6 +110,7 @@ def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
         heatmapCOM = vu.find_centerOfMass(heatmap)
         print("Frame %04d" % i) 
         print("    Pre-kalman:  %02d, %02d" % (heatmapCOM[0], heatmapCOM[1]))
+        history_rawCOM = np.append(history_rawCOM,np.expand_dims(heatmapCOM,1),axis=1)
         
         # Apply Kalman filter to the COM centroid measurement if desired
         if USE_KALMAN:
@@ -106,6 +124,8 @@ def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
                         
             # Calculate the measurement error as the inverse of total heatmap 
             # energy becuase more energy = better localization accuracy
+            # 0.08 here is an empirically determined factor to get the 
+            # uncertanties in the expected range. 0.01 just prevents infinities.
             sigX = 0.08 * 0.5 * nnFrame.shape[0] / (heatmapMeanEnergy + 0.01)
             sigY = 0.08 * 0.5 * nnFrame.shape[1] / (heatmapMeanEnergy + 0.01)
             print("    (sigX, sigY) = (%g,%g)" % (sigX,sigY))
@@ -119,6 +139,7 @@ def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
         overlaidNN = vu.overlay_point(overlaidNN,heatmapCOM,color='g')
         print("    Post-kalman: %02d, %02d" % (heatmapCOM[0], heatmapCOM[1]))
         print('')
+        history_kalmanCOM = np.append(history_kalmanCOM,np.expand_dims(heatmapCOM,1),axis=1)
         
         if showHeatmap:
             # Display the heatmap and the image side-by-side
@@ -195,16 +216,38 @@ def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
         print("Wrote image pairs to " + folder + ' with shape ' +
             str(displayThis.shape))
             
+            
+    # Make a final display of the snail trail of the COM
+    plt.plot(history_rawCOM[1,:], history_rawCOM[0,:], 'k', label="raw")
+    plt.plot(history_kalmanCOM[1,:], history_kalmanCOM[0,:], 'g', label="Kalman filtered")
+    plt.axis('equal')
+    plt.xlim([0,nnFrame.shape[1]])
+    plt.ylim([0,nnFrame.shape[0]])
+    plt.xlabel('Horizontal pixels')
+    plt.ylabel('Vertical pixels')
+    plt.title('Quadrotor centroid history')
+    plt.legend()
+    plt.savefig("snailTrail.png")
+    plt.show()
+    #print(history_rawCOM.shape)
+            
     # Cleanup
     print("Cleaning up")
-    webcam.stop()
+    if filestream == None:
+        webcam.stop()
     cv2.destroyAllWindows()
     print("Done")
     
 
 # Run if called directly
 if __name__ == "__main__":
+    # Run from a saved stream
+    imgBase = os.path.join('webcamSaves','webcam_square','frameRaw_')
     run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_timeRandSign_sWeight00p50'),
-        save=True, liveFeed=True, showHeatmap=True, USE_KALMAN=True)
+       save=True, liveFeed=True, showHeatmap=True, USE_KALMAN=True, filestream=imgBase)
+
+    # Run from a live camera stream
+    #run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_sWeight00p00'),
+    #    save=True, liveFeed=True, showHeatmap=True, USE_KALMAN=True)
 
 
