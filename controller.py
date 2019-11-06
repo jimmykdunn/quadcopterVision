@@ -13,7 +13,6 @@ INFO:
     Date: October 2019
 """
 
-import webcam_utils as wcam
 import cv2
 import os
 import numpy as np
@@ -23,6 +22,10 @@ from datetime import datetime
 import kalman
 import matplotlib.pyplot as plt
 
+try:
+    import webcam_utils as wcam
+except:
+    pass
 
 def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
         showHeatmap=False, liveFeed=True, displayScale=1, USE_KALMAN=True,
@@ -64,6 +67,7 @@ def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
         if filestream == None:
             # Pull from camera   
             frame = webcam.grabFrame() # grab a frame
+            
         else:
             # Break off and exit if past end of sequence
             if i >= frameset.shape[0]:
