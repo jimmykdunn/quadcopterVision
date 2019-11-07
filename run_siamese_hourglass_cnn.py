@@ -149,13 +149,13 @@ def train_siamese_hourglass_nn(trainImagesA, trainMasksA, testImagesA, testMasks
         
     with tf.name_scope('overallLoss'):
         # Overall loss is just the weighted sum of all the loss terms
-        loss = tf.add(heatmapLoss, 
-                      tf.multiply(siameseWeight, siameseLoss))
-        #loss = tf.add(
-        #       tf.add(heatmapLoss, 
-        #              tf.multiply(siameseWeight, siameseLoss)),
-        #       tf.add(tf.multiply(firstMomentWeight,  firstMomentLoss),
-        #              tf.multiply(secondMomentWeight, secondMomentLoss)))
+        #loss = tf.add(heatmapLoss, 
+        #              tf.multiply(siameseWeight, siameseLoss))
+        loss = tf.add(
+               tf.add(heatmapLoss, 
+                      tf.multiply(siameseWeight, siameseLoss)),
+               tf.add(tf.multiply(firstMomentWeight,  firstMomentLoss),
+                      tf.multiply(secondMomentWeight, secondMomentLoss)))
                       
         
         
