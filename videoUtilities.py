@@ -582,71 +582,83 @@ def augment_continuous_sequence(inImageFileBase, inMaskFileBase, outputFolder,
     # Determine valid resizes and draw some randomly
     nbRandomCropResize = 8   
     nbRandomBrightContrast = 4
+    nbMirror = 2
     nbRandomNoise = 4
-    print("Applying %d augmentations" % (nbRandomCropResize*nbRandomBrightContrast))
+    print("Applying %d augmentations" % (nbRandomCropResize*nbRandomBrightContrast*nbMirror))
     
     # Loop over crop/resize pairs
     iAugmentation = 0
     for iCropResize in range(nbRandomCropResize):
         # Loop over brightness/contrast adjustments
         for iBC in range(nbRandomBrightContrast):
-            print("Executing random crop/resize %d of %d with random brightness/contrast %d of %d" % 
-                (iCropResize+1,nbRandomCropResize,iBC+1,nbRandomBrightContrast))
-        
             # Make a seed for random number generator that we will apply 
             # uniformly across each image in this video.
             randSeed = 7*(iCropResize*nbRandomBrightContrast+iBC)
-    
-            # Read in the images to augment one-by-one to preserve memory
-            rawIndex = iStart
-            while True:
-                if rawIndex >= iEnd and iEnd != -1:
-                    break
-                
-                # Use pull_sequence with iStart=iEnd to just get one at a time
-                rawImage = pull_sequence(inImageFileBase, iStart=rawIndex, iEnd=rawIndex,
-                                         ext=ext, color=color, invert=invert)
-                rawMask = pull_sequence(inMaskFileBase, iStart=rawIndex, iEnd=rawIndex,
-                                         ext=ext, color=False, invert=False)
-                rawImage = np.squeeze(rawImage) # remove singleton dimensions
-                rawMask = np.squeeze(rawMask) # remove singleton dimensions
-                if len(rawImage.shape) == 1:
-                    if rawImage == -1 or rawMask == -1:
-                        break # we reached the end or had problems reading
-                
-                # Set the numpy random seed manually so that it applies the
-                # same resize, crop, brightness and contrast settings to every
-                # video in teh sequence.
-                np.random.seed(randSeed)
-                                
-                # Apply the random resize for this video
-                resizedImage, resizedMask = random_resize(rawImage, rawMask, outShape)
-                    
-                # Rotate here?? Ensure only valid area is cropped to
-                #rotatedImage, rotatedMask = random_rotation(resizedImage, resizedMask, outShape)
-                                
-                # Apply the appropriate random crop for this video
-                croppedImage, croppedMask = random_crop(resizedImage, resizedMask, outShape)
-                                
-                # Apply the random brightness/contrast adjustments to the image
-                bcImage = random_bright_contrast(croppedImage)
-                bcMask = croppedMask # brightness/contrast do not effect the mask
-                    
-                # Set as final image to output
-                finalAugmentedImage = bcImage
-                finalAugmentedMask = bcMask
             
-                # Write the augmented image and mask to file
-                augImageFileStr = os.path.join(outputFolder,
-                    'augImage_%04d_%04d' % (rawIndex, iAugmentation) + ext)
-                augMaskFileStr = os.path.join(outputFolder,
-                    'augMask_%04d_%04d' % (rawIndex, iAugmentation) + ext)
-                cv2.imwrite(augImageFileStr,np.squeeze(finalAugmentedImage))
-                cv2.imwrite(augMaskFileStr, np.squeeze(finalAugmentedMask))
+            for iMirror in range(nbMirror):
+                print("Executing random crop/resize %d of %d with random brightness/contrast %d of %d, mirror %d of %d" % 
+                (iCropResize+1,nbRandomCropResize,iBC+1,nbRandomBrightContrast,iMirror+1,nbMirror))
+        
+        
+                # Read in the images to augment one-by-one to preserve memory
+                rawIndex = iStart
+                while True:
+                    if rawIndex >= iEnd and iEnd != -1:
+                        break
+                    
+                    # Use pull_sequence with iStart=iEnd to just get one at a time
+                    rawImage = pull_sequence(inImageFileBase, iStart=rawIndex, iEnd=rawIndex,
+                                             ext=ext, color=color, invert=invert)
+                    rawMask = pull_sequence(inMaskFileBase, iStart=rawIndex, iEnd=rawIndex,
+                                             ext=ext, color=False, invert=False)
+                    rawImage = np.squeeze(rawImage) # remove singleton dimensions
+                    rawMask = np.squeeze(rawMask) # remove singleton dimensions
+                    if len(rawImage.shape) == 1:
+                        if rawImage == -1 or rawMask == -1:
+                            break # we reached the end or had problems reading
+                    
+                    # Set the numpy random seed manually so that it applies the
+                    # same resize, crop, brightness and contrast settings to every
+                    # video in teh sequence.
+                    np.random.seed(randSeed)
+                                    
+                    # Apply the random resize for this video
+                    resizedImage, resizedMask = random_resize(rawImage, rawMask, outShape)
+                        
+                    # Rotate here?? Ensure only valid area is cropped to
+                    #rotatedImage, rotatedMask = random_rotation(resizedImage, resizedMask, outShape)
+                                    
+                    # Apply the appropriate random crop for this video
+                    croppedImage, croppedMask = random_crop(resizedImage, resizedMask, outShape)
+                                    
+                    # Apply the random brightness/contrast adjustments to the image
+                    bcImage = random_bright_contrast(croppedImage)
+                    bcMask = croppedMask # brightness/contrast do not effect the mask
+                        
+                    # Apply mirroring if second time thru, else do nothing
+                    if iMirror == 1:
+                        mirrorImage = np.flip(bcImage,axis=1)
+                        mirrorMask = np.flip(bcMask,axis=1)
+                    else:
+                        mirrorImage = bcImage
+                        mirrorMask = bcMask
+                        
+                    # Set as final image to output
+                    finalAugmentedImage = mirrorImage
+                    finalAugmentedMask = mirrorMask
                 
-                rawIndex += 1
-            # end while loop over raw images
-            iAugmentation += 1 # increment augmentation counter
+                    # Write the augmented image and mask to file
+                    augImageFileStr = os.path.join(outputFolder,
+                        'augImage_%04d_%04d' % (rawIndex, iAugmentation) + ext)
+                    augMaskFileStr = os.path.join(outputFolder,
+                        'augMask_%04d_%04d' % (rawIndex, iAugmentation) + ext)
+                    cv2.imwrite(augImageFileStr,np.squeeze(finalAugmentedImage))
+                    cv2.imwrite(augMaskFileStr, np.squeeze(finalAugmentedMask))
+                    
+                    rawIndex += 1
+                # end while loop over raw images
+                iAugmentation += 1 # increment augmentation counter
+            # end for loop over mirrors
         # end for loop over brightness/contrasts
     # end for loop over crop/resizes
     
@@ -1152,43 +1164,43 @@ if __name__ == "__main__":
     augment_continuous_sequence(
          os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab1","frame_"),
          os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab1","mask_"),
-         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48"),
+         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48_mirror"),
          iStart=175, iEnd=637, outShape=[48,64])
     augment_continuous_sequence(
          os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab2","frame_"),
          os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab2","mask_"),
-         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab2_64x48"),
+         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab2_64x48_mirror"),
          iStart=175, iEnd=637, outShape=[48,64])
     augment_continuous_sequence(
          os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab3","frame_"),
          os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab3","mask_"),
-         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab3_64x48"),
+         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab3_64x48_mirror"),
          iStart=175, iEnd=637, outShape=[48,64])
     augment_continuous_sequence(
          os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab4","frame_"),
          os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab4","mask_"),
-         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab4_64x48"),
+         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab4_64x48_mirror"),
          iStart=175, iEnd=435, outShape=[48,64])
     
     # Continuous baby injections
     augment_continuous_sequence(
          os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab1_baby","frame_"),
          os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab1_baby","mask_"),
-         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48_baby"),
+         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48_baby_mirror"),
          iStart=175, iEnd=637, outShape=[48,64])
     augment_continuous_sequence(
          os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab2_baby","frame_"),
          os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab2_baby","mask_"),
-         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab2_64x48_baby"),
+         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab2_64x48_baby_mirror"),
          iStart=175, iEnd=637, outShape=[48,64])
     augment_continuous_sequence(
          os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab3_baby","frame_"),
          os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab3_baby","mask_"),
-         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab3_64x48_baby"),
+         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab3_64x48_baby_mirror"),
          iStart=175, iEnd=637, outShape=[48,64])
     augment_continuous_sequence(
          os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab4_baby","frame_"),
          os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab4_baby","mask_"),
-         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab4_64x48_baby"),
+         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab4_64x48_baby_mirror"),
          iStart=175, iEnd=435, outShape=[48,64])
          
