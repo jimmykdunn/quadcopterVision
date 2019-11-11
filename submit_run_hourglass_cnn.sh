@@ -6,7 +6,7 @@
 #$ -l h_rt=120:00:00
 #
 ## Give the job a name.
-#$ -N hCRS_moments
+#$ -N hCMR_6k_0_0_0
 #
 ## Redirect error output to standard output
 #$ -j y
@@ -18,4 +18,5 @@ source ~/thesis/quadcopterVision/loadModules.sh
 
 # program name or command and its options and arguments
 cd /usr3/graduate/jkdunn/thesis/quadcopterVision/
-python run_siamese_hourglass_cnn.py 0.0 1.0 1.0 timeRandSign_sWeight00p00_1M01p00_2M01p00
+# argument list: siamese weight, 1st moment weight, 2nd moment weight, graph save location
+python run_siamese_hourglass_cnn.py 0.00 0.00 0.00 mirror6k_sW00p00_1M00p00_2M00p00

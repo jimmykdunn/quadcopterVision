@@ -247,7 +247,7 @@ def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
 if __name__ == "__main__":
     # Run from a saved stream
     imgBase = os.path.join('webcamSaves','webcam_square','frameRaw_')
-    run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_timeRandSign_sWeight00p50'),
+    run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_mirror_sW00p50_1M00p00_2M00p00'),
        save=True, liveFeed=True, showHeatmap=True, USE_KALMAN=True, filestream=imgBase)
 
     # Run from a live camera stream

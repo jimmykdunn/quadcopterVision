@@ -315,7 +315,7 @@ if __name__ == "__main__":
     # Epoch parameters
     peekEveryNEpochs=25
     saveEveryNEpochs=25
-    nEpochs = 20000
+    nEpochs = 60000
     batchSize = 512
     
     
