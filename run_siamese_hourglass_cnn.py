@@ -26,6 +26,7 @@ import matplotlib.pyplot as plt
 import nnUtilities as nnu
 import neuralNetStructures as nns
 import sys
+from importData import importRoboticsLabData
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
@@ -298,10 +299,28 @@ if __name__ == "__main__":
     print("Running:")
     for arg in sys.argv:
         print(arg)
-    siameseWeight = float(sys.argv[1])
-    firstMomentWeight = float(sys.argv[2])
-    secondMomentWeight = float(sys.argv[3])
-    saveName = sys.argv[4]
+        
+    # Parse command line inputs
+    if len(sys.argv) < 2:
+        siameseWeight = 0.0 # default
+    else:
+        siameseWeight = float(sys.argv[1])
+    
+    if len(sys.argv) < 3:
+        firstMomentWeight = 0.0 # default
+    else:
+        firstMomentWeight = float(sys.argv[2])
+        
+    if len(sys.argv) < 4:
+        secondMomentWeight = 0.0 # default
+    else:
+        secondMomentWeight = float(sys.argv[3])
+        
+    if len(sys.argv) < 5:
+        saveName = "savedNetwork" # default
+    else:
+        saveName = sys.argv[4]
+        
     print("siameseWeight = %g" % siameseWeight)
     print("firstMomentWeight = %g" % firstMomentWeight)
     print("secondMomentWeight = %g" % secondMomentWeight)
@@ -309,75 +328,16 @@ if __name__ == "__main__":
     
     #print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
     
-    # Get homebrewed video sequences and corresponding masks
-    print("Reading augmented image and mask sequences")
+    # Set additional default parameters
     checkpointSaveDir = "./savedNetworks/" + saveName
-    # Epoch parameters
     peekEveryNEpochs=25
     saveEveryNEpochs=25
     nEpochs = 60000
     batchSize = 512
     
-    
-    # Complete datasets
-    x_set1, y_set1, id_set1 = vu.pull_aug_sequence(
-        os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48_mirror","augImage_"),
-        os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48_mirror","augMask_"))
-    id_set1_plus = [id+"_01" for id in id_set1]
-    x_set2, y_set2, id_set2 = vu.pull_aug_sequence(
-        os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab2_64x48_mirror","augImage_"),
-        os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab2_64x48_mirror","augMask_"))
-    id_set2_plus = [id+"_02" for id in id_set2]
-    
-    x_set3, y_set3, id_set3 = vu.pull_aug_sequence(
-        os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab3_64x48_mirror","augImage_"),
-        os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab3_64x48_mirror","augMask_"))
-    id_set3_plus = [id+"_03" for id in id_set3]
-    x_set4, y_set4, id_set4 = vu.pull_aug_sequence(
-        os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab4_64x48_mirror","augImage_"),
-        os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab4_64x48_mirror","augMask_"))
-    id_set4_plus = [id+"_04" for id in id_set4]
-    x_set5, y_set5, id_set5 = vu.pull_aug_sequence(
-        os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48_baby_mirror","augImage_"),
-        os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48_baby_mirror","augMask_"))
-    id_set5_plus = [id+"_05" for id in id_set5]
-    x_set6, y_set6, id_set6 = vu.pull_aug_sequence(
-        os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab2_64x48_baby_mirror","augImage_"),
-        os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab2_64x48_baby_mirror","augMask_"))
-    id_set6_plus = [id+"_06" for id in id_set6]
-    x_set7, y_set7, id_set7 = vu.pull_aug_sequence(
-        os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab3_64x48_baby_mirror","augImage_"),
-        os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab3_64x48_baby_mirror","augMask_"))
-    id_set7_plus = [id+"_07" for id in id_set7]
-    x_set8, y_set8, id_set8 = vu.pull_aug_sequence(
-        os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab4_64x48_baby_mirror","augImage_"),
-        os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab4_64x48_baby_mirror","augMask_"))
-    id_set8_plus = [id+"_08" for id in id_set8]
-    
-    x_all = np.concatenate([x_set1,x_set2,x_set3,x_set4,x_set5,x_set6,x_set7,x_set8],axis=0)
-    y_all = np.concatenate([y_set1,y_set2,y_set3,y_set4,y_set5,y_set6,y_set7,y_set8],axis=0)
-    id_all = np.concatenate([id_set1,id_set2,id_set3,id_set4,id_set5,id_set6,id_set7,id_set8],axis=0)
-    id_all_plus = np.concatenate([id_set1_plus,id_set2_plus,id_set3_plus,id_set4_plus,id_set5_plus,id_set6_plus,id_set7_plus,id_set8_plus],axis=0)
-    
-    '''
-    x_all = np.concatenate([x_set1,x_set2])
-    y_all = np.concatenate([y_set1,y_set2])
-    id_all = np.concatenate([id_set1,id_set2])
-    id_all_plus = np.concatenate([id_set1_plus,id_set2_plus])
-    '''
-    '''
-    # Smaller datasets for faster debugging    
-    x_all, y_all, id_all = vu.pull_aug_sequence(
-        os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48","augImage_"),
-        os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48","augMask_"))
-    id_all_plus = [id+"_01" for id in id_all]
-    '''
-    '''
-    x_all, y_all, id_all = vu.pull_aug_sequence(
-        os.path.join("augmentedContinuousSequences","sortTest","augImage_"),
-        os.path.join("augmentedContinuousSequences","sortTest","augMask_"))
-    '''    
-    
+    # Import the augmented robotics lab data sequences
+    print("Reading augmented image and mask sequences")
+    x_all, y_all, id_all, id_all_plus = importRoboticsLabData()
     
     # Convert masks to appropriately-weighted +/- masks
     print("Converting boolean masks into weighted +/- masks")
@@ -443,27 +403,6 @@ if __name__ == "__main__":
     x_testB = x_testB[:numFound,:,:]
     y_test_pmMaskB = y_test_pmMaskB[:numFound,:,:]
     
-    '''
-    # Assemble each siamese arm. This is the 1-frame delta temporal siamese version.
-    x_trainA        = x_train       [:,:-1,:,:] # extract all but last temporal frame
-    y_train_pmMaskA = y_train_pmMask[:,:-1,:,:] # extract all but last temporal frame
-    x_testA         = x_test        [:,:-1,:,:] # extract all but last temporal frame
-    y_test_pmMaskA  = y_test_pmMask [:,:-1,:,:] # extract all but last temporal frame
-    x_trainB        = x_train       [:,1: ,:,:] # extract all but first temporal frame
-    y_train_pmMaskB = y_train_pmMask[:,1: ,:,:] # extract all but first temporal frame
-    x_testB         = x_test        [:,1: ,:,:] # extract all but first temporal frame
-    y_test_pmMaskB  = y_test_pmMask [:,1: ,:,:] # extract all but first temporal frame
-    
-    # Flatten the first two dimensions of everything (augmentation and temporal frame)
-    x_trainA        = x_trainA.reshape       (-1, *x_trainA.shape[-2:])
-    y_train_pmMaskA = y_train_pmMaskA.reshape(-1, *y_train_pmMaskA.shape[-2:])
-    x_testA         = x_testA.reshape        (-1, *x_testA.shape[-2:])
-    y_test_pmMaskA  = y_test_pmMaskA.reshape (-1, *y_test_pmMaskA.shape[-2:])
-    x_trainB        = x_trainB.reshape       (-1, *x_trainB.shape[-2:])
-    y_train_pmMaskB = y_train_pmMaskB.reshape(-1, *y_train_pmMaskB.shape[-2:])
-    x_testB         = x_testB.reshape        (-1, *x_testB.shape[-2:])
-    y_test_pmMaskB  = y_test_pmMaskB.reshape (-1, *y_test_pmMaskB.shape[-2:])
-    '''
     
     # Run the complete training on the hourglass neural net
     print("Running siamese hourglass training")

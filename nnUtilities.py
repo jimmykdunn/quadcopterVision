@@ -446,7 +446,7 @@ def calculateConfusionMatrix(heatmaps, masks, threshold):
 
 
 # Convert numerical confusion matrix to fractional
-def confusionMatrixNumToPct(confusionMatrix)
+def confusionMatrixNumToPct(confusionMatrix):
 
     tpRate = confusionMatrix[0]/(confusionMatrix[0]+confusionMatrix[2]) # target called target/total targets
     fpRate = confusionMatrix[1]/(confusionMatrix[0]+confusionMatrix[2]) # noise called target/total targets
