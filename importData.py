@@ -39,16 +39,17 @@ def importRoboticsLabData(quickTest=False):
         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48_mirror","augImage_"),
         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48_mirror","augMask_"))
     id_set1_plus = [id+"_01" for id in id_set1]
-    x_all = x_set1
-    y_all = y_set1
-    id_all = id_set1
-    id_all_plus = id_set1_plus
+    x_set2, y_set2, id_set2 = vu.pull_aug_sequence(
+        os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab2_64x48_mirror","augImage_"),
+        os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab2_64x48_mirror","augMask_"))
+    id_set2_plus = [id+"_02" for id in id_set2]
+    x_all = np.concatenate([x_set1,x_set2],axis=0)
+    y_all = np.concatenate([y_set1,y_set2],axis=0)
+    id_all = np.concatenate([id_set1,id_set2],axis=0)
+    id_all_plus = np.concatenate([id_set1_plus,id_set2_plus],axis=0)
+    
         
     if not quickTest:
-        x_set2, y_set2, id_set2 = vu.pull_aug_sequence(
-            os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab2_64x48_mirror","augImage_"),
-            os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab2_64x48_mirror","augMask_"))
-        id_set2_plus = [id+"_02" for id in id_set2]
         x_set3, y_set3, id_set3 = vu.pull_aug_sequence(
             os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab3_64x48_mirror","augImage_"),
             os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab3_64x48_mirror","augMask_"))
