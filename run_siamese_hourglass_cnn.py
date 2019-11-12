@@ -66,14 +66,14 @@ if __name__ == "__main__":
     
     # Set additional default parameters
     checkpointSaveDir = "./savedNetworks/" + saveName
-    peekEveryNEpochs=25
-    saveEveryNEpochs=25
-    nEpochs = 1000 #60000
+    peekEveryNEpochs=1000
+    saveEveryNEpochs=1000
+    nEpochs = 60000
     batchSize = 512
     
     # Import the augmented robotics lab data sequences
     print("Reading augmented image and mask sequences")
-    x_all, y_all, id_all, id_all_plus = importRoboticsLabData(quickTest=True)
+    x_all, y_all, id_all, id_all_plus = importRoboticsLabData()
     
     # Convert masks to appropriately-weighted +/- masks
     print("Converting boolean masks into weighted +/- masks")

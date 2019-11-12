@@ -828,7 +828,7 @@ DESCRIPTION:
     duplicates in both train and test sets.
     
 INPUTS: 
-    images: stack of images [nBatch,width,height,nChannels]
+    images: stack of images [nBatch,width,height]
     masks: stack of corresponding masks [nBatch,width,height]
     indices: list of corresponding indices with the format ####_@@@@, where
         #### represents the parent image index, and @@@@ represents the
@@ -891,6 +891,86 @@ def train_test_split_noCheat(images, masks, indices, indices_plus, trainFraction
     test_ids_plus = np.array(indices_plus)[testIDList]
     
     return train_images, train_masks, test_images, test_masks, train_ids, test_ids, train_ids_plus, test_ids_plus
+
+
+
+'''
+FUNCTION:
+    nFolding() 
+    
+DESCRIPTION:
+    Splits the input data into N sets, to roll for mutual training and testing.
+    Done without "cheating", i.e. including augmented copies of the same
+    original image in the same fold.
+    
+INPUTS: 
+    N: number of folds to use
+    images: stack of images [nBatch,width,height,nChannels]
+    masks: stack of corresponding masks [nBatch,width,height]
+    indices: list of corresponding indices with the format ####_@@@@, where
+        #### represents the parent image index, and @@@@ represents the
+        augmentation index.
+    indices_plus: indices with video number label appended as "_**"
+RETURNS: 
+    image_folds: input images split into N folds [nFolds,nBatch,nWidth,nHeight]
+    masks_folds: input masks matching image_folds [nFolds,nBatch,nWidth,nHeight]
+    ids_folds:  list of ####_@@@@ format frame/aug indices for image_folds [nFolds, nBatch]
+    ids_plus_folds: train_ids wth video number label appended as "_**" [nFolds, nBatch]
+'''
+def nFolding(N, images, masks, indices, indices_plus):
+    
+    # Generate a dictonary of the parent indices (frame numbers)
+    parentList = {}
+    for index,indexString in enumerate(indices):
+        parentID = indexString[:4]
+        if not parentID in parentList:
+            parentList[parentID] = [] # initialize
+        parentList[parentID].append(index) # add this index to the child list
+    # endfor    
+    
+    # Divvy up the parent indices into folds
+    nParents = len(parentList)
+    parentIndices = [i for i in range(nParents)]
+    random.shuffle(parentIndices)
+    foldParentIndices = []
+    parentsPerFold = int(nParents/N)
+    for fold in range(N):
+        myParentIndices = parentIndices[fold*parentsPerFold:(fold+1)*parentsPerFold] # omits any odd frames off the end
+        foldParentIndices.append(myParentIndices)
+    
+    # Assign all the child images from each parent image to each fold per 
+    # the above assignment.
+    # Loop over folds
+    foldIDLists = []
+    for fold in range(N):
+        i = 0
+        thisFoldIDList = []
+        # Loop over each frame index
+        for parentID, children in parentList.items():
+            # Loop over each input index belonging to this parent (frame)
+            for childID in children: # indices of input arrays belonging to this frame
+                if i in foldParentIndices[fold]: # if this frame goes in this fold
+                    # Put this image idx into this fold
+                    thisFoldIDList.append(childID)
+            i += 1 # go to next parentID
+        # endfor parent IDs
+        foldIDLists.append(thisFoldIDList)
+    # endfor folds
+    
+    # Put each image and mask into the appropriate set
+    image_folds = []
+    masks_folds = []
+    ids_folds = []
+    ids_plus_folds = []
+    for fold in range(N):
+        image_folds.append(images[foldIDLists[fold],:,:])
+        masks_folds.append(masks[foldIDLists[fold],:,:])
+        ids_folds.append(np.array(indices)[foldIDLists[fold]])
+        ids_plus_folds.append(np.array(indices_plus)[foldIDLists[fold]])
+    
+    
+    return image_folds, masks_folds, ids_folds, ids_plus_folds
+# end nFolding
 
 '''
 FUNCTION:
