@@ -21,9 +21,55 @@ import nnUtilities as nnu
 import sys
 import train_siamese_hourglass_cnn as tshc
 from importData import importRoboticsLabData
+import os
+import shutil
+import cv2
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
+# Write folded data to disk
+
+# Reads all image files in and splits out into N folds.  Each fold goes into
+# its own folder for later analysis.
+def importFoldSave(N, saveDir):
+    # Import the augmented robotics lab data sequences
+    print("Reading augmented image and mask sequences")
+    x_all, y_all, id_all, id_all_plus = importRoboticsLabData(quickTest=True)
+    
+    
+    # Split into train and test sets randomly
+    print("Splitting into training and test sets randomly")
+    x_folds, y_folds, id_folds, id_folds_plus = \
+        vu.nFolding(NFolds, x_all, y_all, id_all, id_all_plus)
+        
+    # Save each fold of images to file
+    for fold in range(N):
+        foldDir = os.path.join(saveDir,"fold_%d" % (fold))
+        
+        # Clear the save directory to avoid collisions
+        if os.path.exists(foldDir): # only rm if it exists
+            shutil.rmtree(foldDir, ignore_errors=True) 
+        os.mkdir(foldDir)
+        
+        # Loop over images and save
+        nImages = x_folds[fold].shape[0]
+        for iImage in range(nImages): 
+            if iImage % 100 == 99:
+                print("Fold %d: writing image %d of %d" % (fold, iImage+1, nImages))
+            cv2.imwrite(os.path.join(foldDir,"image_" + id_folds_plus[fold][iImage] + '.jpg'), 
+                        np.squeeze(x_folds[fold][iImage,:,:])*255)
+            cv2.imwrite(os.path.join(foldDir,"mask_"  + id_folds_plus[fold][iImage] + '.jpg'),
+                        np.squeeze(y_folds[fold][iImage,:,:])*255)
+        # end loop over images
+    # end loop over folds
+        
+    # Convert masks to appropriately-weighted +/- masks
+    print("Converting boolean masks into weighted +/- masks")
+    y_folds_pmMask = []
+    for fold in range(N):
+        y_folds_pmMask.append(nnu.booleanMaskToPlusMinus(y_folds[fold], falseVal=-0.01))
+    
+    return x_folds, y_folds_pmMask, id_folds, id_folds_plus
 
 """
 Build and train the hourglass CNN from the main level when this file is called.
@@ -70,20 +116,30 @@ if __name__ == "__main__":
     nEpochs = 1000 #60000
     batchSize = 512
     NFolds = 4
+    redoFolds = True # true to refold data
+    saveDir = "folds" # directory to save folded data into
     
-    # Import the augmented robotics lab data sequences
-    print("Reading augmented image and mask sequences")
-    x_all, y_all, id_all, id_all_plus = importRoboticsLabData(quickTest=True)
-    nBatch, width, height = x_all.shape[:3]
-    
-    # Convert masks to appropriately-weighted +/- masks
-    print("Converting boolean masks into weighted +/- masks")
-    y_all_pmMask = nnu.booleanMaskToPlusMinus(y_all, falseVal=-0.01)
-    
-    # Split into train and test sets randomly
-    print("Splitting into training and test sets randomly")
-    x_folds, y_folds_pmMask, id_folds, id_folds_plus = \
-        vu.nFolding(NFolds, x_all, y_all_pmMask, id_all, id_all_plus)
+    if redoFolds:
+        # Read in data, fold, and save to file
+        x_folds, y_folds_pmMask, id_folds, id_folds_plus = \
+            importFoldSave(NFolds, saveDir)
+    else:
+        # Read the folded data from file (as written previously by importFoldSave)
+        x_folds, y_folds_pmMask, id_folds, id_folds_plus = \
+            readFoldedImages(saveDir)
+            
+            
+    # Form a set of arrays with all the images for later use
+    nBatch, width, height = x_folds[0].shape[:3]
+    x_all = np.zeros([0,width,height])
+    y_all_pmMask = np.zeros([0,width,height])
+    id_all = []
+    id_all_plus = []
+    for fold in range(NFolds):
+        x_all = np.append(x_all,x_folds[fold],axis=0)
+        y_all_pmMask = np.append(y_all_pmMask,y_folds_pmMask[fold],axis=0)
+        id_all.extend(id_folds[fold])
+        id_all_plus.extend(id_folds_plus[fold])
         
     # We can now loop over each fold of the input data, assigning it as the
     # test fold while training with the other folds.
@@ -175,3 +231,4 @@ if __name__ == "__main__":
         # We may want to parallelize the loop we are in here
         # We may also want to save the indices associated with each fold for
         # replicability.
+        #!!! LEFT OFF HERE !!!
