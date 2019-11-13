@@ -146,10 +146,10 @@ if __name__ == "__main__":
     checkpointSaveDir = "./savedNetworks/" + saveName
     peekEveryNEpochs=1000
     saveEveryNEpochs=1000
-    nEpochs = 1000 #60000
+    nEpochs = 100 #60000
     batchSize = 512
     NFolds = 4
-    redoFolds = True # true to refold data
+    redoFolds = False # true to refold data
     saveDir = "folds" # directory to save folded data into
     
     if redoFolds:
@@ -160,8 +160,6 @@ if __name__ == "__main__":
         # Read the folded data from file (as written previously by importFoldSave)
         x_folds, y_folds_pmMask, id_folds, id_folds_plus = \
             readFoldedImages(NFolds, saveDir)
-     
-    exit()
             
     # Form a set of arrays with all the images for later use
     nBatch, width, height = x_folds[0].shape[:3]
@@ -253,6 +251,7 @@ if __name__ == "__main__":
         
         
         # Run the complete training on the hourglass neural net
+        checkpointSaveDir += "_fold%d" % fold
         print("Running siamese hourglass training")
         heatmaps = tshc.train_siamese_hourglass_cnn(
                 x_trainA, y_train_pmMaskA, x_testA, y_test_pmMaskA, 
