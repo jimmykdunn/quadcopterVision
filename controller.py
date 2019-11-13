@@ -29,7 +29,7 @@ except:
 
 def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
         showHeatmap=False, liveFeed=True, displayScale=1, USE_KALMAN=True,
-        filestream=None):
+        filestream=None, largeDisplay=False):
     # Import the trained neural network
     print("Loading saved neural network from " + modelPath+'.pb')
     tensorflowNet = cv2.dnn.readNetFromTensorflow(modelPath+'.pb')
@@ -106,6 +106,17 @@ def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
         tensorflowNet.setInput(nnFrame)
         heatmap = tensorflowNet.forward()
         heatmap = np.squeeze(heatmap)
+        
+        # Optionally resize everything to be larger for display.  Has the 
+        # drawback of increased latency
+        if largeDisplay:
+            print("Heatmap raw shape (%d,%d)" % heatmap.shape[:2])
+            bigShape = frame.shape[:2]
+            print("Heatmap big shape (%d,%d)" % bigShape[:2])
+            heatmap = cv2.resize(heatmap, bigShape)
+            print("Frame shape (%d,%d)" % nnFrame.shape[:2])
+            nnFrame = frame[:,:,0]
+            print("Frame big shape (%d,%d)" % nnFrame.shape[:2])
         
         # Overlay heatmap contours onto the image (speed negligible)
         #print(np.min(heatmap), np.max(heatmap))
@@ -252,12 +263,12 @@ def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
 # Run if called directly
 if __name__ == "__main__":
     # Run from a saved stream
-    imgBase = os.path.join('webcamSaves','webcam_square','frameRaw_')
-    run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_mirror_60k_sW00p50_1M00p00_2M00p00_49k'),
-       save=True, liveFeed=True, showHeatmap=True, USE_KALMAN=True, filestream=imgBase)
+    #imgBase = os.path.join('webcamSaves','webcam_square','frameRaw_')
+    #run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_mirror_60k_sW00p50_1M00p00_2M00p00_49k'),
+    #   save=True, liveFeed=True, showHeatmap=True, USE_KALMAN=True, filestream=imgBase)
 
     # Run from a live camera stream
-    #run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_mirror_60k_sW00p50_1M00p00_2M00p00_49k'),
-    #    save=True, liveFeed=True, showHeatmap=True, USE_KALMAN=True)
+    run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_mirror_60k_sW00p50_1M00p00_2M00p00_49k'),
+        save=True, liveFeed=True, showHeatmap=True, USE_KALMAN=True, largeDisplay=True)
 
 
