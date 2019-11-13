@@ -34,7 +34,7 @@ tf.logging.set_verbosity(tf.logging.INFO)
 def importFoldSave(N, saveDir):
     # Import the augmented robotics lab data sequences
     print("Reading augmented image and mask sequences")
-    x_all, y_all, id_all, id_all_plus = importRoboticsLabData(quickTest=True)
+    x_all, y_all, id_all, id_all_plus = importRoboticsLabData()
     
     
     # Split into train and test sets randomly
@@ -58,8 +58,9 @@ def importFoldSave(N, saveDir):
                 print("Fold %d: writing image %d of %d" % (fold, iImage+1, nImages))
             cv2.imwrite(os.path.join(foldDir,"image_" + id_folds_plus[fold][iImage] + '.jpg'), 
                         np.squeeze(x_folds[fold][iImage,:,:])*255)
+            mask = np.squeeze(y_folds[fold][iImage,:,:]) < 1
             cv2.imwrite(os.path.join(foldDir,"mask_"  + id_folds_plus[fold][iImage] + '.jpg'),
-                        np.squeeze(y_folds[fold][iImage,:,:])*255)
+                        mask*255)
         # end loop over images
     # end loop over folds
         
@@ -70,6 +71,38 @@ def importFoldSave(N, saveDir):
         y_folds_pmMask.append(nnu.booleanMaskToPlusMinus(y_folds[fold], falseVal=-0.01))
     
     return x_folds, y_folds_pmMask, id_folds, id_folds_plus
+
+
+# Read the images written out by the importFoldSave function above
+def readFoldedImages(N,saveDir):
+    x_folds = []
+    y_folds = []
+    id_folds = []
+    id_folds_plus = []
+    for fold in range(N):        
+        # Read all the images in this fold's directory
+        inImageBase = os.path.join(saveDir,"fold_%d" % fold,"image_")
+        inMaskBase  = os.path.join(saveDir,"fold_%d" % fold,"mask_")
+        imageStack, maskStack, indexStackPlus = vu.pull_aug_sequence(inImageBase, inMaskBase, ext='.jpg', color=False)
+    
+        # Add to the folds set
+        x_folds.append(imageStack)
+        y_folds.append(maskStack)
+        id_folds_plus.append(indexStackPlus)
+        indexStack = []
+        for id_plus in indexStackPlus:
+            indexStack.append(id_plus[:-3])
+        id_folds.append(indexStack)
+    # end for folds
+    
+    # Convert masks to appropriately-weighted +/- masks
+    print("Converting boolean masks into weighted +/- masks")
+    y_folds_pmMask = []
+    for fold in range(N):
+        y_folds_pmMask.append(nnu.booleanMaskToPlusMinus(y_folds[fold], falseVal=-0.01))
+    
+    return x_folds, y_folds_pmMask, id_folds, id_folds_plus
+    
 
 """
 Build and train the hourglass CNN from the main level when this file is called.
@@ -126,8 +159,9 @@ if __name__ == "__main__":
     else:
         # Read the folded data from file (as written previously by importFoldSave)
         x_folds, y_folds_pmMask, id_folds, id_folds_plus = \
-            readFoldedImages(saveDir)
-            
+            readFoldedImages(NFolds, saveDir)
+     
+    exit()
             
     # Form a set of arrays with all the images for later use
     nBatch, width, height = x_folds[0].shape[:3]
