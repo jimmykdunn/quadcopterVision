@@ -132,7 +132,9 @@ def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
         
         # Find the center of mass for this frame
         heatmapCOM = vu.find_centerOfMass(heatmap, minThresh=heatmapThresh*255)
+        targetVisible = True
         if heatmapCOM == [None, None]:
+            targetVisible = False
             print("Target not found")
             heatmapCOM = [heatmap.shape[0]/2,heatmap.shape[1]/2] # default to center of image
         print("Frame %04d" % i) 
@@ -143,23 +145,27 @@ def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
         if USE_KALMAN:
             kalmanFilter.project((curr_time-prev_time).total_seconds())
             
-            # Massage the heatmap and calculate average per-pixel energy
-            heatmapClip = np.maximum(np.minimum(heatmap,all255),allZeros) # range is 0 to 255
-            heatmapClip = heatmapClip.astype(np.float32)
-            heatmapClip[heatmapClip < 255.0*heatmapThresh] = 0.0
-            heatmapMeanEnergy = np.mean(heatmapClip)/255.0 # range is 0 to 1
-            print("    Heatmap mean energy: %g" % heatmapMeanEnergy)
-                        
-            # Calculate the measurement error as the inverse of total heatmap 
-            # energy becuase more energy = better localization accuracy
-            # 0.08 here is an empirically determined factor to get the 
-            # uncertanties in the expected range. 0.01 just prevents infinities.
-            sigX = 0.08 * (1.0/scale) * 0.5 * nnFrame.shape[0] / (heatmapMeanEnergy + 0.01)
-            sigY = 0.08 * (1.0/scale) * 0.5 * nnFrame.shape[1] / (heatmapMeanEnergy + 0.01)
-            print("    (sigX, sigY) = (%g,%g)" % (sigX,sigY))
+            # Only update the kalman filter when we actually detect the target
+            if targetVisible:
+                # Massage the heatmap and calculate average per-pixel energy
+                heatmapClip = np.maximum(np.minimum(heatmap,all255),allZeros) # range is 0 to 255
+                heatmapClip = heatmapClip.astype(np.float32)
+                heatmapClip[heatmapClip < 255.0*heatmapThresh] = 0.0
+                heatmapMeanEnergy = np.mean(heatmapClip)/255.0 # range is 0 to 1
+                print("    Heatmap mean energy: %g" % heatmapMeanEnergy)
+                            
+                # Calculate the measurement error as the inverse of total heatmap 
+                # energy becuase more energy = better localization accuracy
+                # 0.08 here is an empirically determined factor to get the 
+                # uncertanties in the expected range. 0.01 just prevents infinities.
+                sigX = 0.08 * (1.0/scale) * 0.5 * nnFrame.shape[0] / (heatmapMeanEnergy + 0.01)
+                sigY = 0.08 * (1.0/scale) * 0.5 * nnFrame.shape[1] / (heatmapMeanEnergy + 0.01)
+                print("    (sigX, sigY) = (%g,%g)" % (sigX,sigY))
+                
+                # Update the kalman filter with the measured COM and measurement error
+                kalmanFilter.update(heatmapCOM, [[sigX, 0],[0, sigY]])
             
-            # Update the kalman filter with the measured COM and measurement error
-            kalmanFilter.update(heatmapCOM, [[sigX, 0],[0, sigY]])
+            # Pull the COM from the kalman vector state
             heatmapCOM = kalmanFilter.stateVector[:2]
         # endif USE_KALMAN
         
@@ -248,10 +254,10 @@ def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
     # Make a final display of the snail trail of the COM
     xCoords = history_rawCOM[1,:]
     yCoords = heatmap.shape[0] - history_rawCOM[0,:] # invert y axis for consistency
-    plt.plot(xCoords, yCoords, 'k', label="raw")
+    plt.plot(xCoords, yCoords, 'k+', label="raw")
     xCoordsKalman = history_kalmanCOM[1,:]
     yCoordsKalman = heatmap.shape[0] - history_kalmanCOM[0,:] # invert y axis for consistency
-    plt.plot(xCoordsKalman, yCoordsKalman, 'g', label="Kalman filtered")
+    plt.plot(xCoordsKalman, yCoordsKalman, 'go', label="Kalman filtered")
     plt.axis('equal')
     plt.xlim([0,nnFrame.shape[1]])
     plt.ylim([0,nnFrame.shape[0]])
@@ -274,12 +280,18 @@ def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
 # Run if called directly
 if __name__ == "__main__":
     # Run from a saved stream
-    #imgBase = os.path.join('webcamSaves','webcam_square','frameRaw_')
+    imgBase = os.path.join('webcamSaves','webcam_square','frameRaw_')
     #run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_mirror_60k_sW00p50_1M00p00_2M00p00_49k'),
     #   save=True, liveFeed=True, showHeatmap=True, USE_KALMAN=True, filestream=imgBase)
+    #run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_mirror_60k_sW00p50_1M00p00_2M00p00_49k'),
+    #    save=True, liveFeed=True, showHeatmap=True, USE_KALMAN=True, filestream=imgBase, heatmapThresh=0.5)
+    #run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_mirror_60k_sW00p00_1M00p00_2M00p00_16k'),
+    #    save=True, liveFeed=True, showHeatmap=True, USE_KALMAN=True, filestream=imgBase, heatmapThresh=0.5)
 
     # Run from a live camera stream
     run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_mirror_60k_sW00p50_1M00p00_2M00p00_49k'),
         save=True, liveFeed=True, showHeatmap=True, USE_KALMAN=True, largeDisplay=True, heatmapThresh=0.5)
+    #run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_mirror_60k_sW00p00_1M00p00_2M00p00_16k'),
+    #    save=True, liveFeed=True, showHeatmap=True, USE_KALMAN=True, largeDisplay=True, heatmapThresh=0.5)
 
 
