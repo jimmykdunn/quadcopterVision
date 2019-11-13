@@ -393,7 +393,10 @@ def find_siamese_match(indexString, imageStack, maskStack, indexStack,
     matchedIndexStr = "%04d_%04d_%02d" % (matchedTemporalIndex,matchedAugIndex,matchedVidIndex)
     
     if matchedIndexStr in indexStack_plus:
-        pairIdx = indexStack_plus.tolist().index(matchedIndexStr) # this may be a speed bottleneck, could use preformed dict to speedup
+        if type(indexStack_plus) == type([]):
+            pairIdx = indexStack_plus.index(matchedIndexStr)
+        else:
+            pairIdx = indexStack_plus.tolist().index(matchedIndexStr) # this may be a speed bottleneck, could use preformed dict to speedup
         pairedImage = imageStack[pairIdx,:,:]
         pairedMask = maskStack[pairIdx,:,:]
         pairedIndexString = indexStack[pairIdx]
