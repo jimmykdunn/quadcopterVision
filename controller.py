@@ -105,10 +105,12 @@ def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
         # framerate is in the 300Hz range, with it framerate is in the 50Hz range.
         tensorflowNet.setInput(nnFrame)
         heatmap = tensorflowNet.forward()
-        heatmap = np.squeeze(heatmap)*255.0 # scale appropriately
+        heatmap = np.squeeze(heatmap)
         
         # Overlay heatmap contours onto the image (speed negligible)
-        overlaidNN = vu.overlay_heatmap(heatmap, nnFrame, heatThreshold=1.0)
+        #print(np.min(heatmap), np.max(heatmap))
+        overlaidNN = vu.overlay_heatmap(heatmap, nnFrame, heatThreshold=0.8)
+        heatmap = heatmap*255.0 # scale appropriately
         
         # Find the center of mass for this frame
         heatmapCOM = vu.find_centerOfMass(heatmap)
@@ -222,8 +224,12 @@ def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
             
             
     # Make a final display of the snail trail of the COM
-    plt.plot(history_rawCOM[1,:], history_rawCOM[0,:], 'k', label="raw")
-    plt.plot(history_kalmanCOM[1,:], history_kalmanCOM[0,:], 'g', label="Kalman filtered")
+    xCoords = history_rawCOM[1,:]
+    yCoords = heatmap.shape[0] - history_rawCOM[0,:] # invert y axis for consistency
+    plt.plot(xCoords, yCoords, 'k', label="raw")
+    xCoordsKalman = history_kalmanCOM[1,:]
+    yCoordsKalman = heatmap.shape[0] - history_kalmanCOM[0,:] # invert y axis for consistency
+    plt.plot(xCoordsKalman, yCoordsKalman, 'g', label="Kalman filtered")
     plt.axis('equal')
     plt.xlim([0,nnFrame.shape[1]])
     plt.ylim([0,nnFrame.shape[0]])
@@ -247,11 +253,11 @@ def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
 if __name__ == "__main__":
     # Run from a saved stream
     imgBase = os.path.join('webcamSaves','webcam_square','frameRaw_')
-    run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_mirror_sW00p50_1M00p00_2M00p00'),
+    run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_mirror_60k_sW00p50_1M00p00_2M00p00_49k'),
        save=True, liveFeed=True, showHeatmap=True, USE_KALMAN=True, filestream=imgBase)
 
     # Run from a live camera stream
-    #run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_sWeight00p00'),
+    #run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_mirror_60k_sW00p50_1M00p00_2M00p00_49k'),
     #    save=True, liveFeed=True, showHeatmap=True, USE_KALMAN=True)
 
 
