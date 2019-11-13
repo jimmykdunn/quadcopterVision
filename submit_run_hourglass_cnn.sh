@@ -6,7 +6,7 @@
 #$ -l h_rt=120:00:00
 #
 ## Give the job a name.
-#$ -N hCNF_60k_5
+#$ -N hCF3_60k_0
 #
 ## Redirect error output to standard output
 #$ -j y
@@ -19,4 +19,5 @@ source ~/thesis/quadcopterVision/loadModules.sh
 # program name or command and its options and arguments
 cd /usr3/graduate/jkdunn/thesis/quadcopterVision/
 # argument list: siamese weight, 1st moment weight, 2nd moment weight, graph save location
-python run_siamese_hourglass_cnn.py 0.50 0.00 0.00 noiseFix60k_sW00p50
+#python run_siamese_hourglass_cnn.py 0.50 0.00 0.00 noiseFix60k_sW00p50
+python nfold_siamese_hourglass_cnn.py 0.00 0.00 0.00 noiseFix4Folds60k_sW00p00 3

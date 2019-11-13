@@ -110,6 +110,8 @@ Build and train the hourglass CNN from the main level when this file is called.
 
 if __name__ == "__main__":  
 
+    NFolds = 4
+    
     print("Running:")
     for arg in sys.argv:
         print(arg)
@@ -135,6 +137,12 @@ if __name__ == "__main__":
     else:
         saveName = sys.argv[4]
         
+    if len(sys.argv) < 6:
+        foldsToRun = np.arange(NFolds) # default - will execute the loop
+    else:
+        foldsToRun = [int(sys.argv[5])] # run just this fold
+        
+        
     print("siameseWeight = %g" % siameseWeight)
     print("firstMomentWeight = %g" % firstMomentWeight)
     print("secondMomentWeight = %g" % secondMomentWeight)
@@ -146,9 +154,8 @@ if __name__ == "__main__":
     checkpointSaveDir = "./savedNetworks/" + saveName
     peekEveryNEpochs=1000
     saveEveryNEpochs=1000
-    nEpochs = 100 #60000
+    nEpochs = 60000
     batchSize = 512
-    NFolds = 4
     redoFolds = False # true to refold data
     saveDir = "folds" # directory to save folded data into
     
@@ -167,15 +174,15 @@ if __name__ == "__main__":
     y_all_pmMask = np.zeros([0,width,height])
     id_all = []
     id_all_plus = []
-    for fold in range(NFolds):
-        x_all = np.append(x_all,x_folds[fold],axis=0)
-        y_all_pmMask = np.append(y_all_pmMask,y_folds_pmMask[fold],axis=0)
-        id_all.extend(id_folds[fold])
-        id_all_plus.extend(id_folds_plus[fold])
+    for ifold in range(NFolds):
+        x_all = np.append(x_all,x_folds[ifold],axis=0)
+        y_all_pmMask = np.append(y_all_pmMask,y_folds_pmMask[ifold],axis=0)
+        id_all.extend(id_folds[ifold])
+        id_all_plus.extend(id_folds_plus[ifold])
         
     # We can now loop over each fold of the input data, assigning it as the
     # test fold while training with the other folds.
-    for fold in range(NFolds):
+    for fold in foldsToRun:
         x_train, y_train_pmMask = np.zeros([0,width,height]), np.zeros([0,width,height])
         id_train, id_train_plus = [], []
         
