@@ -195,7 +195,7 @@ def pull_aug_sequence(inImageBase, inMaskBase, ext='.jpg', color=False):
     for indexString, imageName in imageDict.items():
         if indexString in maskDict: # if matching mask exists
             if stackCount % 100 == 99:
-                print("Read %d images" % (stackCount+1))
+                print("Read %d of %d images" % (stackCount+1, len(imageDict)))
             
             # Read in both the image and the mask as a pair
             image = cv2.imread(inImageBase+indexString+ext)
