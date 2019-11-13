@@ -204,7 +204,7 @@ def pull_aug_sequence(inImageBase, inMaskBase, ext='.jpg', color=False):
             if not color:
                 image = image[:,:,0] # just pull 1st channel
                 nColors = 1
-            mask = mask[:,:,0] # just pull 1st channel, masks are always B/W
+            mask = np.mean(np.array(mask).astype(np.float32),axis=2)
             
             # Preallocate image and mask stacks for speed
             if not stackStarted:
@@ -215,7 +215,7 @@ def pull_aug_sequence(inImageBase, inMaskBase, ext='.jpg', color=False):
                         
             # Reshape nicely and add to the stacks
             image = np.reshape(image,[1,width,height,nColors])
-            mask  = np.reshape(mask, [1,width,height]) < 1
+            mask  = np.reshape(mask, [1,width,height]) < 125
             imageStack[stackCount,:,:,:] = image
             maskStack[stackCount,:,:]  = mask
             indexStack[stackCount] = indexString
