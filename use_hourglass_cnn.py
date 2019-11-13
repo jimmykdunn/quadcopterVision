@@ -307,7 +307,7 @@ def quadcopterBatchTest(modelPath,directory='goldenImages',ext='.jpg'):
                 maskpoint = cv2.imread(maskName)
                 
                 datapoint = np.mean(datapoint,axis=2)/float(255)
-                maskpoint = np.mean(maskpoint,axis=2) == 0
+                maskpoint = np.mean(maskpoint,axis=2) < 125
                 print("Running CNN at " + modelPath + " on " + os.path.join(directory,filename))
                 if modelExt == '.ckpt':
                     heatmap = use_hourglass_cnn(modelPath,
@@ -368,6 +368,6 @@ if __name__ == "__main__":
     print("\n\n")
     #quadcopterBatchTest(os.path.join('homebrew_hourglass_nn_save','model_at1000.ckpt'))
     #quadcopterBatchTest(os.path.join('homebrew_hourglass_nn_save_GOOD','model_at20000.ckpt'), directory='goldenImages')
-    quadcopterBatchTest(os.path.join('savedNetworks','mirror60k_sW00p00_1M00p00_2M00p00','model_at1000.ckpt'), directory='goldenImages')
+    quadcopterBatchTest(os.path.join('savedNetworks','mirror60k_sW00p00_1M00p00_2M00p00','model_at3000.ckpt'), directory='goldenImages')
     
     
