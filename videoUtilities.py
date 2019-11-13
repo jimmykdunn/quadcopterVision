@@ -16,6 +16,7 @@ import os
 import numpy as np
 #import matplotlib.pyplot as plt
 import random
+from copy import copy
 
 """
 FUNCTION:
@@ -988,7 +989,7 @@ OPTIONAL INPUTS:
 RETURNS: 
     The input image with the outlines of heatmap displayed in green
 '''
-def overlay_heatmap(heatmap, image, heatThreshold=0.5):
+def overlay_heatmap(heatmap, image, heatThreshold=0.5, scale=1):
     # Massage heatmap into a thresholded binary array
     heatmap = 255*np.minimum(heatmap,np.ones(heatmap.shape))
     heatmap = heatmap.astype(np.uint8)
@@ -996,7 +997,7 @@ def overlay_heatmap(heatmap, image, heatThreshold=0.5):
     binaryHeatmap = binaryHeatmap.astype(np.uint8)
     
     # Dilate and erode heatmap to remove little holes and spikes
-    kernel2 = np.ones((2,2),np.uint8)
+    kernel2 = np.ones((2*scale,2*scale),np.uint8)
     dilated = cv2.dilate(binaryHeatmap,kernel2,iterations=1)
     eroded = cv2.erode(dilated,kernel2,iterations=1)
     
@@ -1080,17 +1081,23 @@ DESCRIPTION:
     
 INPUTS: 
     heatmap: 2D array of target likelihood values (width,height)
+OPTIONAL INPUTS:
+    minThresh: smallest value a pixel can have and still contribute to the COM
 RETURNS: 
     The center of mass as a 2-element array, [xCOM,yCOM]
 '''
-def find_centerOfMass(heatmap):
+def find_centerOfMass(heatmap, minThresh=0.0):
     if len(heatmap.shape) != 2:
         heatmap = np.squeeze(heatmap)
     if len(heatmap.shape) != 2:
         print("Heatmap has wrong number of dimensions. Must be 2D:")
         print(heatmap.shape)
         
-    totalWeight = np.sum(heatmap)
+    # Threshold the heatmap if set
+    heatmapTH = copy(heatmap)
+    heatmapTH[heatmapTH < minThresh] = 0.0
+        
+    totalWeight = np.sum(heatmapTH)
     
     if totalWeight == 0:
         # heatmap has no active pixels, return none
@@ -1101,8 +1108,8 @@ def find_centerOfMass(heatmap):
     # Do COM calculation with matrices for speed        
     xx = np.repeat(np.expand_dims(np.arange(width ),axis=1),height,axis=1)
     yy = np.repeat(np.expand_dims(np.arange(height),axis=0),width, axis=0)
-    xSum = np.sum(xx*heatmap)
-    ySum = np.sum(yy*heatmap)
+    xSum = np.sum(xx*heatmapTH)
+    ySum = np.sum(yy*heatmapTH)
             
     centerOfMass = [xSum/totalWeight, ySum/totalWeight]
     

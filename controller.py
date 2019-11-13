@@ -29,7 +29,7 @@ except:
 
 def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
         showHeatmap=False, liveFeed=True, displayScale=1, USE_KALMAN=True,
-        filestream=None, largeDisplay=False):
+        filestream=None, largeDisplay=False, heatmapThresh=0.75):
     # Import the trained neural network
     print("Loading saved neural network from " + modelPath+'.pb')
     tensorflowNet = cv2.dnn.readNetFromTensorflow(modelPath+'.pb')
@@ -109,22 +109,32 @@ def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
         
         # Optionally resize everything to be larger for display.  Has the 
         # drawback of increased latency
+        scale = 1
         if largeDisplay:
-            print("Heatmap raw shape (%d,%d)" % heatmap.shape[:2])
-            bigShape = frame.shape[:2]
-            print("Heatmap big shape (%d,%d)" % bigShape[:2])
+            scale = 4
+            bigShape = (int(heatmap.shape[1]*scale), int(heatmap.shape[0]*scale))
             heatmap = cv2.resize(heatmap, bigShape)
-            print("Frame shape (%d,%d)" % nnFrame.shape[:2])
-            nnFrame = frame[:,:,0]
-            print("Frame big shape (%d,%d)" % nnFrame.shape[:2])
+            nnFrame = cv2.resize(frame[:,:,0], bigShape) * float(1.0/255.0)
+            
+        #print("Heatmap big shape (%d,%d)" % heatmap.shape[:2])
+        #print("Frame big shape (%d,%d)" % nnFrame.shape[:2])
+        
+        if i == 0:
+            # Initialize useful arrays for later
+            allZeros = np.zeros_like(nnFrame)
+            all255  = np.ones_like(nnFrame)*255
+        
         
         # Overlay heatmap contours onto the image (speed negligible)
         #print(np.min(heatmap), np.max(heatmap))
-        overlaidNN = vu.overlay_heatmap(heatmap, nnFrame, heatThreshold=0.8)
+        overlaidNN = vu.overlay_heatmap(heatmap, nnFrame, heatThreshold=0.75, scale=scale)
         heatmap = heatmap*255.0 # scale appropriately
         
         # Find the center of mass for this frame
-        heatmapCOM = vu.find_centerOfMass(heatmap)
+        heatmapCOM = vu.find_centerOfMass(heatmap, minThresh=heatmapThresh*255)
+        if heatmapCOM == [None, None]:
+            print("Target not found")
+            heatmapCOM = [heatmap.shape[0]/2,heatmap.shape[1]/2] # default to center of image
         print("Frame %04d" % i) 
         print("    Pre-kalman:  %02d, %02d" % (heatmapCOM[0], heatmapCOM[1]))
         history_rawCOM = np.append(history_rawCOM,np.expand_dims(heatmapCOM,1),axis=1)
@@ -136,6 +146,7 @@ def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
             # Massage the heatmap and calculate average per-pixel energy
             heatmapClip = np.maximum(np.minimum(heatmap,all255),allZeros) # range is 0 to 255
             heatmapClip = heatmapClip.astype(np.float32)
+            heatmapClip[heatmapClip < 255.0*heatmapThresh] = 0.0
             heatmapMeanEnergy = np.mean(heatmapClip)/255.0 # range is 0 to 1
             print("    Heatmap mean energy: %g" % heatmapMeanEnergy)
                         
@@ -143,8 +154,8 @@ def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
             # energy becuase more energy = better localization accuracy
             # 0.08 here is an empirically determined factor to get the 
             # uncertanties in the expected range. 0.01 just prevents infinities.
-            sigX = 0.08 * 0.5 * nnFrame.shape[0] / (heatmapMeanEnergy + 0.01)
-            sigY = 0.08 * 0.5 * nnFrame.shape[1] / (heatmapMeanEnergy + 0.01)
+            sigX = 0.08 * (1.0/scale) * 0.5 * nnFrame.shape[0] / (heatmapMeanEnergy + 0.01)
+            sigY = 0.08 * (1.0/scale) * 0.5 * nnFrame.shape[1] / (heatmapMeanEnergy + 0.01)
             print("    (sigX, sigY) = (%g,%g)" % (sigX,sigY))
             
             # Update the kalman filter with the measured COM and measurement error
@@ -269,6 +280,6 @@ if __name__ == "__main__":
 
     # Run from a live camera stream
     run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_mirror_60k_sW00p50_1M00p00_2M00p00_49k'),
-        save=True, liveFeed=True, showHeatmap=True, USE_KALMAN=True, largeDisplay=True)
+        save=True, liveFeed=True, showHeatmap=True, USE_KALMAN=True, largeDisplay=True, heatmapThresh=0.5)
 
 
