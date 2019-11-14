@@ -105,7 +105,21 @@ def readFoldedImages(N,saveDir):
     
 
 """
-Build and train the hourglass CNN from the main level when this file is called.
+Trains an hourglass CNN on already-folded data. Directories are implied in the
+code. Optionally will also randomly create the folded data with in-code
+modification.  Actual final performance runs are done in another function.
+CALL SEQUENCE:
+    python nfold_siamese_hourglass_cnn.py [siameseWeight] [firstMomentWeight]
+        [secondMomentWeight] [saveName] [foldsToRun]
+        
+OPTIONAL PARAMETERS:
+    siameseWeight: weight to apply to siamese loss term (reccommend 0.5) (default 0.0)
+    firstMomentWeight: weight to apply to first moment loss term (recommend 0.0) (default 0.0)
+    secondMomentWeight: weight to apply to second moment loss term (recommend 0.0) (default 0.0
+    saveName: name of folder trained network will save to (default "savedNetwork")
+    foldsToRun: list of folds to run. If omitted, will run all folds in serial.
+        Recommend calling this file once from submit script (qsub) for each fold
+        to be trained.
 """
 
 if __name__ == "__main__":  
@@ -267,8 +281,3 @@ if __name__ == "__main__":
             saveEveryNEpochs=saveEveryNEpochs, nEpochs=nEpochs, batchSize=batchSize,
             siameseWeight=siameseWeight, firstMomentWeight=firstMomentWeight, secondMomentWeight=secondMomentWeight)
     
-        # Run the statistics on this fold
-        # We may want to parallelize the loop we are in here
-        # We may also want to save the indices associated with each fold for
-        # replicability.
-        #!!! LEFT OFF HERE !!!
