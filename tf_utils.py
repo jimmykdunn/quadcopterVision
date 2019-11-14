@@ -131,4 +131,4 @@ def trim_to_output(graphDef, graphOutputs, outname):
         
 # Run with defaults if at highest level
 if __name__ == "__main__":    
-    ckpt_to_protobuf(os.path.join('savedNetworks','mirror60k_sW00p00_1M00p00_2M00p00','model_at16000.ckpt'))
+    ckpt_to_protobuf(os.path.join('savedNetworks','noiseFix4Folds60k_sW00p00_fold3','model_at25000.ckpt'))

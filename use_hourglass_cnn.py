@@ -322,7 +322,7 @@ def quadcopterBatchTest(modelPath,directory='goldenImages',ext='.jpg'):
                 
                 # Overlay on outline of the heatmap in green onto the image
                 #greenedImage = vu.overlay_heatmap(heatmap,datapoint)
-                greenedImage = vu.overlay_heatmap_and_mask(heatmap,maskpoint,datapoint)
+                greenedImage = vu.overlay_heatmap_and_mask(heatmap,maskpoint,datapoint,heatThreshold=0.75)
                    
                 # Overlay heatmap and mask center of mask onto the image
                 heatmapCOM = vu.find_centerOfMass(heatmap)
@@ -368,6 +368,6 @@ if __name__ == "__main__":
     print("\n\n")
     #quadcopterBatchTest(os.path.join('homebrew_hourglass_nn_save','model_at1000.ckpt'))
     #quadcopterBatchTest(os.path.join('homebrew_hourglass_nn_save_GOOD','model_at20000.ckpt'), directory='goldenImages')
-    quadcopterBatchTest(os.path.join('savedNetworks','mirror60k_sW00p00_1M00p00_2M00p00','model_at16000.ckpt'), directory='goldenImages')
+    quadcopterBatchTest(os.path.join('savedNetworks','noiseFix4Folds60k_sW00p00_fold0','model_at52000.ckpt'), directory='goldenImages')
     
     

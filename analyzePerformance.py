@@ -112,10 +112,10 @@ OUTPUTS:
     Prints the confusion matrices for each of a set of thresholds on the heatmaps.
     Plots and saves a ROC curve for the associated confusion matrices.
 '''
-def runNFoldPerformanceAnalysis(N, saveDir, modelPath):
+def runNFoldPerformanceAnalysis(N, saveDir, modelPath, modelName="modelFinal_full"):
     # Read each fold of imagery
     x_folds, y_folds_pmMask, id_folds, id_folds_plus = readFoldedImages(N,saveDir)
-    y_folds = y_folds_pmMask > 0.0
+    y_folds = [yfold > 0.0 for yfold in y_folds_pmMask]
     
     # Preallocate arrays for output and truth
     #nFrames_total = 0
@@ -130,7 +130,8 @@ def runNFoldPerformanceAnalysis(N, saveDir, modelPath):
     # Execute forward passes of each neural network on its respective fold of
     # data (which was trained with the other folds of data)
     for fold in range(N):
-        foldModelPath = os.path.join(modelPath+"fold%d" % fold,"modelFinal_full")
+        foldModelPath = os.path.join(modelPath+"fold%d" % fold, modelName)
+        #foldModelPath = os.path.join(modelPath+"fold%d" % fold,"model_at25000_full")
         
         # Import the trained neural network
         print("Loading saved neural network from " + foldModelPath+'.pb')
@@ -231,4 +232,9 @@ def drawROCCurve(tpByThreshold, fnByThreshold, fpByThreshold, tnByThreshold):
 if __name__ == "__main__":
     #runBasicPerformanceAnalysis(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_mirror_sW00p50_1M00p00_2M00p00'))
     #runBasicPerformanceAnalysis(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_mirror_sW00p00_1M00p00_2M00p00'))
-    runNFoldPerformanceAnalysis(4, 'folds', os.path.join('savedNetworks','noiseFix4Folds60k_sW00p50_'))
+    
+    # Quick test version (minimal data to read for debugging)
+    runNFoldPerformanceAnalysis(4, 'testFolds', os.path.join('savedNetworks','noiseFix4Folds60k_sW00p50_'), modelName = "model_at25000_full")
+    
+    # Full version (reads all data)
+    #runNFoldPerformanceAnalysis(4, 'folds', os.path.join('savedNetworks','noiseFix4Folds60k_sW00p50_'), modelName = "modelFinal_full")
