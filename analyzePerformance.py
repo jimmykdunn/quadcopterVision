@@ -17,6 +17,7 @@ import numpy as np
 import os
 from importData import importRoboticsLabData
 import matplotlib.pyplot as plt
+from nfold_siamese_hourglass_cnn import readFoldedImages
 
 
 """
@@ -92,8 +93,75 @@ def runBasicPerformanceAnalysis(modelPath):
         heatmap = np.squeeze(heatmap)*255.0 # scale appropriately
         
         heatmaps[i,:,:] = heatmap # put into the big stack
+        
+    # Make the ROC Curves and confusion matrices on the heatmaps
+    rocCurveAndConfusionMatrices(heatmaps, y_all, modelPath)
+# end runBasicPerformanceAnalysis
     
     
+'''
+runNFoldPerformanceAnalysis()
+    Run N-fold cross validation analysis with already-trained networks on the
+    associated data.
+INPUTS:
+    N: number of folds. Nominally 4
+    saveDir: directory where folded data are saved to. Nominally "folds".
+    modelPath: location of trained networks. Will have "fold#" appended to it,
+        where "#" is the number of the fold. Nominally "savedNetworks/[somename]"
+OUTPUTS: 
+    Prints the confusion matrices for each of a set of thresholds on the heatmaps.
+    Plots and saves a ROC curve for the associated confusion matrices.
+'''
+def runNFoldPerformanceAnalysis(N, saveDir, modelPath):
+    # Read each fold of imagery
+    x_folds, y_folds_pmMask, id_folds, id_folds_plus = readFoldedImages(N,saveDir)
+    y_folds = y_folds_pmMask > 0.0
+    
+    # Preallocate arrays for output and truth
+    #nFrames_total = 0
+    #for datafold in x_folds:
+    #    nFrames_total += datafold.shape[0]
+    #    
+    #heatmaps_all = np.zeros((nFrames_total,x_folds[0].shape[1],x_folds[0].shape[2]))
+    #y_pmMask_all = np.zeros((nFrames_total,x_folds[0].shape[1],x_folds[0].shape[2]))
+    heatmaps_all = np.zeros((0,x_folds[0].shape[1],x_folds[0].shape[2]))
+    y_all = np.zeros((0,x_folds[0].shape[1],x_folds[0].shape[2])).astype(np.bool)
+    
+    # Execute forward passes of each neural network on its respective fold of
+    # data (which was trained with the other folds of data)
+    for fold in range(N):
+        foldModelPath = os.path.join(modelPath+"fold%d" % fold,"modelFinal_full")
+        
+        # Import the trained neural network
+        print("Loading saved neural network from " + foldModelPath+'.pb')
+        tensorflowNet = readNetFromTensorflow(foldModelPath+'.pb')
+        print("Neural network sucessfully loaded")
+        
+        # Execute a forward pass on all of the input frames for this fold
+        heatmaps = np.zeros_like(x_folds[fold]) # preallocate for speed
+        for i, frame in enumerate(x_folds[fold]):
+            if i % 1000 == 0:
+                print("Running CNN for fold %d on frame %d of %d" % (fold, i, x_folds[fold].shape[0]))
+            tensorflowNet.setInput(frame)
+            heatmap = tensorflowNet.forward()
+            heatmap = np.squeeze(heatmap)*255.0 # scale appropriately
+            
+            heatmaps[i,:,:] = heatmap # put into the big stack
+        
+        # Append the full dataset arrays with this fold's arrays
+        heatmaps_all = np.append(heatmaps_all,heatmaps,axis=0)
+        y_all = np.append(y_all,y_folds[fold],axis=0)
+        
+        
+    # We now have a complete array of heatmaps generated with nFold cross
+    # validation methods and their associated truth masks. We can make 
+    # confusion matrices and ROC curves with it.
+    rocCurveAndConfusionMatrices(heatmaps_all, y_all, modelPath)
+
+# end runNFoldPerformanceAnalysis
+    
+    
+def rocCurveAndConfusionMatrices(heatmaps, y_all, modelPath):
     # Loop over a series of thresholds and calculate the resulting confusion
     # matrices and ROC curve points
     #thresholds = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
@@ -142,7 +210,9 @@ def runBasicPerformanceAnalysis(modelPath):
     drawROCCurve(tpByThreshold, fnByThreshold, fpByThreshold, tnByThreshold)
     plt.savefig(modelPath + "_rocCurve.png")
     plt.show()
-# end runBasicPerformanceAnalysis
+# end rocCurveAndConfusionMatrices
+    
+    
     
     
 def drawROCCurve(tpByThreshold, fnByThreshold, fpByThreshold, tnByThreshold):
@@ -160,4 +230,5 @@ def drawROCCurve(tpByThreshold, fnByThreshold, fpByThreshold, tnByThreshold):
 # Run if called directly
 if __name__ == "__main__":
     #runBasicPerformanceAnalysis(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_mirror_sW00p50_1M00p00_2M00p00'))
-    runBasicPerformanceAnalysis(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_mirror_sW00p00_1M00p00_2M00p00'))
+    #runBasicPerformanceAnalysis(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_mirror_sW00p00_1M00p00_2M00p00'))
+    runNFoldPerformanceAnalysis(4, 'folds', os.path.join('savedNetworks','noiseFix4Folds60k_sW00p50_'))
