@@ -44,8 +44,10 @@ def hourglass_nn(x):
     # First convolutional layer - maps one grayscale image to 32 feature maps.
     with tf.name_scope('firstConv'):
         w1 = nnu.weight_variable([5,5,1,32])
+        b1 = nnu.weight_variable([32])
         #w1 = weight_variable([7,7,1,32])
-        h_conv1 = tf.nn.relu(nnu.conv2d(x_image,w1)) # [-1,width,height,32]
+        #h_conv1 = tf.nn.relu(nnu.conv2d(x_image,w1)) # [-1,width,height,32]
+        h_conv1 = tf.nn.relu(tf.nn.bias_add(nnu.conv2d(x_image,w1), b1)) # added bias term
 
     # Pooling layer - downsamples by 2X.
     with tf.name_scope('firstPool'):
@@ -54,8 +56,10 @@ def hourglass_nn(x):
     # Second convolutional layer -- maps 32 feature maps to 64.
     with tf.name_scope('secondConv'):
         w2 = nnu.weight_variable([5,5,32,64]) 
+        b2 = nnu.weight_variable([64])
         #w2 = weight_variable([7,7,32,64]) 
-        h_conv2 = tf.nn.relu(nnu.conv2d(h_pool1,w2)) # [-1,width/4,height/4,64]
+        #h_conv2 = tf.nn.relu(nnu.conv2d(h_pool1,w2)) # [-1,width/4,height/4,64]
+        h_conv2 = tf.nn.relu(tf.nn.bias_add(nnu.conv2d(h_pool1,w2),b2))
 
     # Second pooling layer.
     with tf.name_scope('secondPool'):

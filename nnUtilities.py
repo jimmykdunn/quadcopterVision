@@ -133,6 +133,7 @@ def upconv2d(x, wShape):
     with tf.name_scope('myConv2dTranspose'):
         convStride = [wShape[0]-1,wShape[1]-1]
         # inputs, filters, kernelsize, stride
+        # Bias is automatically included (use_bias term defaults to True)
         xUpconv = tf.layers.conv2d_transpose(x, filters=wShape[2], 
             kernel_size=tuple(wShape[:2]), strides=tuple(convStride), padding='SAME')
     
