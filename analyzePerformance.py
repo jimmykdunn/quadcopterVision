@@ -166,7 +166,7 @@ def rocCurveAndConfusionMatrices(heatmaps, y_all, modelPath):
     # Loop over a series of thresholds and calculate the resulting confusion
     # matrices and ROC curve points
     #thresholds = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-    thresholds = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 200, 300, 400, 500, 600]
+    thresholds = np.arange(0,610,10) #[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 125, 150, 175, 200, 225, 250, 275, 300, 400, 500, 600]
     tpByThreshold = np.zeros_like(thresholds)
     fnByThreshold = np.zeros_like(thresholds)
     fpByThreshold = np.zeros_like(thresholds)
@@ -233,8 +233,10 @@ if __name__ == "__main__":
     #runBasicPerformanceAnalysis(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_mirror_sW00p50_1M00p00_2M00p00'))
     #runBasicPerformanceAnalysis(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_mirror_sW00p00_1M00p00_2M00p00'))
     
-    # Quick test version (minimal data to read for debugging)
-    runNFoldPerformanceAnalysis(4, 'testFolds', os.path.join('savedNetworks','noiseFix4Folds60k_sW00p50_'), modelName = "model_at25000_full")
+    # Quick test version (minimal data to read for debugging) (early network version)
+    #runNFoldPerformanceAnalysis(4, 'testFolds', os.path.join('savedNetworks','noiseFix4Folds60k_sW00p00_'), modelName = "model_at25000_full")
+    #runNFoldPerformanceAnalysis(4, 'testFolds', os.path.join('savedNetworks','noiseFix4Folds60k_sW00p50_'), modelName = "model_at25000_full")
     
-    # Full version (reads all data)
+    # Full version (reads all data) (uses final networks)
+    runNFoldPerformanceAnalysis(4, 'folds', os.path.join('savedNetworks','noiseFix4Folds60k_sW00p00_'), modelName = "modelFinal_full")
     #runNFoldPerformanceAnalysis(4, 'folds', os.path.join('savedNetworks','noiseFix4Folds60k_sW00p50_'), modelName = "modelFinal_full")
