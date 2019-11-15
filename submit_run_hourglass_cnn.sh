@@ -6,13 +6,17 @@
 #$ -l h_rt=120:00:00
 #
 ## Give the job a name.
-#$ -N hCF3_60k_0
+#$ -N hCBF0_60k_5
 #
 ## Redirect error output to standard output
 #$ -j y
 #
 ## What project to use. 
 #$ -P semslam
+#
+## Select a skylake processor architecture (tensorflow training runs maybe 4x faster on these for some reason)
+#$ -l cpu_arch=skylake
+
 
 source ~/thesis/quadcopterVision/loadModules.sh
 
@@ -20,4 +24,4 @@ source ~/thesis/quadcopterVision/loadModules.sh
 cd /usr3/graduate/jkdunn/thesis/quadcopterVision/
 # argument list: siamese weight, 1st moment weight, 2nd moment weight, graph save location
 #python run_siamese_hourglass_cnn.py 0.50 0.00 0.00 noiseFix60k_sW00p50
-python nfold_siamese_hourglass_cnn.py 0.00 0.00 0.00 noiseFix4Folds60k_sW00p00 3
+python nfold_siamese_hourglass_cnn.py 0.50 0.00 0.00 biasAdd4Folds60k_sW00p50 0
