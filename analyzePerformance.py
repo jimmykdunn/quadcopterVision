@@ -210,7 +210,7 @@ def rocCurveAndConfusionMatrices(heatmaps, y_all, modelPath):
     # Make the ROC curve
     drawROCCurve(tpByThreshold, fnByThreshold, fpByThreshold, tnByThreshold)
     plt.savefig(modelPath + "_rocCurve.png")
-    plt.show()
+    #plt.show()
 # end rocCurveAndConfusionMatrices
     
     
@@ -223,10 +223,10 @@ def drawROCCurve(tpByThreshold, fnByThreshold, fpByThreshold, tnByThreshold):
     trueNegRate  = tnByThreshold/(fpByThreshold+tnByThreshold)
     
     plt.plot(falsePosRate,truePosRate,label='target pixel ROC')
-    plt.plot(falseNegRate,trueNegRate,label='background pixel ROC')
-    plt.legend()
-    plt.xlabel("False classification rate")
-    plt.ylabel("True classification rate")
+    #plt.plot(falseNegRate,trueNegRate,label='background pixel ROC')
+    #plt.legend()
+    plt.xlabel("False positive rate")
+    plt.ylabel("True positive rate")
     
 # Run if called directly
 if __name__ == "__main__":
@@ -238,5 +238,5 @@ if __name__ == "__main__":
     #runNFoldPerformanceAnalysis(4, 'testFolds', os.path.join('savedNetworks','noiseFix4Folds60k_sW00p50_'), modelName = "model_at25000_full")
     
     # Full version (reads all data) (uses final networks)
-    runNFoldPerformanceAnalysis(4, 'folds', os.path.join('savedNetworks','noiseFix4Folds60k_sW00p00_'), modelName = "modelFinal_full")
-    #runNFoldPerformanceAnalysis(4, 'folds', os.path.join('savedNetworks','noiseFix4Folds60k_sW00p50_'), modelName = "modelFinal_full")
+    #runNFoldPerformanceAnalysis(4, 'folds', os.path.join('savedNetworks','biasAdd4Folds60k_sW00p00_'), modelName = "modelFinal_full")
+    runNFoldPerformanceAnalysis(4, 'folds', os.path.join('savedNetworks','biasAdd4Folds60k_sW00p50_'), modelName = "modelFinal_full")
