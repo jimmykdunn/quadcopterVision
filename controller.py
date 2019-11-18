@@ -289,8 +289,8 @@ if __name__ == "__main__":
     #    save=True, liveFeed=True, showHeatmap=True, USE_KALMAN=True, filestream=imgBase, heatmapThresh=0.5)
 
     # Run from a live camera stream
-    run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_mirror_60k_sW00p50_1M00p00_2M00p00_49k'),
-        save=True, liveFeed=True, showHeatmap=True, USE_KALMAN=True, largeDisplay=True, heatmapThresh=0.5)
+    run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_biasAdd_sW00p50_fold0'),
+        save=True, liveFeed=True, showHeatmap=True, USE_KALMAN=True, largeDisplay=False, heatmapThresh=0.5)
     #run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_mirror_60k_sW00p00_1M00p00_2M00p00_16k'),
     #    save=True, liveFeed=True, showHeatmap=True, USE_KALMAN=True, largeDisplay=True, heatmapThresh=0.5)
 
