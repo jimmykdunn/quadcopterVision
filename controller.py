@@ -266,6 +266,7 @@ def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
     plt.title('Quadrotor centroid history')
     plt.legend()
     plt.savefig("snailTrail.png")
+    print("Wrote snail trail to snailTrail.png")
     plt.show()
     #print(history_rawCOM.shape)
             
@@ -285,12 +286,12 @@ if __name__ == "__main__":
     #   save=True, liveFeed=True, showHeatmap=True, USE_KALMAN=True, filestream=imgBase)
     #run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_mirror_60k_sW00p50_1M00p00_2M00p00_49k'),
     #    save=True, liveFeed=True, showHeatmap=True, USE_KALMAN=True, filestream=imgBase, heatmapThresh=0.5)
-    #run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_mirror_60k_sW00p00_1M00p00_2M00p00_16k'),
-    #    save=True, liveFeed=True, showHeatmap=True, USE_KALMAN=True, filestream=imgBase, heatmapThresh=0.5)
+    run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_biasAdd_sW00p50_fold3'),
+        save=True, liveFeed=True, showHeatmap=True, USE_KALMAN=True, filestream=imgBase, heatmapThresh=0.5)
 
     # Run from a live camera stream
-    run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_biasAdd_sW00p50_fold0'),
-        save=True, liveFeed=True, showHeatmap=True, USE_KALMAN=True, largeDisplay=False, heatmapThresh=0.5)
+    #run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_biasAdd_sW00p50_fold0'),
+    #    save=True, liveFeed=True, showHeatmap=True, USE_KALMAN=True, largeDisplay=False, heatmapThresh=0.5)
     #run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_mirror_60k_sW00p00_1M00p00_2M00p00_16k'),
     #    save=True, liveFeed=True, showHeatmap=True, USE_KALMAN=True, largeDisplay=True, heatmapThresh=0.5)
 
