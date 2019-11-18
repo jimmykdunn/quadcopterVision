@@ -294,8 +294,8 @@ if __name__ == "__main__":
     
     # Full version (reads all data) (uses final networks)
     #runNFoldPerformanceAnalysis(4, 'folds', os.path.join('savedNetworks','biasAdd4Folds60k_sW00p00_'), modelName = "modelFinal_full")
-    #runNFoldPerformanceAnalysis(4, 'folds', os.path.join('savedNetworks','biasAdd4Folds60k_sW00p10_'), modelName = "modelFinal_full")
-    runNFoldPerformanceAnalysis(4, 'folds', os.path.join('savedNetworks','biasAdd4Folds60k_sW00p30_'), modelName = "modelFinal_full")
+    runNFoldPerformanceAnalysis(4, 'folds', os.path.join('savedNetworks','biasAdd4Folds60k_sW00p10_'), modelName = "modelFinal_full")
+    #runNFoldPerformanceAnalysis(4, 'folds', os.path.join('savedNetworks','biasAdd4Folds60k_sW00p30_'), modelName = "modelFinal_full")
     #runNFoldPerformanceAnalysis(4, 'folds', os.path.join('savedNetworks','biasAdd4Folds60k_sW00p50_'), modelName = "modelFinal_full")
     #runNFoldPerformanceAnalysis(4, 'folds', os.path.join('savedNetworks','biasAdd4Folds60k_sW00p80_'), modelName = "modelFinal_full")
     
@@ -307,9 +307,9 @@ if __name__ == "__main__":
     labelList.append("no Siamese loss")
     linespecList.append('k')
     
-    logList.append(os.path.join('savedNetworks','biasAdd4Folds60k_sW00p10__confMatrices.log'))
-    labelList.append("Siamese weight = 0.1")
-    linespecList.append('k--')
+    #logList.append(os.path.join('savedNetworks','biasAdd4Folds60k_sW00p10__confMatrices.log'))
+    #labelList.append("Siamese weight = 0.1")
+    #linespecList.append('k--')
     
     logList.append(os.path.join('savedNetworks','biasAdd4Folds60k_sW00p30__confMatrices.log'))
     labelList.append("Siamese weight = 0.3")

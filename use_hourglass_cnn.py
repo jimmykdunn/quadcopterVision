@@ -246,7 +246,7 @@ def quadcopterTest(modelPath):
     print("Running CNN at " + modelPath + " on " + dataPath)
     heatmap = use_hourglass_cnn(modelPath, 
                          np.reshape(datapoint,[1,datapoint.shape[0],datapoint.shape[1]]),
-                         numTimingTrials=100)
+                         numTimingTrials=1)
     
     # Overlay on outline of the heatmap in green onto the image
     greenedImage = vu.overlay_heatmap(heatmap,datapoint)
@@ -312,11 +312,11 @@ def quadcopterBatchTest(modelPath,directory='goldenImages',ext='.jpg'):
                 if modelExt == '.ckpt':
                     heatmap = use_hourglass_cnn(modelPath,
                         np.reshape(datapoint,[1,datapoint.shape[0],datapoint.shape[1]]),
-                        numTimingTrials=100)
+                        numTimingTrials=1)
                 elif modelExt == '.pb':
                     heatmap = use_hourglass_cnn_pb(modelPath, 
                         np.reshape(datapoint,[1,datapoint.shape[0],datapoint.shape[1]]),
-                        numTimingTrials=100)
+                        numTimingTrials=1)
                 else:
                     print('Model type not recognized: ' + modelExt)
                 
@@ -368,6 +368,6 @@ if __name__ == "__main__":
     print("\n\n")
     #quadcopterBatchTest(os.path.join('homebrew_hourglass_nn_save','model_at1000.ckpt'))
     #quadcopterBatchTest(os.path.join('homebrew_hourglass_nn_save_GOOD','model_at20000.ckpt'), directory='goldenImages')
-    quadcopterBatchTest(os.path.join('savedNetworks','noiseFix4Folds60k_sW00p00_fold0','model_at52000.ckpt'), directory='goldenImages')
+    quadcopterBatchTest(os.path.join('savedNetworks','biasAdd4Folds60k_sW00p80_fold3','model_at60000.ckpt'), directory='goldenImages')
     
     
