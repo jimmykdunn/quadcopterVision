@@ -266,10 +266,11 @@ def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
         # Make a final display of the snail trail of the COM
         xCoords = history_rawCOM[1,:]
         yCoords = heatmap.shape[0] - history_rawCOM[0,:] # invert y axis for consistency
-        plt.plot(xCoords, yCoords, 'k+', label="raw")
+        plt.plot(xCoords, yCoords, 'k+', markersize=4, label="raw")
         xCoordsKalman = history_kalmanCOM[1,:]
         yCoordsKalman = heatmap.shape[0] - history_kalmanCOM[0,:] # invert y axis for consistency
-        plt.plot(xCoordsKalman, yCoordsKalman, 'go', label="Kalman filtered")
+        #plt.plot(xCoordsKalman[0::10], yCoordsKalman[0::10], 'go', label="Kalman filtered") # plot every 10 points
+        plt.plot(xCoordsKalman, yCoordsKalman, 'go', markersize=3, label="Kalman filtered")
         plt.axis('equal')
         plt.xlim([0,nnFrame.shape[1]])
         plt.ylim([0,nnFrame.shape[0]])
@@ -300,12 +301,12 @@ if __name__ == "__main__":
     #   save=True, liveFeed=True, showHeatmap=True, USE_KALMAN=True, filestream=imgBase)
     #run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_mirror_60k_sW00p50_1M00p00_2M00p00_49k'),
     #    save=True, liveFeed=True, showHeatmap=True, USE_KALMAN=True, filestream=imgBase, heatmapThresh=0.5)
-    #run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_biasAdd_sW00p50_fold3'),
-    #    save=True, liveFeed=True, showHeatmap=True, USE_KALMAN=True, filestream=imgBase, heatmapThresh=0.5)
+    run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_biasAdd_sW00p30_fold1'),
+        save=True, liveFeed=True, showHeatmap=True, USE_KALMAN=True, filestream=imgBase, heatmapThresh=0.5)
 
     # Run from a live camera stream
-    run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_biasAdd_sW00p50_fold0'),
-        save=True, liveFeed=True, showHeatmap=True, USE_KALMAN=True, largeDisplay=False, heatmapThresh=0.5)
+    #run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_biasAdd_sW00p50_fold0'),
+    #    save=True, liveFeed=True, showHeatmap=True, USE_KALMAN=True, largeDisplay=False, heatmapThresh=0.5)
     #run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_mirror_60k_sW00p00_1M00p00_2M00p00_16k'),
     #    save=True, liveFeed=True, showHeatmap=True, USE_KALMAN=True, largeDisplay=True, heatmapThresh=0.5)
 

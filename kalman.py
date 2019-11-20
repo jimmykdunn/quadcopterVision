@@ -34,10 +34,10 @@ class kalman_filter:
         # of the uncertainty related to the motion of the target.
         # In reality, this is a function of the time since the last measurement,
         # but since we have a somewhat stable framerate, we let it be constant.
-        self.Q = [[0.0003, 0, 0,    0], \
-                  [0,    0.1, 0,    0], \
-                  [0,    0, 0.001, 0], \
-                  [0,    0, 0,    0.05]]
+        self.Q = [[0.2,    0,    0,    0], \
+                  [0,    0.2,    0,    0], \
+                  [0,      0, 0.05,    0], \
+                  [0,      0,    0, 0.05]]
         #self.Q = [[0, 0, 0, 0], \
         #          [0, 0, 0, 0], \
         #          [0, 0, 0, 0], \

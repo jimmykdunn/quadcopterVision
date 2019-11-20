@@ -217,19 +217,21 @@ def rocCurveAndConfusionMatrices(heatmaps, y_all, modelPath):
     
     
 def drawROCCurve(tpByThreshold, fnByThreshold, fpByThreshold, tnByThreshold, 
-    linespec='', labelStr=''):
+    linespec='', labelStr='', xlim=[0,1], ylim=[0,1]):
     truePosRate  = tpByThreshold/(tpByThreshold+fnByThreshold)
     falsePosRate = fpByThreshold/(fpByThreshold+tnByThreshold)
     
     plt.plot(falsePosRate,truePosRate,linespec,label=labelStr)
     plt.xlabel("False positive rate")
     plt.ylabel("True positive rate")
+    plt.xlim(xlim)
+    plt.ylim(ylim)
 # end drawROCCurve  
     
     
     
 # Make a nice plot for the report of two ROC curves for comparison
-def rocCurveComparison(logList, labelList, linespecList):
+def rocCurveComparison(logList, labelList, linespecList, xlim=[0,1], ylim=[0,1]):
 
     # Loop over each log in the list
     for log, label, linespec in zip(logList,labelList,linespecList):
@@ -241,7 +243,7 @@ def rocCurveComparison(logList, labelList, linespecList):
         
         # Plot the ROC curve using the confusion matrix data
         drawROCCurve(tpByThreshold, fnByThreshold, fpByThreshold, tnByThreshold, 
-            linespec=linespec,labelStr=label)
+            linespec=linespec,labelStr=label, xlim=xlim, ylim=ylim)
     
     plt.legend()
     rocCurveSaveFile = "allRocCurves.png"
@@ -294,7 +296,10 @@ if __name__ == "__main__":
     
     # Full version (reads all data) (uses final networks)
     #runNFoldPerformanceAnalysis(4, 'folds', os.path.join('savedNetworks','biasAdd4Folds60k_sW00p00_'), modelName = "modelFinal_full")
-    runNFoldPerformanceAnalysis(4, 'folds', os.path.join('savedNetworks','biasAdd4Folds60k_sW00p10_'), modelName = "modelFinal_full")
+    runNFoldPerformanceAnalysis(4, 'folds', os.path.join('savedNetworks','biasAdd4Folds60k_sW00p01_'), modelName = "modelFinal_full")
+    #runNFoldPerformanceAnalysis(4, 'folds', os.path.join('savedNetworks','biasAdd4Folds60k_sW00p05_'), modelName = "modelFinal_full")
+    #runNFoldPerformanceAnalysis(4, 'folds', os.path.join('savedNetworks','biasAdd4Folds60k_sW00p10_'), modelName = "modelFinal_full")
+    #runNFoldPerformanceAnalysis(4, 'folds', os.path.join('savedNetworks','biasAdd4Folds60k_sW00p20_'), modelName = "modelFinal_full")
     #runNFoldPerformanceAnalysis(4, 'folds', os.path.join('savedNetworks','biasAdd4Folds60k_sW00p30_'), modelName = "modelFinal_full")
     #runNFoldPerformanceAnalysis(4, 'folds', os.path.join('savedNetworks','biasAdd4Folds60k_sW00p50_'), modelName = "modelFinal_full")
     #runNFoldPerformanceAnalysis(4, 'folds', os.path.join('savedNetworks','biasAdd4Folds60k_sW00p80_'), modelName = "modelFinal_full")
@@ -302,14 +307,15 @@ if __name__ == "__main__":
     '''
     # Make a bunch of ROC curves from a list of logs
     logList, labelList, linespecList = [], [], []
+    xlim, ylim = [0,0.25], [0,1]
 
     logList.append(os.path.join('savedNetworks','biasAdd4Folds60k_sW00p00__confMatrices.log'))
     labelList.append("no Siamese loss")
     linespecList.append('k')
     
-    #logList.append(os.path.join('savedNetworks','biasAdd4Folds60k_sW00p10__confMatrices.log'))
-    #labelList.append("Siamese weight = 0.1")
-    #linespecList.append('k--')
+    logList.append(os.path.join('savedNetworks','biasAdd4Folds60k_sW00p10__confMatrices.log'))
+    labelList.append("Siamese weight = 0.1")
+    linespecList.append('k--')
     
     logList.append(os.path.join('savedNetworks','biasAdd4Folds60k_sW00p30__confMatrices.log'))
     labelList.append("Siamese weight = 0.3")
@@ -324,6 +330,6 @@ if __name__ == "__main__":
     linespecList.append('g--')
        
     
-    rocCurveComparison(logList, labelList, linespecList)
+    rocCurveComparison(logList, labelList, linespecList, xlim=xlim, ylim=ylim)
     '''
     
