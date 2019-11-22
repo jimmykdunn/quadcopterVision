@@ -5,8 +5,6 @@ DESCRIPTION:
     Trains and evaluates a convolutional neural net (CNN) to generate a heatmap
     of the probability of a quadcopter being at each pixel in the input image.
     Uses tensorflow.  
-    
-    Based on NMIST homework from CS542 at Boston University in Fall 2018
 
 INFO:
     Author: James Dunn, Boston University

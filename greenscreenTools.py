@@ -11,6 +11,11 @@ INFO:
     Date: September 2019
 """
 
+import copy
+import numpy as np
+import cv2
+
+
 """
 FUNCTION: injectBackground
 DESCRIPTION:
@@ -23,10 +28,6 @@ INPUTS:
 RETURNS: 
     image: image with greenscreen pixels replaced with background pixels
 """
-import copy
-import numpy as np
-import cv2
-
 def injectBackground(greenImage, background, shift=[0,0]):
     
     # Find background pixels with findGreenscreen.py. Use default parameters.

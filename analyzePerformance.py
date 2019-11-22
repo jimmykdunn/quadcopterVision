@@ -56,7 +56,14 @@ def calculateConfusionMatrix(heatmaps, masks, threshold):
 # end calculateConfusionMatrix
 
 
-# Convert numerical confusion matrix to fractional
+"""
+confusionMatrixNumToPct()
+    Convert numerical confusion matrix to fractional confusion matrix
+INPUTS:
+    confusion matrix: [tp,fn,fp,tn] in integer counts
+RETURNS:
+    2x2 confusion matrix [tpRate, fnRate; fpRate, tnRate] as fractions
+"""
 def confusionMatrixNumToPct(confusionMatrix):
 
     tpRate = confusionMatrix[0]/(confusionMatrix[0]+confusionMatrix[1]) # target called target/total targets
@@ -68,6 +75,17 @@ def confusionMatrixNumToPct(confusionMatrix):
 
 # end confusionMatrixNumToPct
     
+"""
+runBasicPerformanceAnalysis()
+    Basic ROC curve generation using a single fold of data and a single trained
+    model.  Also prints out confusion matrices for each ROC curve point.
+INPUTS:
+    modelPath: path to the trained network's tensorflow .pb file. Must be .pb
+        format, not .pbtxt or .ckpt
+OUTPUTS:
+    Displays ROC curve plot and confusion matrices for the input model run on
+    the data imported by importRoboticsLabData().
+"""
 def runBasicPerformanceAnalysis(modelPath):
     # Import the augmented robotics lab data sequences
     print("Reading augmented image and mask sequences")
@@ -102,12 +120,15 @@ def runBasicPerformanceAnalysis(modelPath):
 '''
 runNFoldPerformanceAnalysis()
     Run N-fold cross validation analysis with already-trained networks on the
-    associated data.
+    associated data. Uses readFoldedImages() to read data.
 INPUTS:
     N: number of folds. Nominally 4
     saveDir: directory where folded data are saved to. Nominally "folds".
     modelPath: location of trained networks. Will have "fold#" appended to it,
         where "#" is the number of the fold. Nominally "savedNetworks/[somename]"
+OPTIONAL INPUTS:
+    modelName: beginning of the name of the models in modelPath, not including
+        the fold number. Default "modelFinal_full"
 OUTPUTS: 
     Prints the confusion matrices for each of a set of thresholds on the heatmaps.
     Plots and saves a ROC curve for the associated confusion matrices.
@@ -162,6 +183,18 @@ def runNFoldPerformanceAnalysis(N, saveDir, modelPath, modelName="modelFinal_ful
 # end runNFoldPerformanceAnalysis
     
     
+"""
+rocCurveAndConfusionMatrices()
+    Generates a ROC curve and associated confusion matrices for a series of
+    thresholds.
+INPUTS:
+    heatmaps: heatmaps to generate statistics for. [width,height,batch]
+    y_all: truth masks associated with heatmaps. [width,height,batch]
+    modelPath: where the resuling ROC curve figure will be saved to. 
+        "__rocCurve.png" will be appended prior to saving.
+OUTPUTS:
+    Displays ROC curve plot and confusion matrices.
+"""
 def rocCurveAndConfusionMatrices(heatmaps, y_all, modelPath):
     # Loop over a series of thresholds and calculate the resulting confusion
     # matrices and ROC curve points
@@ -215,7 +248,22 @@ def rocCurveAndConfusionMatrices(heatmaps, y_all, modelPath):
     
     
     
-    
+"""
+drawROCCurve()
+    Plots the ROC Curve for the input arrays of confusion matrices.
+INPUTS:
+    tpByThreshold: array of true positive counts by detection threshold
+    fnByThreshold: array of false negative counts by detection threshold
+    fpByThreshold: array of false positive counts by detection threshold
+    tnByThreshold: array of true negative counts by detection threshold
+OPTIONAL INPUTS:
+    linespec: linespec argument to forward to matplotlib.pyplot.plot
+    labelStr: legend label to forward to matplotlib.pyplot.plot
+    xlim: horizontal plot range to forward to matplotlib.pyplot.xlim
+    ylim: vertical plot range to forward to matplotlib.pyplot.ylim
+OUTPUTS:
+    Displays ROC curve plot (true positive rate vs false positive rate)
+"""
 def drawROCCurve(tpByThreshold, fnByThreshold, fpByThreshold, tnByThreshold, 
     linespec='', labelStr='', xlim=[0,1], ylim=[0,1]):
     truePosRate  = tpByThreshold/(tpByThreshold+fnByThreshold)
@@ -230,6 +278,25 @@ def drawROCCurve(tpByThreshold, fnByThreshold, fpByThreshold, tnByThreshold,
     
     
     
+"""
+rocCurveComparison()
+    Plots a nicely-formatted set of ROC curves using the input list of logfiles
+    containing confusion matrices.  Ideal for comparison of algorithms in 
+    loglist.
+INPUTS:
+    logList: list of log file locations that contain confusion matrices. The log
+        files are assumed to be the stdout output from 
+        runNFoldPerformanceAnalysis().
+    labelList: legend labels for each log in logList
+    linspecList: linespecs to pass to matplotlib.pyplot.plot for each log in 
+        logList
+OPTIONAL INPUTS:
+    xlim: horizontal plot range to forward to matplotlib.pyplot.xlim
+    ylim: vertical plot range to forward to matplotlib.pyplot.ylim
+OUTPUTS:
+    Saves ROC curves plot (true positive rate vs false positive rate) to 
+    "allROCCurves.png" in the directory it is called from.
+"""
 # Make a nice plot for the report of two ROC curves for comparison
 def rocCurveComparison(logList, labelList, linespecList, xlim=[0,1], ylim=[0,1]):
 
@@ -251,7 +318,17 @@ def rocCurveComparison(logList, labelList, linespecList, xlim=[0,1], ylim=[0,1])
     print("ROC curve plot saved to " + rocCurveSaveFile)
 # end rocCurveComparision
 
-
+   
+"""
+confMatricesFromLog()
+    Extracts the confusion matrices from a logfile that is assumed to have the 
+    format of the stdout of a run of runNFoldPerformanceAnalysis().
+INPUTS:
+    logList: log file location that contains confusion matrices. The log file is
+        assumed to be the stdout output from runNFoldPerformanceAnalysis.
+RETURNS:
+    List of confusion matrices in the format [[tp,fn,fp,tn]]
+"""
 def confMatricesFromLog(logfile):
     # Start with the ubiquitious "just call everything target" matrix
     confMatrices = [[1.0,0.0,1.0,0.0]]

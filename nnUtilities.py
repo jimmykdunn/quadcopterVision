@@ -391,6 +391,16 @@ def calculateSecondMomentLoss(b_heatmaps,b_masks):
 # end calculateSecondMomentLoss
 
     
+"""
+repeatAlongBatch()
+    Takes the input array and repeats it N times along the not-yet-there batch
+    (first) dimension.
+INPUTS:
+    array: array to repeat [width,height]
+    N: number of times to repeat array
+RETURNS:
+    array repeated N times along a new first dimension
+"""
 def repeatAlongBatch(array,N):
     dims = tf.shape(array)
     expandedArray = tf.expand_dims(array,0)
@@ -400,7 +410,19 @@ def repeatAlongBatch(array,N):
     return expandedArray
 # end repeatAlongBatch()
     
-    
+     
+"""
+repeatAlongLastTwice()
+    Takes the input array and repeats it N1xN2 times along two not-yet-there
+    dimensions at the end.
+INPUTS:
+    array: array to repeat [N]
+    N1: number of times to repeat array along first new dimension
+    N2: number of times to repeat array along second new dimension
+RETURNS:
+    expandedArray repeated N1 times along first new dimension and N2 times along
+        second new dimension.
+"""
 def repeatAlongLastTwice(array,N1,N2):
     dims = tf.shape(array)
     expandedArray = tf.expand_dims(tf.expand_dims(array,-1),-1)

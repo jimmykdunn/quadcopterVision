@@ -264,6 +264,25 @@ def quadcopterTest(modelPath):
     
     
 # Apply a threshold of 170 and color code true detections and false detections
+"""
+colorCodeTPFNFPTN()
+DESCRIPTION:
+    Takes the input heatmap and masks and forms a color-coded image showing
+    which pixels of the heatmap are true positives, false negatives, false
+    positives, and true negatives.
+    
+INPUTS: 
+    heatmap: heatmap (output of a forward pass of the trained hourglass neural
+        network) to show. [width,height]
+    mask: associated boolean truth image, true for target, false for background
+        [width,height]
+    threshold: threshold to apply to the heatmap to generate detections
+    
+RETURNS: 
+    Color-coded classification of each pixel [width,height,3]. Blue for true
+    positives, red for false positives, yellow for false negatives, black for
+    true negatives.
+"""
 def colorCodeTPFNFPTN(heatmap,mask,threshold):
     
     # Threshold the heatmap
@@ -302,13 +321,6 @@ OPTIONAL INPUTS:
     
 OUTPUTS: 
     Saves the resulting heatmaps to file
-
-INFO:
-    Author: James Dunn, Boston University
-    Thesis work for MS degree in ECE
-    Advisor: Dr. Roberto Tron
-    Email: jkdunn@bu.edu
-    Date: September 2019
 """
 def quadcopterBatchTest(modelPath,directory='goldenImages',ext='.jpg'):
     iImage = 0

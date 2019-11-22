@@ -22,11 +22,55 @@ from datetime import datetime
 import kalman
 import matplotlib.pyplot as plt
 
+# Load webcam_utils if running on platform that supports it (ODROiD), otherwise
+# don't bother (SCC testing with saved video streams)
 try:
     import webcam_utils as wcam
 except:
     pass
 
+"""
+run()
+DESCRIPTION:
+    Runs the quadcopter detection neural network in real-time using default
+    camera.  Optionally uses pre-saved frames rather than the camera. Intended
+    to be run on ODROiD XU4.
+    
+INPUTS: 
+    modelPath: checkpoint (".pb") file to run a forward pass with. Must be a .pb
+        file, .ckpt files are not supported in this function
+    
+OPTIONAL INPUTS:
+    nnFramesize: size of images that the neural network expects. Default (64,48)
+    save: boolean - True to save frames to file, false otherwise. Default False.
+        Note that saving frames will cause some additional latency.
+    folder: directory to save frames to. Default "webcam".
+    showHeatmap: True to display the heatmaps, false otherwise.  Defuault false.
+    liveFeed: True to display frames live, false otherwise. Default True.
+    displayScale: Scale factor to apply to neural network output images before 
+        displaying. Default 1 (no scaling).
+    USE_KALMAN: True to apply a Kalman filter to the results, false otherwise.
+        Default True.
+    filestream: path to files to use in place of streaming from the camera.  Set
+        to "None" to stream from camera. Default None.
+    largeDisplay: True to enlarge display, false otherwise
+    heatmapThresh: threshold to apply to heatmaps before calculating centroid or
+        calculating mean energy. Default 0.75.
+    runAlgorithm: True to run detection algorithm, false otherwise.  Used in
+        latency testing to determine relative processing time taken by detection
+        algorithm versus frame capture. Default true.
+    
+OUTPUTS: 
+    Optionally saves the resulting heatmaps to file and/or displays them live.
+    Prints out heatmap centroid with and without Kalman filtering.
+
+INFO:
+    Author: James Dunn, Boston University
+    Thesis work for MS degree in ECE
+    Advisor: Dr. Roberto Tron
+    Email: jkdunn@bu.edu
+    Date: October 2019
+"""
 def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
         showHeatmap=False, liveFeed=True, displayScale=1, USE_KALMAN=True,
         filestream=None, largeDisplay=False, heatmapThresh=0.75, runAlgorithm=True):

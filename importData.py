@@ -35,6 +35,8 @@ RETURNS:
 """
 def importRoboticsLabData(quickTest=False):
     
+    # This represents the most recent version of the robotics lab data with all
+    # the most recent augmentations applied.
     x_set1, y_set1, id_set1 = vu.pull_aug_sequence(
         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48_mirror","augImage_"),
         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48_mirror","augMask_"))
@@ -48,7 +50,7 @@ def importRoboticsLabData(quickTest=False):
     id_all = np.concatenate([id_set1,id_set2],axis=0)
     id_all_plus = np.concatenate([id_set1_plus,id_set2_plus],axis=0)
     
-        
+    # Read the rest of the data if we are not running a quick test.
     if not quickTest:
         x_set3, y_set3, id_set3 = vu.pull_aug_sequence(
             os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab3_64x48_mirror","augImage_"),

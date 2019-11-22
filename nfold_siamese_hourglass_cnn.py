@@ -27,10 +27,24 @@ import cv2
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
-# Write folded data to disk
-
-# Reads all image files in and splits out into N folds.  Each fold goes into
-# its own folder for later analysis.
+"""
+importFoldSave()
+Reads all image files in using the importRoboticsLabData() function, then splits
+out into N folds.  Each fold goes into its own folder for later analysis.
+INPUTS:
+    N: number of folds to use. Nominally 4
+    saveDir: directory to save folded data to. Nominally "folds".
+        
+RETURNS:
+    x_folds: image for each fold [nfold][nBatch,width,height]
+    y_folds_pmMask: masks for each fold [nfold][nBatch,width,height]
+    id_folds: id string for each fold [nfold][nBatch]. Format is "****_%%%%", 
+        where **** is the temporal frame number and %%%% is the augmentation 
+        index.
+    id_folds_plus: id_folds with an additional "video" index appended 
+        [nfold][nBatch], i.e. "****_%%%%_$$" where **** and %%%% are as above, 
+        and $$ represents the index of the video that each frame came from.
+"""
 def importFoldSave(N, saveDir):
     # Import the augmented robotics lab data sequences
     print("Reading augmented image and mask sequences")
@@ -73,7 +87,25 @@ def importFoldSave(N, saveDir):
     return x_folds, y_folds_pmMask, id_folds, id_folds_plus
 
 
-# Read the images written out by the importFoldSave function above
+# 
+
+"""
+readFoldedImages()
+Read the images written out by the importFoldSave function above from saveDir.
+INPUTS:
+    N: number of folds to use. Nominally 4
+    saveDir: directory to save folded data to. Nominally "folds".
+        
+RETURNS:
+    x_folds: image for each fold [nfold][nBatch,width,height]
+    y_folds_pmMask: masks for each fold [nfold][nBatch,width,height]
+    id_folds: id string for each fold [nfold][nBatch]. Format is "****_%%%%", 
+        where **** is the temporal frame number and %%%% is the augmentation 
+        index.
+    id_folds_plus: id_folds with an additional "video" index appended 
+        [nfold][nBatch], i.e. "****_%%%%_$$" where **** and %%%% are as above, 
+        and $$ represents the index of the video that each frame came from.
+"""
 def readFoldedImages(N,saveDir):
     x_folds = []
     y_folds = []

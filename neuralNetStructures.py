@@ -2,11 +2,8 @@
 """
 FILE: neuralNetStructures.py
 DESCRIPTION:
-    Function for the forward passes of neural networks.  Hourglass networks
-    are the default.
-    Uses tensorflow.  
-    
-    Based on NMIST homework from CS542 at Boston University in Fall 2018
+    Function for the forward passes of hourglass neural networks.
+    Uses tensorflow.
 
 INFO:
     Author: James Dunn, Boston University
@@ -20,16 +17,18 @@ import tensorflow as tf
 import nnUtilities as nnu
 
 """
-Build the hourglass NN template.  This is a 3-hidden layer convolutional neural
-network. It has 2 layers of convolution+pooling, followed by two feed-forward
-(dense) layers.
+Build the hourglass NN template.  This is a 4-hidden layer convolutional neural
+network. It has 2 layers of convolution+pooling, followed by two layers of 
+upconvolution, including a skip connection.  Set up as a tensorflow graph so
+that we can train its weight (w) and bias (b) parameters.
+
 INPUTS:
-    x: input images, [-1,28,28,1] (-1 is for the number of images in the batch)
+    x: input images, [nBatch,width,height,1]
 EXAMPLE:
     heatmap = hourglass_nn(x)
 RETURNS:
-    heatmap: map of pixel values, higher for pixles more likely to be target.
-             Same size as input x.
+    heatmaps: map of pixel values, higher for pixles more likely to be target.
+        Same size as input x.
 """
 def hourglass_nn(x):
     
