@@ -263,6 +263,29 @@ def quadcopterTest(modelPath):
     plt.imshow(joined)
     
     
+# Apply a threshold of 170 and color code true detections and false detections
+def colorCodeTPFNFPTN(heatmap,mask,threshold):
+    
+    # Threshold the heatmap
+    heatmapClass = heatmap >= threshold
+    maskClass = mask > 0
+    
+    # Compare classification of each pixel to the truth mask
+    truePosPixels = np.logical_and(heatmapClass,maskClass);
+    falsePosPixels = np.logical_and(heatmapClass,np.logical_not(maskClass));
+    falseNegPixels = np.logical_and(np.logical_not(heatmapClass),maskClass);
+    trueNegPixels = np.logical_and(np.logical_not(heatmapClass),np.logical_not(maskClass));
+    
+    # Make the heatmap color-coded
+    heatmapColor = np.repeat(heatmap[:,:,np.newaxis],3,axis=2)
+    heatmapColor[truePosPixels] = [255,0,0] # blue
+    heatmapColor[falsePosPixels] = [0,0,255] # red
+    heatmapColor[falseNegPixels] = [0,255,255] # yellow
+    heatmapColor[trueNegPixels] = [0,0,0] # black
+    
+    return heatmapColor
+# end colorCodeTPFNFPTN()
+    
 """
 quadcopterBatchTest()
 DESCRIPTION:
@@ -319,6 +342,7 @@ def quadcopterBatchTest(modelPath,directory='goldenImages',ext='.jpg'):
                         numTimingTrials=1)
                 else:
                     print('Model type not recognized: ' + modelExt)
+                    
                 
                 # Overlay on outline of the heatmap in green onto the image
                 #greenedImage = vu.overlay_heatmap(heatmap,datapoint)
@@ -330,13 +354,21 @@ def quadcopterBatchTest(modelPath,directory='goldenImages',ext='.jpg'):
                 maskCOM = vu.find_centerOfMass(maskpoint)
                 greenedImage = vu.overlay_point(greenedImage,maskCOM,   color='r')
                 
+                # Condition the heatmap nicely for display
+                heatmap = np.squeeze(heatmap[0,:])*255.0
+                heatmap = np.minimum(heatmap,np.ones(heatmap.shape)*255)
+                heatmap = np.maximum(heatmap,np.zeros(heatmap.shape))
+                heatmap = heatmap.astype(np.uint8)                
+                
+                # Apply a threshold of 170 and color code true detections and
+                # false detections
+                heatmapOutArray = colorCodeTPFNFPTN(heatmap,maskpoint,170)
+                heatmapMonochromeArray = np.repeat(heatmap[:,:,np.newaxis],3,axis=2)
+                
                 # Join heatmap and actual image to a single array for output
-                heatmapOutArray = np.squeeze(heatmap[0,:])*255.0
-                heatmapOutArray = np.minimum(heatmapOutArray,np.ones(heatmapOutArray.shape)*255)
-                heatmapOutArray = np.maximum(heatmapOutArray,np.zeros(heatmapOutArray.shape))
-                heatmapOutArray = heatmapOutArray.astype(np.uint8)
-                heatmapOutArray = np.repeat(heatmapOutArray[:,:,np.newaxis],3,axis=2)
-                pair = np.concatenate([greenedImage, heatmapOutArray],axis=0)
+                #pair = np.concatenate([greenedImage, heatmapOutArray],axis=0)
+                image = np.repeat(datapoint[:,:,np.newaxis]*float(255),3,axis=2)
+                pair = np.concatenate([image, heatmapOutArray, heatmapMonochromeArray],axis=0)
                 
                 # Create filmstrip if this is the first image in the folder, 
                 # otherwise tack it on
@@ -344,6 +376,19 @@ def quadcopterBatchTest(modelPath,directory='goldenImages',ext='.jpg'):
                     filmstrip = pair
                 else:
                     filmstrip = np.concatenate([filmstrip,pair],axis=1)
+                    
+                    
+                
+                # Delta for a nice plot of siamese method 0 vs 17
+                # Use only for debugging
+                if False:
+                    if iImage == 0:
+                        heatmap0 = heatmapMonochromeArray
+                    if iImage == 17:
+                        heatmap17 = heatmapMonochromeArray
+                        plt.imshow(heatmap0-heatmap17)
+                        plt.show()
+                    
                     
                 # Increment counter
                 iImage += 1
@@ -356,6 +401,7 @@ def quadcopterBatchTest(modelPath,directory='goldenImages',ext='.jpg'):
     print('Wrote ' + os.path.join('heatmaps','goldenFilmstrip.png'))
     #plt.imshow(filmstrip)
     #plt.show()
+    
             
 # Run with defaults if at highest level
 if __name__ == "__main__":
@@ -368,6 +414,6 @@ if __name__ == "__main__":
     print("\n\n")
     #quadcopterBatchTest(os.path.join('homebrew_hourglass_nn_save','model_at1000.ckpt'))
     #quadcopterBatchTest(os.path.join('homebrew_hourglass_nn_save_GOOD','model_at20000.ckpt'), directory='goldenImages')
-    quadcopterBatchTest(os.path.join('savedNetworks','biasAdd4Folds60k_sW00p80_fold3','model_at60000.ckpt'), directory='goldenImages')
+    quadcopterBatchTest(os.path.join('savedNetworks','biasAdd4Folds60k_sW00p10_fold3','model_at60000.ckpt'), directory='goldenImages')
     
     

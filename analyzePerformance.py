@@ -296,7 +296,7 @@ if __name__ == "__main__":
     
     # Full version (reads all data) (uses final networks)
     #runNFoldPerformanceAnalysis(4, 'folds', os.path.join('savedNetworks','biasAdd4Folds60k_sW00p00_'), modelName = "modelFinal_full")
-    runNFoldPerformanceAnalysis(4, 'folds', os.path.join('savedNetworks','biasAdd4Folds60k_sW00p01_'), modelName = "modelFinal_full")
+    #runNFoldPerformanceAnalysis(4, 'folds', os.path.join('savedNetworks','biasAdd4Folds60k_sW00p01_'), modelName = "modelFinal_full")
     #runNFoldPerformanceAnalysis(4, 'folds', os.path.join('savedNetworks','biasAdd4Folds60k_sW00p05_'), modelName = "modelFinal_full")
     #runNFoldPerformanceAnalysis(4, 'folds', os.path.join('savedNetworks','biasAdd4Folds60k_sW00p10_'), modelName = "modelFinal_full")
     #runNFoldPerformanceAnalysis(4, 'folds', os.path.join('savedNetworks','biasAdd4Folds60k_sW00p20_'), modelName = "modelFinal_full")
@@ -304,32 +304,44 @@ if __name__ == "__main__":
     #runNFoldPerformanceAnalysis(4, 'folds', os.path.join('savedNetworks','biasAdd4Folds60k_sW00p50_'), modelName = "modelFinal_full")
     #runNFoldPerformanceAnalysis(4, 'folds', os.path.join('savedNetworks','biasAdd4Folds60k_sW00p80_'), modelName = "modelFinal_full")
     
-    '''
+    
     # Make a bunch of ROC curves from a list of logs
     logList, labelList, linespecList = [], [], []
-    xlim, ylim = [0,0.25], [0,1]
+    xlim, ylim = [0,0.15], [0,1]
 
     logList.append(os.path.join('savedNetworks','biasAdd4Folds60k_sW00p00__confMatrices.log'))
     labelList.append("no Siamese loss")
     linespecList.append('k')
+
+    logList.append(os.path.join('savedNetworks','biasAdd4Folds60k_sW00p01__confMatrices.log'))
+    labelList.append("Siamese weight = 0.01")
+    linespecList.append('k--')
+
+    #logList.append(os.path.join('savedNetworks','biasAdd4Folds60k_sW00p05__confMatrices.log'))
+    #labelList.append("Siamese weight = 0.05")
+    #linespecList.append('b--')
     
     logList.append(os.path.join('savedNetworks','biasAdd4Folds60k_sW00p10__confMatrices.log'))
     labelList.append("Siamese weight = 0.1")
-    linespecList.append('k--')
+    linespecList.append('b-.')
+
+    #logList.append(os.path.join('savedNetworks','biasAdd4Folds60k_sW00p20__confMatrices.log'))
+    #labelList.append("Siamese weight = 0.2")
+    #linespecList.append('g--')
     
     logList.append(os.path.join('savedNetworks','biasAdd4Folds60k_sW00p30__confMatrices.log'))
     labelList.append("Siamese weight = 0.3")
-    linespecList.append('b--')
+    linespecList.append('g--')
     
-    logList.append(os.path.join('savedNetworks','biasAdd4Folds60k_sW00p50__confMatrices.log'))
-    labelList.append("Siamese weight = 0.5")
-    linespecList.append('c--')
+    #logList.append(os.path.join('savedNetworks','biasAdd4Folds60k_sW00p50__confMatrices.log'))
+    #labelList.append("Siamese weight = 0.5")
+    #linespecList.append('r--')
     
     logList.append(os.path.join('savedNetworks','biasAdd4Folds60k_sW00p80__confMatrices.log'))
     labelList.append("Siamese weight = 0.8")
-    linespecList.append('g--')
+    linespecList.append('y-.')
        
     
     rocCurveComparison(logList, labelList, linespecList, xlim=xlim, ylim=ylim)
-    '''
+    
     
