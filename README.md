@@ -1,19 +1,24 @@
-# quadcopterVision
-# MS ECE Thesis Project code
-# James Dunn, Boston University, 2019-2020
+quadcopterVision
+MS ECE Thesis Project code
+James Dunn, Boston University, 2019-2020
 
 Code for visual detection of quadcopters from video feeds for use in formation control.
 Languages: Python with tensorflow
 
+==================================
+
 DEPENDENCIES:
+
 cv2 (version 4.0.1 recommended, use other versions at your own risk)
 
 tensorflow (version 1.13.1 recommended, use other versions at your own risk)
 
 Most recent versions of : numpy, os, random, copy, matplotlib, datetime, shutil, time, imutils, sys, struct
 
+==================================
 
 DIRECTIONS:
+
 The following directions detail how to get data ready, augment and prepare it for the neural network, train the neural network, and run forward passes of the neural network. These are general directions.  You will probably need to look up some specifics in the code files themselves to run things exactly how you want.
 
 1. Get some background videos in .avi format that represent the typical environment that you will use the quadcopter in. These are NOT provided on the git repo due to size restrictions.
@@ -38,7 +43,10 @@ The following directions detail how to get data ready, augment and prepare it fo
 
 10. You can also run your trained network live on video streamed from a camera with controller.py. For my thesis work, this was done onboard an ODROiD XU4 mounted to a quadcopter, but the code should work with any camera you have connected to whatever computer you are working with.  You can also run on already-captured data by using the "filestream" argument to the run() function in controller.py. Check the example usages at the bottom of controller.py for other ways to use it.
 
+==================================
+
 ABSTRACT
+
 The ability to command a team of quadrotor drones to maintain a formation is an important capability for applications such as area surveillance, search and rescue, agriculture, and reconnaissance.  Of particular interest is operation in environments where radio and/or GPS may be denied or not sufficiently accurate for the desired application.  This is common indoors, in military scenarios due to electronic interference (jamming), and in unmapped or dynamic areas where reliance on existing maps for absolute geolocation is insufficient for relative localization of the quadcopters.  Scenarios where one or more of the quadrotors is non-cooperative, such as a seek-and-destroy type of mission, are also possible when using only visual sensors.
 
 To address these issues, we develop and implement an algorithm that discriminates between quadrotor pixels and non-quadrotor pixels.  We implement the algorithm on a single-board ODROiD XU4 mounted to a quadrotor drone. An standard visual-band webcam is the only sensor used.
