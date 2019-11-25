@@ -1,0 +1,9 @@
+<launch>
+  <?ignore
+    Does the following:
+    1) Start a node commanding the quad to land safely.
+  ?>
+
+  <node pkg="offboard_test" name="LandSafely_Node" type="land_safely.py"/>
+
+</launch>
