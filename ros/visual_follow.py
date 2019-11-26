@@ -20,7 +20,7 @@ global bridge
 global current_pose
 global boxes_msg
 
-# Function to call upon receipt of an image
+# Function to call upon receipt of an image from the image node
 def callback(image_msg):
     global pub_Image
     global pub_BoxesImage
@@ -43,15 +43,13 @@ def callback(image_msg):
     cv_img = bridge.imgmsg_to_cv2(image_msg, desired_encoding="passthrough")
     cv_gray = cv2.cvtColor(cv_img, cv2.COLOR_BGR2GRAY)
     
-    # Resize to appropriate size
+    # Resize to appropriate size for neural network input
     nnFrame = cv2.resize(cv_gray,nnFramesize)
     nnFrame = nnFrame[:,:,0] * float(1.0/255.0)
     nnFrame = np.squeeze(nnFrame)
     
     # Execute a forward pass of the neural network on the frame to get a
     # heatmap of target likelihood
-    # This is now by far the limiting temporal factor - without it the 
-    # framerate is in the 300Hz range, with it framerate is in the 50Hz range.
     tensorflowNet.setInput(nnFrame)
     heatmap = tensorflowNet.forward()
     heatmap = np.squeeze(heatmap)
@@ -95,7 +93,7 @@ def callback(image_msg):
     boxes_img = bridge.cv2_to_imgmsg(imagePlusBox, encoding="bgr8")
     pub_BoxesImage.publish(boxes_img)
     
-    # Publish the centroid box
+    # Publish the centroid box coordinates themselves
     boxes_msg = RegionOfInterest()
     boxes_msg.x_offset = centroid[0]-1
     boxes_msg.y_offset = centroid[1]-1
@@ -104,7 +102,7 @@ def callback(image_msg):
     boxes_msg.do_rectify = False
     pub_Boxes.publish(boxes_msg)
     
-    # Publish the setpoint position
+    # Publish the actual setpoint position
     # Make sure this is nice and smooth and what we want in stationary testing
     # before actually using it as a flight control. Can even have everything but
     # the actual command running without actually flying the quad.
@@ -112,11 +110,14 @@ def callback(image_msg):
         local_position_pub.publish(goal_pose)
             
     
-
+# Update the current pose whenever the topic is written to
 def pos_sub_callback(pose_sub_data):
     global current_pose
     current_pose = pose_sub_data
     
+    
+# Everything in the main function gets executed at startup, and any callbacks
+# from subscribed topics will get called as messages are recieved.
 def main():
     global pub_Image
     global pub_BoxesImage
@@ -128,6 +129,7 @@ def main():
     global local_position_pub
     global goal_pose
 
+    # Hostname is (for example) "quad_delorian"
     hostname = socket.gethostname()
 
     # Create a node
