@@ -27,16 +27,16 @@ def pos_sub_callback(pose_sub_data):
     local_position_pub.publish(goal_pose)
     
 def main():
-    global current_pose
     global local_position_pub
     global goal_pose
+    global current_pose
 
-    hostname = socket.gethostname()
+    hostname = socket.gethostname() # name of the quad (i.e. "quad_delorian")
 
     # Create a node
     rospy.init_node(hostname+'_land_safely', anonymous='True')
     
-    # Create publishers and subscribers
+    # Subscribe to the pose and publish to the setpoint position
     local_position_subscribe = rospy.Subscriber(hostname+'/mavros/mocap/pose', PoseStamped, pos_sub_callback)
     local_position_pub = rospy.Publisher(hostname+'/mavros/setpoint_position/local', PoseStamped, queue_size = 1)
     
