@@ -86,9 +86,10 @@ def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
         if not os.path.exists(folder):
             os.mkdir(folder)
             
-    # Initialize COM history vectors
+    # Initialize COM and size history vectors
     history_rawCOM = np.array([[],[]])
     history_kalmanCOM = np.array([[],[]])
+    history_area = []
         
     # Initialize the video stream from the camera
     if filestream == None:
@@ -177,6 +178,12 @@ def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
             #print(np.min(heatmap), np.max(heatmap))
             overlaidNN = vu.overlay_heatmap(heatmap, nnFrame, heatThreshold=0.75, scale=scale)
             heatmap = heatmap*255.0 # scale appropriately
+            
+            # Calculate the estimated size of the quadcopter as the area of the
+            # thresholded region
+            areaFrac = np.sum(heatmap > 255.0*heatmapThresh)/(heatmap.shape[0]*heatmap.shape[1])
+            history_area.append(areaFrac)
+            
             
             # Find the center of mass for this frame
             heatmapCOM = vu.find_centerOfMass(heatmap, minThresh=heatmapThresh*255)
@@ -326,6 +333,17 @@ def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
         print("Wrote snail trail to snailTrail.png")
         plt.show()
         #print(history_rawCOM.shape)
+        
+        # Make a final display of the quadcopter area through time
+        plt.plot(np.arange(len(history_area)), history_area, 'k+', markersize=4, label="raw")
+        plt.xlim([0,len(history_area)])
+        plt.ylim([0.1,0.4])
+        plt.xlabel('Frame number')
+        plt.ylabel('Fractional area')
+        plt.title('Measured Quadcopter size vs time')
+        plt.savefig("areaVsTime.png")
+        print("Wrote area vs time plot to areaVsTime.png")
+        plt.show()
     
     # end if runAlgorithm
             
@@ -345,7 +363,7 @@ if __name__ == "__main__":
     #   save=True, liveFeed=True, showHeatmap=True, USE_KALMAN=True, filestream=imgBase)
     #run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_mirror_60k_sW00p50_1M00p00_2M00p00_49k'),
     #    save=True, liveFeed=True, showHeatmap=True, USE_KALMAN=True, filestream=imgBase, heatmapThresh=0.5)
-    run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_biasAdd_sW00p50_fold3'),
+    run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_biasAdd_sW00p00_fold3'),
         save=True, liveFeed=True, showHeatmap=True, USE_KALMAN=True, filestream=imgBase, heatmapThresh=0.5)
 
     # Run from a live camera stream
