@@ -20,6 +20,7 @@ import videoUtilities as vu
 import shutil
 from datetime import datetime
 import kalman
+import kalman1D
 import matplotlib.pyplot as plt
 
 # Load webcam_utils if running on platform that supports it (ODROiD), otherwise
@@ -90,6 +91,7 @@ def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
     history_rawCOM = np.array([[],[]])
     history_kalmanCOM = np.array([[],[]])
     history_area = []
+    history_kalmanArea = []
         
     # Initialize the video stream from the camera
     if filestream == None:
@@ -144,6 +146,8 @@ def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
                     0,0,                                   # vx, vy
                     nnFrame.shape[0]/2,nnFrame.shape[1]/2, # sigX, sigY
                     0,0)                                   # sigVX, sigVY
+                kalmanFilterArea = kalman1D.kalman_filter(
+                    600, 0.0, 1000, 0.0001) # x,vx, sigX, sigVX
                 # Initialize useful arrays for later
                 allZeros = np.zeros_like(nnFrame)
                 all255  = np.ones_like(nnFrame)*255
@@ -181,8 +185,8 @@ def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
             
             # Calculate the estimated size of the quadcopter as the area of the
             # thresholded region
-            areaFrac = np.sum(heatmap > 255.0*heatmapThresh)/(heatmap.shape[0]*heatmap.shape[1])
-            history_area.append(areaFrac)
+            area = np.sum(heatmap > 255.0*heatmapThresh)
+            history_area.append(area)
             
             
             # Find the center of mass for this frame
@@ -194,11 +198,13 @@ def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
                 heatmapCOM = [heatmap.shape[0]/2,heatmap.shape[1]/2] # default to center of image
             print("Frame %04d" % i) 
             print("    Pre-kalman:  %02d, %02d" % (heatmapCOM[0], heatmapCOM[1]))
+            print("    Pre-kalman area:  %g" % area)
             history_rawCOM = np.append(history_rawCOM,np.expand_dims(heatmapCOM,1),axis=1)
             
             # Apply Kalman filter to the COM centroid measurement if desired
             if USE_KALMAN:
                 kalmanFilter.project((curr_time-prev_time).total_seconds())
+                kalmanFilterArea.project((curr_time-prev_time).total_seconds())
                 
                 # Only update the kalman filter when we actually detect the target
                 if targetVisible:
@@ -219,16 +225,26 @@ def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
                     
                     # Update the kalman filter with the measured COM and measurement error
                     kalmanFilter.update(heatmapCOM, [[sigX, 0],[0, sigY]])
+                                        
+                    # Update the kalman filter with the measured area
+                    sigArea = 40.0 / (heatmapMeanEnergy + 0.0001)
+                    kalmanFilterArea.update(area, sigArea)
+                    print("    sigArea = %g" % sigArea)
                 
                 # Pull the COM from the kalman vector state
                 heatmapCOM = kalmanFilter.stateVector[:2]
+                areaFrac = kalmanFilterArea.stateVector[0]
+                areaRate = kalmanFilterArea.stateVector[1]
             # endif USE_KALMAN
             
             # Overlay the target location
             overlaidNN = vu.overlay_point(overlaidNN,heatmapCOM,color='g')
             print("    Post-kalman: %02d, %02d" % (heatmapCOM[0], heatmapCOM[1]))
+            print("    Post-kalman area: %f" % areaFrac)
+            print("    Post-kalman area rate: %f" % areaRate)
             print('')
             history_kalmanCOM = np.append(history_kalmanCOM,np.expand_dims(heatmapCOM,1),axis=1)
+            history_kalmanArea.append(areaFrac)
             
             if showHeatmap:
                 # Display the heatmap and the image side-by-side
@@ -335,12 +351,15 @@ def run(modelPath, nnFramesize=(64,48), save=False, folder='webcam',
         #print(history_rawCOM.shape)
         
         # Make a final display of the quadcopter area through time
-        plt.plot(np.arange(len(history_area)), history_area, 'k+', markersize=4, label="raw")
+        totalArea = heatmap.shape[0]*heatmap.shape[1]
+        plt.plot(np.arange(len(history_area)), np.array(history_area)/totalArea, 'k+', markersize=4, label="raw")
+        plt.plot(np.arange(len(history_area)), np.array(history_kalmanArea)/totalArea, 'g', markersize=3, label="Kalman filtered")
         plt.xlim([0,len(history_area)])
         plt.ylim([0.1,0.4])
         plt.xlabel('Frame number')
-        plt.ylabel('Fractional area')
+        plt.ylabel('Fractional Area')
         plt.title('Measured Quadcopter size vs time')
+        plt.legend()
         plt.savefig("areaVsTime.png")
         print("Wrote area vs time plot to areaVsTime.png")
         plt.show()
@@ -363,7 +382,7 @@ if __name__ == "__main__":
     #   save=True, liveFeed=True, showHeatmap=True, USE_KALMAN=True, filestream=imgBase)
     #run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_mirror_60k_sW00p50_1M00p00_2M00p00_49k'),
     #    save=True, liveFeed=True, showHeatmap=True, USE_KALMAN=True, filestream=imgBase, heatmapThresh=0.5)
-    run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_biasAdd_sW00p00_fold3'),
+    run(os.path.join('homebrew_hourglass_nn_save_GOOD','modelFinal_full_biasAdd_sW00p10_fold3'),
         save=True, liveFeed=True, showHeatmap=True, USE_KALMAN=True, filestream=imgBase, heatmapThresh=0.5)
 
     # Run from a live camera stream
