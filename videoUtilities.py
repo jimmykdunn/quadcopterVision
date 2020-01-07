@@ -1252,45 +1252,45 @@ if __name__ == "__main__":
          
     # Continuous regular-sized injections
     augment_continuous_sequence(
-         os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab1","frame_"),
-         os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab1","mask_"),
-         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48_mirror"),
-         iStart=175, iEnd=637, outShape=[48,64])
+         os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab1_noHand","frame_"),
+         os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab1_noHand","mask_"),
+         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab1_96x72_mirror_noHand"),
+         iStart=175, iEnd=637, outShape=[72,96])
     augment_continuous_sequence(
-         os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab2","frame_"),
-         os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab2","mask_"),
-         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab2_64x48_mirror"),
-         iStart=175, iEnd=637, outShape=[48,64])
+         os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab2_noHand","frame_"),
+         os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab2_noHand","mask_"),
+         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab2_96x72_mirror_noHand"),
+         iStart=175, iEnd=637, outShape=[72,96])
     augment_continuous_sequence(
-         os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab3","frame_"),
-         os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab3","mask_"),
-         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab3_64x48_mirror"),
-         iStart=175, iEnd=637, outShape=[48,64])
+         os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab3_noHand","frame_"),
+         os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab3_noHand","mask_"),
+         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab3_96x72_mirror_noHand"),
+         iStart=175, iEnd=637, outShape=[72,96])
     augment_continuous_sequence(
-         os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab4","frame_"),
-         os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab4","mask_"),
-         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab4_64x48_mirror"),
-         iStart=175, iEnd=435, outShape=[48,64])
+         os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab4_noHand","frame_"),
+         os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab4_noHand","mask_"),
+         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab4_96x72_mirror_noHand"),
+         iStart=175, iEnd=435, outShape=[72,96])
     
     # Continuous baby injections
     augment_continuous_sequence(
-         os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab1_baby","frame_"),
-         os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab1_baby","mask_"),
-         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab1_64x48_baby_mirror"),
-         iStart=175, iEnd=637, outShape=[48,64])
+         os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab1_baby_noHand","frame_"),
+         os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab1_baby_noHand","mask_"),
+         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab1_96x72_baby_mirror_noHand"),
+         iStart=175, iEnd=637, outShape=[72,96])
     augment_continuous_sequence(
-         os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab2_baby","frame_"),
-         os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab2_baby","mask_"),
-         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab2_64x48_baby_mirror"),
-         iStart=175, iEnd=637, outShape=[48,64])
+         os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab2_baby_noHand","frame_"),
+         os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab2_baby_noHand","mask_"),
+         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab2_96x72_baby_mirror_noHand"),
+         iStart=175, iEnd=637, outShape=[72,96])
     augment_continuous_sequence(
-         os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab3_baby","frame_"),
-         os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab3_baby","mask_"),
-         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab3_64x48_baby_mirror"),
-         iStart=175, iEnd=637, outShape=[48,64])
+         os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab3_baby_noHand","frame_"),
+         os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab3_baby_noHand","mask_"),
+         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab3_96x72_baby_mirror_noHand"),
+         iStart=175, iEnd=637, outShape=[72,96])
     augment_continuous_sequence(
-         os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab4_baby","frame_"),
-         os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab4_baby","mask_"),
-         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab4_64x48_baby_mirror"),
-         iStart=175, iEnd=435, outShape=[48,64])
+         os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab4_baby_noHand","frame_"),
+         os.path.join("sequences","defaultGreenscreenVideo_over_roboticsLab4_baby_noHand","mask_"),
+         os.path.join("augmentedContinuousSequences","defaultGreenscreenVideo_over_roboticsLab4_96x72_baby_mirror_noHand"),
+         iStart=175, iEnd=435, outShape=[72,96])
          

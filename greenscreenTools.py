@@ -33,6 +33,10 @@ def injectBackground(greenImage, background, shift=[0,0]):
     # Find background pixels with findGreenscreen.py. Use default parameters.
     greenMask = findGreenscreen(greenImage)
     
+    # Find skin pixels (from handheld quad in video)
+    skinMask = skinDetect(greenImage) > 0
+    greenMask = np.logical_or(greenMask, skinMask) # mask out skin pixels and green pixels
+    
     # Change the size of the greenscreened frame (for example, by 
     # zooming in or simply zeropadding) so that it matches the size of 
     # the background video.
@@ -87,6 +91,26 @@ def findGreenscreen(greenImageIn, screenColorHSV=[41,63,138], colorVariance=30.0
     
     return greenMask
 
+
+# skinDetect function adapted from CS640 lab held on March 29, 2019
+# Function that detects whether a pixel belongs to the skin based on RGB values
+# src - the source color image
+# dst - the destination grayscale image where skin pixels are colored white and the rest are colored black
+def skinDetect(src):
+    # Surveys of skin color modeling and detection techniques:
+    # 1. Vezhnevets, Vladimir, Vassili Sazonov, and Alla Andreeva. "A survey on pixel-based skin color detection techniques." Proc. Graphicon. Vol. 3. 2003.
+    # 2. Kakumanu, Praveen, Sokratis Makrogiannis, and Nikolaos Bourbakis. "A survey of skin-color modeling and detection methods." Pattern recognition 40.3 (2007): 1106-1122.
+                
+    # Fast array-based way
+    dst = np.zeros((src.shape[0], src.shape[1], 1), dtype = "uint8")
+    b = src[:,:,0]
+    g = src[:,:,1]
+    r = src[:,:,2]
+    dst = (r>95) * (g>40) * (b>20) * (r>g) * (r>b) * (abs(r-g) > 15) * \
+        ((np.amax(src,axis=2)-np.amin(src,axis=2)) > 15)
+        
+                
+    return dst.astype(np.uint8)
 
 """
 FUNCTION: smartSizeMatch

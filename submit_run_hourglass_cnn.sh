@@ -6,7 +6,7 @@
 #$ -l h_rt=120:00:00
 #
 ## Give the job a name.
-#$ -N hCB3_2
+#$ -N hNoHND_5_3
 #
 ## Redirect error output to standard output
 #$ -j y
@@ -15,7 +15,7 @@
 #$ -P semslam
 #
 ## Select a skylake processor architecture (tensorflow training runs maybe 4x faster on these for some reason)
-#$ -l cpu_arch=skylake
+##$ -l cpu_arch=skylake
 
 
 source ~/thesis/quadcopterVision/loadModules.sh
@@ -25,5 +25,22 @@ cd /usr3/graduate/jkdunn/thesis/quadcopterVision/
 
 # argument list: siamese weight, 1st moment weight, 2nd moment weight, graph save location
 #python run_siamese_hourglass_cnn.py 0.50 0.00 0.00 noiseFix60k_sW00p50
-python nfold_siamese_hourglass_cnn.py 0.2 0.00 0.00 biasAdd4Folds60k_sW00p20 3
+
+#python nfold_siamese_hourglass_cnn.py 0.1 0.00 0.00 biasAdd4Folds60k96x72noHand_sW00p10 0
+#python nfold_siamese_hourglass_cnn.py 0.1 0.00 0.00 biasAdd4Folds60k96x72noHand_sW00p10 1
+#python nfold_siamese_hourglass_cnn.py 0.1 0.00 0.00 biasAdd4Folds60k96x72noHand_sW00p10 2
+#python nfold_siamese_hourglass_cnn.py 0.1 0.00 0.00 biasAdd4Folds60k96x72noHand_sW00p10 3
+#python nfold_siamese_hourglass_cnn.py 0.0 0.00 0.00 biasAdd4Folds60k96x72noHand_sW00p00 0
+#python nfold_siamese_hourglass_cnn.py 0.0 0.00 0.00 biasAdd4Folds60k96x72noHand_sW00p00 1
+#python nfold_siamese_hourglass_cnn.py 0.0 0.00 0.00 biasAdd4Folds60k96x72noHand_sW00p00 2
+#python nfold_siamese_hourglass_cnn.py 0.0 0.00 0.00 biasAdd4Folds60k96x72noHand_sW00p00 3
+#python nfold_siamese_hourglass_cnn.py 0.2 0.00 0.00 biasAdd4Folds60k96x72noHand_sW00p20 0
+#python nfold_siamese_hourglass_cnn.py 0.2 0.00 0.00 biasAdd4Folds60k96x72noHand_sW00p20 1
+#python nfold_siamese_hourglass_cnn.py 0.2 0.00 0.00 biasAdd4Folds60k96x72noHand_sW00p20 2
+#python nfold_siamese_hourglass_cnn.py 0.2 0.00 0.00 biasAdd4Folds60k96x72noHand_sW00p20 3
+#python nfold_siamese_hourglass_cnn.py 0.05 0.00 0.00 biasAdd4Folds60k96x72noHand_sW00p05 0
+#python nfold_siamese_hourglass_cnn.py 0.05 0.00 0.00 biasAdd4Folds60k96x72noHand_sW00p05 1
+#python nfold_siamese_hourglass_cnn.py 0.05 0.00 0.00 biasAdd4Folds60k96x72noHand_sW00p05 2
+python nfold_siamese_hourglass_cnn.py 0.05 0.00 0.00 biasAdd4Folds60k96x72noHand_sW00p05 3
+
 #python analyzePerformance.py

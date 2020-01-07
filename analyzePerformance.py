@@ -380,12 +380,14 @@ if __name__ == "__main__":
     #runNFoldPerformanceAnalysis(4, 'folds', os.path.join('savedNetworks','biasAdd4Folds60k_sW00p30_'), modelName = "modelFinal_full")
     #runNFoldPerformanceAnalysis(4, 'folds', os.path.join('savedNetworks','biasAdd4Folds60k_sW00p50_'), modelName = "modelFinal_full")
     #runNFoldPerformanceAnalysis(4, 'folds', os.path.join('savedNetworks','biasAdd4Folds60k_sW00p80_'), modelName = "modelFinal_full")
+    #runNFoldPerformanceAnalysis(4, 'folds_96x72_noHand', os.path.join('savedNetworks','biasAdd4Folds60k96x72noHand_sW00p10_'), modelName = "modelFinal_full")
+    runNFoldPerformanceAnalysis(4, 'folds_96x72_noHand', os.path.join('savedNetworks','biasAdd4Folds60k96x72noHand_sW00p00_'), modelName = "modelFinal_full")
     
     
     # Make a bunch of ROC curves from a list of logs
     logList, labelList, linespecList = [], [], []
     xlim, ylim = [0,0.15], [0,1]
-
+'''
     logList.append(os.path.join('savedNetworks','biasAdd4Folds60k_sW00p00__confMatrices.log'))
     labelList.append("no Siamese loss")
     linespecList.append('k')
@@ -420,5 +422,5 @@ if __name__ == "__main__":
        
     
     rocCurveComparison(logList, labelList, linespecList, xlim=xlim, ylim=ylim)
-    
+'''    
     

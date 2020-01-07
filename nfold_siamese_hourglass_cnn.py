@@ -54,7 +54,7 @@ def importFoldSave(N, saveDir):
     # Split into train and test sets randomly
     print("Splitting into training and test sets randomly")
     x_folds, y_folds, id_folds, id_folds_plus = \
-        vu.nFolding(NFolds, x_all, y_all, id_all, id_all_plus)
+        vu.nFolding(N, x_all, y_all, id_all, id_all_plus)
         
     # Save each fold of images to file
     for fold in range(N):
@@ -203,7 +203,9 @@ if __name__ == "__main__":
     nEpochs = 60000
     batchSize = 512
     redoFolds = False # true to refold data
-    saveDir = "folds" # directory to save folded data into
+    #saveDir = "folds" # directory to save folded data into
+    #saveDir = "folds_96x72" # directory to save folded data into
+    saveDir = "folds_96x72_noHand" # directory to save folded data into
     
     if redoFolds:
         # Read in data, fold, and save to file
