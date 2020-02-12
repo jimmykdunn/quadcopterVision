@@ -374,7 +374,8 @@ def quadcopterBatchTest(modelPath,directory='goldenImages',ext='.jpg'):
                 
                 # Apply a threshold of 170 and color code true detections and
                 # false detections
-                heatmapOutArray = colorCodeTPFNFPTN(heatmap,maskpoint,170)
+                #heatmapOutArray = colorCodeTPFNFPTN(heatmap,maskpoint,170)
+                heatmapOutArray = colorCodeTPFNFPTN(heatmap,maskpoint,217)
                 heatmapMonochromeArray = np.repeat(heatmap[:,:,np.newaxis],3,axis=2)
                 
                 # Join heatmap and actual image to a single array for output
@@ -427,6 +428,6 @@ if __name__ == "__main__":
     #quadcopterBatchTest(os.path.join('homebrew_hourglass_nn_save','model_at1000.ckpt'))
     #quadcopterBatchTest(os.path.join('homebrew_hourglass_nn_save_GOOD','model_at20000.ckpt'), directory='goldenImages')
     #quadcopterBatchTest(os.path.join('savedNetworks','biasAdd4Folds60k_sW00p10_fold3','model_at60000.ckpt'), directory='goldenImages')
-    quadcopterBatchTest(os.path.join('savedNetworks','biasAdd4Folds60k96x72noHand_sW00p10_fold0','model_at60000.ckpt'), directory='goldenImages_96x72')
+    quadcopterBatchTest(os.path.join('savedNetworks','biasAdd4Folds60k96x72noHand_sW00p00_fold0','model_at60000.ckpt'), directory='goldenImages_96x72_noHand')
     
     

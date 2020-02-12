@@ -1,9 +1,9 @@
 #! /bin/bash -l
 # The -l specifies that we are loading modules
-#$ -pe omp 8 # using 16 processors. Available options are : 8 12 16 64
+#$ -pe omp 2 # using 16 processors. Available options are : 8 12 16 64
 #
 ## Walltime limit
-#$ -l h_rt=120:00:00
+#$ -l h_rt=96:00:00
 #
 ## Give the job a name.
 #$ -N hNoHND_5_3
@@ -15,7 +15,7 @@
 #$ -P semslam
 #
 ## Select a skylake processor architecture (tensorflow training runs maybe 4x faster on these for some reason)
-##$ -l cpu_arch=skylake
+#$ -l cpu_arch=skylake
 
 
 source ~/thesis/quadcopterVision/loadModules.sh
@@ -42,5 +42,13 @@ cd /usr3/graduate/jkdunn/thesis/quadcopterVision/
 #python nfold_siamese_hourglass_cnn.py 0.05 0.00 0.00 biasAdd4Folds60k96x72noHand_sW00p05 1
 #python nfold_siamese_hourglass_cnn.py 0.05 0.00 0.00 biasAdd4Folds60k96x72noHand_sW00p05 2
 python nfold_siamese_hourglass_cnn.py 0.05 0.00 0.00 biasAdd4Folds60k96x72noHand_sW00p05 3
+#python nfold_siamese_hourglass_cnn.py 0.01 0.00 0.00 biasAdd4Folds60k96x72noHand_sW00p01 0
+#python nfold_siamese_hourglass_cnn.py 0.01 0.00 0.00 biasAdd4Folds60k96x72noHand_sW00p01 1
+#python nfold_siamese_hourglass_cnn.py 0.01 0.00 0.00 biasAdd4Folds60k96x72noHand_sW00p01 2
+#python nfold_siamese_hourglass_cnn.py 0.01 0.00 0.00 biasAdd4Folds60k96x72noHand_sW00p01 3
+#python nfold_siamese_hourglass_cnn.py 0.5 0.00 0.00 biasAdd4Folds60k96x72noHand_sW00p50 0
+#python nfold_siamese_hourglass_cnn.py 0.5 0.00 0.00 biasAdd4Folds60k96x72noHand_sW00p50 1
+#python nfold_siamese_hourglass_cnn.py 0.5 0.00 0.00 biasAdd4Folds60k96x72noHand_sW00p50 2
+#python nfold_siamese_hourglass_cnn.py 0.5 0.00 0.00 biasAdd4Folds60k96x72noHand_sW00p50 3
 
 #python analyzePerformance.py
