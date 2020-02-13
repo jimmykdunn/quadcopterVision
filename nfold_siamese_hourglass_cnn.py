@@ -188,6 +188,11 @@ if __name__ == "__main__":
     else:
         foldsToRun = [int(sys.argv[5])] # run just this fold
         
+    if len(sys.argv) < 7:
+        siameseOffset = 1 # default
+    else:
+        siameseOffset = int(sys.argv[6]) # use the designated siamese offset # number of frames apart to compare for Siamese loss
+        
         
     print("siameseWeight = %g" % siameseWeight)
     print("firstMomentWeight = %g" % firstMomentWeight)
@@ -265,7 +270,7 @@ if __name__ == "__main__":
         for i in range(len(id_train_plus)):
             # Search thru all images - simaese match may not be in same set
             pairedImage, pairedMask, pairedIndexString = vu.find_siamese_match(
-                id_train_plus[i], x_all, y_all_pmMask, id_all, id_all_plus, randomSign=True)
+                id_train_plus[i], x_all, y_all_pmMask, id_all, id_all_plus, randomSign=True, offset=siameseOffset)
             if pairedIndexString != "****_****": # if there is a siamese match
                 x_trainA[numFound,:,:] = x_train[i,:,:]
                 y_train_pmMaskA[numFound,:,:] = y_train_pmMask[i,:,:]
@@ -288,7 +293,7 @@ if __name__ == "__main__":
         for i in range(len(id_test_plus)):
             # Search thru all images - simaese match may not be in same set
             pairedImage, pairedMask, pairedIndexString = vu.find_siamese_match(
-                id_test_plus[i], x_all, y_all_pmMask, id_all, id_all_plus)
+                id_test_plus[i], x_all, y_all_pmMask, id_all, id_all_plus, offset=siameseOffset)
             if pairedIndexString != "****_****": # if there is a siamese match
                 x_testA[numFound,:,:] = x_test[i,:,:]
                 y_test_pmMaskA[numFound,:,:] = y_test_pmMask[i,:,:]
