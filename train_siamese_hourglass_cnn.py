@@ -62,14 +62,18 @@ def train_siamese_hourglass_cnn(trainImagesA, trainMasksA, testImagesA, testMask
                                trainImagesB, trainMasksB, testImagesB, testMasksB, \
     nEpochs=100, batchSize=100, checkpointSaveDir='./hourglass_nn_save', \
     saveEveryNEpochs=500, peekEveryNEpochs=50, siameseWeight = 1.0,
-    firstMomentWeight = 1.0, secondMomentWeight = 1.0):
+    firstMomentWeight = 1.0, secondMomentWeight = 1.0, continuePrevious=True):
     
     print("BEGIN SIAMESE HOURGLASS NN TRAINING")
     
     # Clear checkpoint files to get a clean training run each time
-    if os.path.exists(checkpointSaveDir): # only rm if it exists
-        shutil.rmtree(checkpointSaveDir, ignore_errors=True)   
+    if os.path.exists(checkpointSaveDir): 
+        if continuePrevious: # continue training from previously saved network
+            pass
+        else: # remove existing saves
+            shutil.rmtree(checkpointSaveDir, ignore_errors=True) 
     else:
+        continuePrevious = False
         os.mkdir(checkpointSaveDir)
         
     # Image sizes
@@ -175,14 +179,39 @@ def train_siamese_hourglass_cnn(trainImagesA, trainMasksA, testImagesA, testMask
     
     # Actually execute the training using the CNN template we just built
     with tf.Session() as sess:
+    
         # Initialize all variables
         sess.run(tf.global_variables_initializer())
+        
+        # Load earlier session if we are continuing from a previous one
+        if continuePrevious: # continue training from previously saved network
+            # Determine the latest epoch saved in checkpointSaveDir
+            files = os.listdir(checkpointSaveDir)
+            lastEpoch = 0
+            for cFile in files:
+                if cFile[:8] == 'model_at':
+                    dotPos = cFile.find('.')
+                    epochNum = int(cFile[8:dotPos])
+                    if epochNum > lastEpoch:
+                        lastEpoch = epochNum
+            
+            # Restore it
+            checkpointSaveFile = checkpointSaveDir + "/model_at" + str(lastEpoch) + ".ckpt"
+            print("Restoring graph from %s and continuing training" % checkpointSaveFile)
+            saver.restore(sess,checkpointSaveFile)
+            print("Successfully restored saved session")
+            nEpochs -= lastEpoch
+            epochsToRun = np.arange(nEpochs) + lastEpoch
+        else:
+            epochsToRun = np.arange(nEpochs)
+    
         
         # Loop over every epoch
         peekSchedule = []
         trainGainHistory = []
         testGainHistory = []
-        for epoch in range(nEpochs): 
+        for epoch in epochsToRun: 
+        #for epoch in range(nEpochs): 
             # Extract data for this batch
             batchA = nnu.extractBatch(batchSize, trainImagesA, trainMasksA, epoch)
             batchB = nnu.extractBatch(batchSize, trainImagesB, trainMasksB, epoch)
@@ -244,7 +273,8 @@ def train_siamese_hourglass_cnn(trainImagesA, trainMasksA, testImagesA, testMask
     
             # Save the model weights (and everything else) every 
             # saveEveryNEpochs epochs, but always save at the end.
-            if epoch % saveEveryNEpochs == (saveEveryNEpochs-1) or epoch == (nEpochs-1):
+            #if epoch % saveEveryNEpochs == (saveEveryNEpochs-1) or epoch == (nEpochs-1):
+            if epoch % saveEveryNEpochs == (saveEveryNEpochs-1) or epoch == (nEpochs-1) or epoch == epochsToRun[0]:
                 save_path = saver.save(sess, checkpointSaveDir + "/model_at" + str(epoch+1) + ".ckpt")
                 print("    Checkpoint saved to: %s" % save_path)
                 

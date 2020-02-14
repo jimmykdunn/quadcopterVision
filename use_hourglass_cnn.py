@@ -428,6 +428,6 @@ if __name__ == "__main__":
     #quadcopterBatchTest(os.path.join('homebrew_hourglass_nn_save','model_at1000.ckpt'))
     #quadcopterBatchTest(os.path.join('homebrew_hourglass_nn_save_GOOD','model_at20000.ckpt'), directory='goldenImages')
     #quadcopterBatchTest(os.path.join('savedNetworks','biasAdd4Folds60k_sW00p10_fold3','model_at60000.ckpt'), directory='goldenImages')
-    quadcopterBatchTest(os.path.join('savedNetworks','biasAdd4Folds60k96x72noHandSOff3_sW00p10_fold2','model_at15000.ckpt'), directory='goldenImages_96x72_noHand')
+    quadcopterBatchTest(os.path.join('savedNetworks','biasAdd4Folds60k96x72noHand_sW00p20_fold0','model_at28002.ckpt'), directory='goldenImages_96x72_noHand')
     
     
