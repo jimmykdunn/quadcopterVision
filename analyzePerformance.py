@@ -275,6 +275,43 @@ def drawROCCurve(tpByThreshold, fnByThreshold, fpByThreshold, tnByThreshold,
     plt.xlim(xlim)
     plt.ylim(ylim)
 # end drawROCCurve  
+
+    
+"""
+drawPRCurve()
+    Plots the precision/recall curve for the input arrays of confusion matrices.
+INPUTS:
+    tpByThreshold: array of true positive counts by detection threshold
+    fnByThreshold: array of false negative counts by detection threshold
+    fpByThreshold: array of false positive counts by detection threshold
+    tnByThreshold: array of true negative counts by detection threshold
+OPTIONAL INPUTS:
+    linespec: linespec argument to forward to matplotlib.pyplot.plot
+    labelStr: legend label to forward to matplotlib.pyplot.plot
+    xlim: horizontal plot range to forward to matplotlib.pyplot.xlim
+    ylim: vertical plot range to forward to matplotlib.pyplot.ylim
+OUTPUTS:
+    Displays precision/recall curve plot
+"""
+def drawPRCurve(tpByThreshold, fnByThreshold, fpByThreshold, tnByThreshold, 
+    linespec='', labelStr='', xlim=[0,1], ylim=[0,1]):
+    
+    # Precision: fraction of pixels called quadcopter that actually are
+    # quadcopter
+    precision = tpByThreshold/(tpByThreshold+fpByThreshold)
+    #print(tpByThreshold)
+    #print(fpByThreshold)
+    #print(fnByThreshold)
+    
+    # Recall: fraction of quadcopter pixels that we detect
+    recall = tpByThreshold/(tpByThreshold+fnByThreshold)
+    
+    plt.plot(recall,precision,linespec,label=labelStr)
+    plt.xlabel("Recall")
+    plt.ylabel("Precision")
+    plt.xlim(xlim)
+    plt.ylim(ylim)
+# end drawPRCurve  
     
     
     
@@ -316,6 +353,45 @@ def rocCurveComparison(logList, labelList, linespecList, xlim=[0,1], ylim=[0,1])
     rocCurveSaveFile = "allRocCurves.png"
     plt.savefig(rocCurveSaveFile)
     print("ROC curve plot saved to " + rocCurveSaveFile)
+# end rocCurveComparision
+
+"""
+precisionRecallComparison()
+    Plots a nicely-formatted set of precison-recall curves using the input list 
+    of logfiles containing confusion matrices.  Ideal for comparison of 
+    algorithms in loglist.
+INPUTS:
+    logList: list of log file locations that contain confusion matrices. The log
+        files are assumed to be the stdout output from 
+        runNFoldPerformanceAnalysis().
+    labelList: legend labels for each log in logList
+    linspecList: linespecs to pass to matplotlib.pyplot.plot for each log in 
+        logList
+OPTIONAL INPUTS:
+    xlim: horizontal plot range to forward to matplotlib.pyplot.xlim
+    ylim: vertical plot range to forward to matplotlib.pyplot.ylim
+OUTPUTS:
+    Saves P/R curves plot to "allPRCurves.png" in the directory it is called from.
+"""
+# Make a nice plot for the report of two ROC curves for comparison
+def precisionRecallComparison(logList, labelList, linespecList, xlim=[0,1], ylim=[0,1]):
+
+    # Loop over each log in the list
+    for log, label, linespec in zip(logList,labelList,linespecList):
+        confMatrices = confMatrixCountsFromLog(log)
+        tpByThreshold = np.array([matrix[0] for matrix in confMatrices])
+        fnByThreshold = np.array([matrix[1] for matrix in confMatrices])
+        fpByThreshold = np.array([matrix[2] for matrix in confMatrices])
+        tnByThreshold = np.array([matrix[3] for matrix in confMatrices])
+        
+        # Plot the PR curve using the confusion matrix data
+        drawPRCurve(tpByThreshold, fnByThreshold, fpByThreshold, tnByThreshold, 
+            linespec=linespec,labelStr=label, xlim=xlim, ylim=ylim)
+    
+    plt.legend()
+    prCurveSaveFile = "allPRCurves.png"
+    plt.savefig(prCurveSaveFile)
+    print("Precision/recall curve plot saved to " + prCurveSaveFile)
 # end rocCurveComparision
 
    
@@ -360,6 +436,54 @@ def confMatricesFromLog(logfile):
     return confMatrices
 # end confMatricesFromLog
 
+"""
+confMatrixCountsFromLog()
+    Extracts the confusion matrix counts from a logfile that is assumed to have the 
+    format of the stdout of a run of runNFoldPerformanceAnalysis().
+INPUTS:
+    logList: log file location that contains confusion matrices. The log file is
+        assumed to be the stdout output from runNFoldPerformanceAnalysis.
+RETURNS:
+    List of confusion matrices (in counts) in the format [[tp,fn,fp,tn]]
+"""
+def confMatrixCountsFromLog(logfile):
+    # Start with the ubiquitious "just call everything target" matrix
+    confMatrices = [[100,0,100,0]]
+
+    # Read in the log containing all the confusion matrices
+    with open(logfile) as f:
+        lines = list(f)
+    
+    # Loop over lines to extract 
+    pullNextMatrix = False
+    firstMatrix = True
+    for line in lines:
+        if "Confusion matrix (pixel counts)" in line:
+            pullNextMatrix = True
+            confMatrix = np.zeros(4)
+            
+        if pullNextMatrix and ("true target" in line):
+            confMatrix[0] = int(line.split()[2][:-1]) # remove the comma
+            confMatrix[1] = int(line.split()[3])
+        
+        if pullNextMatrix and ("true noise" in line):
+            confMatrix[2] = int(line.split()[2][:-1]) # remove the comma
+            confMatrix[3] = int(line.split()[3])
+            
+            # Initialize with "just call everything taret" matrix
+            if firstMatrix:
+                firstMatrix = False
+                confMatrices = [[confMatrix[0]+confMatrix[1], 0, confMatrix[2]+confMatrix[3], 0]]
+            
+            confMatrices.append(confMatrix)
+            pullNextMatrix = False
+            
+    # End with the ubiquitious "just call everything noise" matrix
+    confMatrices.append([0, confMatrix[0]+confMatrix[1], 0, confMatrix[2]+confMatrix[3]])
+    
+    return confMatrices
+# end confMatrixCountsFromLog
+
     
 # Run if called directly
 if __name__ == "__main__":
@@ -382,31 +506,37 @@ if __name__ == "__main__":
     #runNFoldPerformanceAnalysis(4, 'folds', os.path.join('savedNetworks','biasAdd4Folds60k_sW00p80_'), modelName = "modelFinal_full")
     #runNFoldPerformanceAnalysis(4, 'folds_96x72_noHand', os.path.join('savedNetworks','biasAdd4Folds60k96x72noHand_sW00p10_'), modelName = "modelFinal_full")
     #runNFoldPerformanceAnalysis(4, 'folds_96x72_noHand', os.path.join('savedNetworks','biasAdd4Folds60k96x72noHand_sW00p00_'), modelName = "modelFinal_full")
+    #runNFoldPerformanceAnalysis(4, 'folds_96x72_noHand', os.path.join('savedNetworks','biasAdd4Folds60k96x72noHand_sW00p05_'), modelName = "modelFinal_full")
+    #runNFoldPerformanceAnalysis(4, 'folds_96x72_noHand', os.path.join('savedNetworks','biasAdd4Folds60k96x72noHand_sW00p20_'), modelName = "modelFinal_full")
+    #runNFoldPerformanceAnalysis(4, 'folds_96x72_noHand', os.path.join('savedNetworks','biasAdd4Folds60k96x72noHandSOff3_sW00p10_'), modelName = "modelFinal_full")
     
     
     # Make a bunch of ROC curves from a list of logs
     logList, labelList, linespecList = [], [], []
     xlim, ylim = [0,0.07], [0,1]
 
+    # NO SIAMESE LOSS
     logList.append(os.path.join('savedNetworks','biasAdd4Folds60k96x72noHand_sW00p00__confMatrices.log'))
     labelList.append("no Siamese loss")
     linespecList.append('k')
 
+    # VARYING THE SIAMESE LOSS WEIGHT
     #logList.append(os.path.join('savedNetworks','biasAdd4Folds60k_sW00p01__confMatrices.log'))
     #labelList.append("Siamese weight = 0.01")
     #linespecList.append('k--')
 
-    #logList.append(os.path.join('savedNetworks','biasAdd4Folds60k_sW00p05__confMatrices.log'))
+    #logList.append(os.path.join('savedNetworks','biasAdd4Folds60k96x72noHand_sW00p05__confMatrices.log'))
     #labelList.append("Siamese weight = 0.05")
-    #linespecList.append('b--')
+    #linespecList.append('y--')
     
     logList.append(os.path.join('savedNetworks','biasAdd4Folds60k96x72noHand_sW00p10__confMatrices.log'))
-    labelList.append("Siamese weight = 0.1")
-    linespecList.append('b-.')
+    #labelList.append("Siamese weight = 0.10")
+    labelList.append("Siamese frame gap = 1")
+    linespecList.append('b')
 
-    #logList.append(os.path.join('savedNetworks','biasAdd4Folds60k_sW00p20__confMatrices.log'))
-    #labelList.append("Siamese weight = 0.2")
-    #linespecList.append('g--')
+    #logList.append(os.path.join('savedNetworks','biasAdd4Folds60k96x72noHand_sW00p20__confMatrices.log'))
+    #labelList.append("Siamese weight = 0.20")
+    #linespecList.append('m--')
     
     #logList.append(os.path.join('savedNetworks','biasAdd4Folds60k_sW00p30__confMatrices.log'))
     #labelList.append("Siamese weight = 0.3")
@@ -419,8 +549,16 @@ if __name__ == "__main__":
     #logList.append(os.path.join('savedNetworks','biasAdd4Folds60k_sW00p80__confMatrices.log'))
     #labelList.append("Siamese weight = 0.8")
     #linespecList.append('y-.')
+    
+    
+    
+    # VARYING THE SIAMESE GAP 
+    logList.append(os.path.join('savedNetworks','biasAdd4Folds60k96x72noHandSOff3_sW00p10__confMatrices.log'))
+    labelList.append("Siamese frame gap = 3")
+    linespecList.append('r--')
        
     
-    rocCurveComparison(logList, labelList, linespecList, xlim=xlim, ylim=ylim)
-   
+    #rocCurveComparison(logList, labelList, linespecList, xlim=xlim, ylim=ylim)
+    precisionRecallComparison(logList, labelList, linespecList, xlim=[0.85,1], ylim=[0,0.6])
+    
     
